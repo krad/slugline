@@ -4,13 +4,18 @@ import { Parser, parseTagsAndAttributes } from '../src/parser'
 
 const vod     = fs.readFileSync('./tests/fixtures/vod.m3u8').toString()
 const master  = fs.readFileSync('./tests/fixtures/master.m3u8').toString()
+const invalid = fs.readFileSync('./tests/fixtures/invalid.m3u8').toString()
 
 test('that we throw when we attempt to parse something that is not a playlist', t=>{
+
   const throwFunc   = () => { Parser.parse('hi') }
   const noThrowFunc = () => { Parser.parse(vod) }
+  const invalidFunc = () => { Parser.parse(invalid) }
 
   t.throws(throwFunc, /not valid playlist/,  'threw not valid playlist')
   t.doesNotThrow(noThrowFunc)
+  t.throws(invalidFunc, /not valid playlist/, 'threw not valid playlist')
+
   t.end()
 })
 
@@ -27,8 +32,7 @@ test('that we can build a raw structure from a playlist', t=> {
   t.equals('VOD', results[4]["#EXT-X-PLAYLIST-TYPE"], 'playlist type correct')
 
   t.equals(6.006226722, results[7]["#EXTINF"], 'float precision correct')
-
-  console.log(results);
+  // console.log(results);
 
   t.end()
 })
