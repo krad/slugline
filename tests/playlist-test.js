@@ -2,9 +2,9 @@ const test = require('tape')
 const fs   = require('fs')
 import { Playlist } from '../src/playlist'
 
-const vod = fs.readFileSync('./tests/fixtures/vod.m3u8').toString()
+const vod = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
 
-test('basic attributes from a playlist', t=>{
+test('basic attributes from a VOD playlist', t=>{
 
   const playlist = Playlist.parse(vod)
   t.ok(playlist, 'got a playlist')
@@ -14,6 +14,7 @@ test('basic attributes from a playlist', t=>{
   t.equals(1, playlist.mediaSequenceNumber,            'media sequence number was correct')
   t.equals('VOD', playlist.type,                       'identified as a VOD playlist')
   t.equals(7, playlist.segments.length,                'got correct amount of segments')
+  t.equals(27.028028262, playlist.totalDuration,       'total duration was present and correct')
   t.equals(true, playlist.ended,                       'playlist correctly marked as ended')
 
   const initSegment = playlist.segments[0]

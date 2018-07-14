@@ -2,9 +2,9 @@ const test = require('tape')
 const fs   = require('fs')
 import { Parser, parseTagsAndAttributes } from '../src/parser'
 
-const vod     = fs.readFileSync('./tests/fixtures/vod.m3u8').toString()
-const master  = fs.readFileSync('./tests/fixtures/master.m3u8').toString()
-const invalid = fs.readFileSync('./tests/fixtures/invalid.m3u8').toString()
+const vod     = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
+const master  = fs.readFileSync('./tests/fixtures/basic/master.m3u8').toString()
+const invalid = fs.readFileSync('./tests/fixtures/basic/invalid.m3u8').toString()
 
 test('that we throw when we attempt to parse something that is not a playlist', t=>{
 

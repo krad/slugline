@@ -16,12 +16,8 @@ class MediaInitializationSegment extends Segment {
 class MediaSegment extends Segment {
   constructor(info) {
     super()
-    // this.mediaSequenceNumber = undefined
-    // this.bitRate             = undefined
-    this.duration            = info.duration
     if (info.title) { this.title = info.title }
-    // this.size                = undefined
-    // this.title               = undefined // #EXTINF:<duration>,[<title>]
+    this.duration = info.duration
   }
 
   // get bitRate() { return this.size / this.duration }

@@ -70,6 +70,16 @@ class MediaPlaylist extends Playlist {
    */
   get type() { return this._type }
 
+  get totalDuration() {
+    return this.segments
+    .filter(segment => {
+      return segment.constructor.name == 'MediaSegment'
+    }).
+    reduce((acc, curr) => {
+      return acc + curr.duration
+    }, 0)
+  }
+
 
   /**
    * get ended - A bool marking if the stream is ended/complete (VOD playlists / Complete EVENT playlists)
@@ -83,18 +93,18 @@ class MediaPlaylist extends Playlist {
  // and 1.5 times the target duration.  The bit rate of a set is
  // calculated by dividing the sum of the segment sizes by the sum of the
  // segment durations.
-  get peakBitRate() {
-    return undefined
-  }
+  // get peakBitRate() {
+  //   return undefined
+  // }
 
   // The average segment bit rate of a Media Playlist is the sum of the
   //   sizes (in bits) of every Media Segment in the Media Playlist, divided
   //   by the Media Playlist duration.  Note that this includes container
   //   overhead, but not HTTP or other overhead imposed by the delivery
   //   system.
-  get avgBitRate() {
-    return undefined
-  }
+  // get avgBitRate() {
+  //   return undefined
+  // }
 
 }
 
@@ -104,16 +114,16 @@ class MasterPlaylist extends Playlist {
   }
 }
 
-class VariantStream {
-  constructor() {
-
-  }
-}
-
-class Rendition {
-  constructor() {
-
-  }
-}
+// class VariantStream {
+//   constructor() {
+//
+//   }
+// }
+//
+// class Rendition {
+//   constructor() {
+//
+//   }
+// }
 
 export { Playlist, MediaPlaylist, MasterPlaylist }
