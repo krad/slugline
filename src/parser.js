@@ -18,6 +18,7 @@ const MEDIA_SEGMENT_TAGS = [
 const MEDIA_PLAYLIST_TAGS = [
   "#EXT-X-TARGETDURATION",
   "#EXT-X-MEDIA-SEQUENCE",
+  "#EXT-X-MEDIA_SEQUENCE",
   "#EXT-X-DISCONTINUITY-SEQUENCE",
   "#EXT-X-ENDLIST",
   "#EXT-X-PLAYLIST-TYPE",
@@ -122,7 +123,11 @@ const parseTagsAndAttributes = (body) => {
 
     const comps = line.split(":")
     if (comps.length > 1) {
-      return {[comps[0]]: Attribute.parse(comps[1])}
+      if (comps[0] == '#EXTINF') {
+        return {[comps[0]]: Attribute.parseInfo(comps[1])}
+      } else {
+        return {[comps[0]]: Attribute.parse(comps[1])}
+      }
     } else {
       return line
     }

@@ -10,6 +10,14 @@ class Attribute {
     }
   }
 
+  static parseInfo(input) {
+    var result = {}
+    const comps = input.split(',')
+    result['duration'] = stringOrNumber(comps[0])
+    if (comps[1]) { result['title'] = comps[1] }
+    return result
+  }
+
 }
 
 const arrayToObject = (acc, cur) => {
@@ -25,7 +33,7 @@ const stringOrNumber = (input) => {
 }
 
 const clean = (input) => {
-  return input.replace(/[",]/, "")
+  return input.replace(/[",]/g, "")
 }
 
 export { Attribute }

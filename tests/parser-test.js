@@ -33,7 +33,10 @@ test('that we can build a raw structure from a playlist', t=> {
   t.equals(1, results[3]["#EXT-X-MEDIA_SEQUENCE"], 'media sequence correct')
   t.equals('VOD', results[4]["#EXT-X-PLAYLIST-TYPE"], 'playlist type correct')
 
-  t.equals(6.006226722, results[7]["#EXTINF"], 'float precision correct')
+  t.ok(results[7]['#EXTINF'].duration, 'duration present')
+  t.ok(results[7]['#EXTINF'].title, 'duration present')
+  t.equals(6.006226722, results[7]["#EXTINF"].duration, 'float precision correct')
+  t.equals('First Sequence Title', results[7]['#EXTINF'].title, 'Title sequence present')
   // console.log(results);
 
   t.end()
