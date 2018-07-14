@@ -11,10 +11,12 @@ test('that we throw when we attempt to parse something that is not a playlist', 
   const throwFunc   = () => { Parser.parse('hi') }
   const noThrowFunc = () => { Parser.parse(vod) }
   const invalidFunc = () => { Parser.parse(invalid) }
+  const badFunc     = () => { Parser.parse('#EXTM3U')}
 
   t.throws(throwFunc, /not valid playlist/,  'threw not valid playlist')
   t.doesNotThrow(noThrowFunc)
-  t.throws(invalidFunc, /not valid playlist/, 'threw not valid playlist')
+  t.throws(invalidFunc, /playlist had media & master tags/, 'threw not valid playlist')
+  t.throws(badFunc, /not valid playlist/, 'threw not valid playlist')
 
   t.end()
 })

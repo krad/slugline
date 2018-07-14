@@ -43,20 +43,25 @@ const MASTER_AND_MEDIA_TAGS = [
   "EXT-X-START",
 ]
 
+const ERRORS = {
+  INVALID: 'not valid playlist',
+  MIXED_TAGS: 'playlist had media & master tags'
+}
+
 class Parser {
   static parse(body) {
-    if (body.slice(0, 7) !== '#EXTM3U') { throw 'not valid playlist' }
+    if (body.slice(0, 7) !== '#EXTM3U') { throwError(ERRORS.INVALID) }
     const playlistStruct = parseTagsAndAttributes(body)
 
     const isMedia   = isMediaPlaylist(playlistStruct)
     const isMaster  = isMasterPlaylist(playlistStruct)
 
     // If we have tags for both Media and Master type playlists, something is wrong
-    if (isMedia && isMaster) { throw 'not valid playlist' }
+    if (isMedia && isMaster) { throwError(ERRORS.MIXED_TAGS) }
     if (isMedia) { return new MediaPlaylist(playlistStruct) } // return a MediaPlaylist
     if (isMaster) { return new MasterPlaylist(playlistStruct) } // return a MasterPlaylist
 
-    throw 'not valid playlist'
+    throwError(ERRORS.INVALID)
   }
 }
 

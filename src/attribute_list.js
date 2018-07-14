@@ -2,16 +2,12 @@ class Attribute {
 
   static parse(input) {
     const components = input.split(',').map(i => i.split('='))
-
     if (components[0].length == 1) {
       return stringOrNumber(clean(input))
-
     } else {
       const x = components.reduce(arrayToObject, {})
       return x
     }
-
-    return input
   }
 
 }
