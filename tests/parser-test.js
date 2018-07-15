@@ -37,7 +37,6 @@ test('that we can build a raw structure from a playlist', t=> {
   t.ok(results[7]['#EXTINF'].title, 'duration present')
   t.equals(6.006226722, results[7]["#EXTINF"].duration, 'float precision correct')
   t.equals('First Sequence Title', results[7]['#EXTINF'].title, 'Title sequence present')
-  // console.log(results);
 
   t.end()
 })

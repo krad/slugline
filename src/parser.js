@@ -123,11 +123,7 @@ const parseTagsAndAttributes = (body) => {
 
     const comps = line.split(":")
     if (comps.length > 1) {
-      if (comps[0] == '#EXTINF') {
-        return {[comps[0]]: Attribute.parseInfo(comps[1])}
-      } else {
-        return {[comps[0]]: Attribute.parse(comps[1])}
-      }
+      return {[comps[0]]: Attribute.parse(comps)}
     } else {
       return line
     }

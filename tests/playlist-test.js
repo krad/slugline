@@ -2,7 +2,8 @@ const test = require('tape')
 const fs   = require('fs')
 import { Playlist } from '../src/playlist'
 
-const vod = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
+const vod     = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
+const master  = fs.readFileSync('./tests/fixtures/apple-advanced-fmp4/master.m3u8').toString()
 
 test('basic attributes from a VOD playlist', t=>{
 
@@ -27,4 +28,15 @@ test('basic attributes from a VOD playlist', t=>{
   console.log(playlist);
 
   t.end()
+})
+
+// FIXME
+test('basic attributes from a Master playlist', t=> {
+
+  const playlist = Playlist.parse(master)
+  t.ok(playlist, 'got a playlist')
+  console.log(playlist);
+
+  t.end()
+
 })
