@@ -1,65 +1,46 @@
-import { Parser } from './parser'
-import { MediaSegment, MediaInitializationSegment } from './media_segment'
+import { Parser, configureMediaPlaylist, configureMasterPlaylist } from './parser'
 
+/**
+ * Playlist is the base type for all supported playlists
+ */
 class Playlist {
 
+  /**
+   * @static parse - Parse a playlist body
+   *
+   * @param  {String} playlistBody The contents of a m3u8 playlist
+   * @return {Playlist}            Returns either a MediaPlaylist or a MasterPlaylist object
+   */
   static parse(playlistBody) {
     return Parser.parse(playlistBody)
   }
 
 }
 
+
+/**
+ * A Media Playlist contains a list of Media Segments, which when played
+   sequentially will play the multimedia presentation.
+
+   Here is an example of a Media Playlist:
+
+   #EXTM3U
+   #EXT-X-TARGETDURATION:10
+
+   #EXTINF:9.009,
+   http://media.example.com/first.ts
+   #EXTINF:9.009,
+   http://media.example.com/second.ts
+   #EXTINF:3.003,
+   http://media.example.com/third.ts
+ */
 class MediaPlaylist extends Playlist {
 
   constructor(playlistStruct) {
     super()
     this._ended   = false
     this.segments = []
-
-    var currentSegment     = undefined
-    playlistStruct.forEach(tag => {
-      if (typeof tag === 'string') {
-
-        if (tag === '#EXT-X-ENDLIST') {
-          this._ended = true
-        } else {
-          if (currentSegment) {
-            currentSegment.uri = tag
-            this.segments.push(currentSegment)
-            currentSegment = undefined
-          }
-        }
-      }
-
-      if (typeof tag == 'object') {
-        if (tag['#EXT-X-MAP']) {
-          if (tag['#EXT-X-MAP']['URI']) {
-            this.segments.push(new MediaInitializationSegment(tag['#EXT-X-MAP']['URI']))
-          }
-        }
-
-        if (tag['#EXTINF']) {
-          currentSegment = new MediaSegment(tag['#EXTINF'])
-        }
-
-        if (tag['#EXT-X-TARGETDURATION']) {
-          this.targetDuration = tag['#EXT-X-TARGETDURATION']
-        }
-
-        if (tag['#EXT-X-VERSION']) {
-          this.version = tag['#EXT-X-VERSION']
-        }
-
-        if (tag['#EXT-X-PLAYLIST-TYPE']) {
-          this._type = tag['#EXT-X-PLAYLIST-TYPE']
-        }
-
-        if (tag['#EXT-X-MEDIA_SEQUENCE']) {
-          this.mediaSequenceNumber = tag['#EXT-X-MEDIA_SEQUENCE']
-        }
-      }
-    })
-
+    configureMediaPlaylist(this, playlistStruct)
   }
 
 
@@ -108,22 +89,50 @@ class MediaPlaylist extends Playlist {
 
 }
 
+/**
+ * A Master Playlist provides a set of Variant Streams, each of which
+   describes a different version of the same content.
+
+   A Variant Stream includes a Media Playlist that specifies media
+   encoded at a particular bit rate, in a particular format, and at a
+   particular resolution for media containing video.
+
+   A Variant Stream can also specify a set of Renditions.  Renditions
+   are alternate versions of the content, such as audio produced in
+   different languages or video recorded from different camera angles.
+
+   Clients should switch between different Variant Streams to adapt to
+   network conditions.  Clients should choose Renditions based on user
+   preferences.
+
+ */
 class MasterPlaylist extends Playlist {
-  constructor() {
+  constructor(playlistStruct) {
     super()
+    this.variants = []
+    configureMasterPlaylist(this, playlistStruct)
   }
 }
 
-// class VariantStream {
-//   constructor() {
-//
-//   }
-// }
-//
+class VariantStream {
+  constructor(streamInfo) {
+    this.bandwidth = streamInfo['BANDWIDTH']
+
+    if (streamInfo['AVERAGE-BANDWIDTH']) {
+      this.avgBandwidth = streamInfo['AVERAGE-BANDWIDTH']
+    }
+
+    if (streamInfo['CODECS']) {
+      this.codecs = streamInfo['CODECS']
+    }
+
+  }
+}
+
 // class Rendition {
 //   constructor() {
 //
 //   }
 // }
 
-export { Playlist, MediaPlaylist, MasterPlaylist }
+export { Playlist, MediaPlaylist, MasterPlaylist, VariantStream }

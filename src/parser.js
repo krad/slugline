@@ -1,5 +1,6 @@
 import { Attribute } from './attribute_list'
-import { MediaPlaylist, MasterPlaylist } from './playlist'
+import { MediaPlaylist, MasterPlaylist, VariantStream } from './playlist'
+import { MediaSegment, MediaInitializationSegment } from './media_segment'
 
 const BASIC_TAGS = ["EXTM3U", "EXT-X-VERSION"]
 
@@ -70,7 +71,6 @@ const throwError = (err) => {
   throw err
 }
 
-
 /**
  * Used to determine if a parsed playlist struct is a media playlist
  */
@@ -120,16 +120,14 @@ const componentsFromString = (body) => {
  */
 const parseTagsAndAttributes = (body) => {
   return componentsFromString(body).map(line => {
-
     const comps = line.split(":")
-    if (comps.length > 1) {
+    if (comps.length > 1 && comps[0] !== 'http') {
       return {[comps[0]]: Attribute.parse(comps)}
     } else {
       return line
     }
   })
 }
-
 
 /**
  * Used to find members of an array present in another array
@@ -138,4 +136,71 @@ const findOne = (haystack, arr) => {
   return arr.some(x => haystack.indexOf(x) >= 0)
 }
 
-export { Parser, parseTagsAndAttributes }
+/// Used to configure a media playlist
+const configureMediaPlaylist = (playlist, struct) => {
+  var currentSegment = undefined
+  struct.forEach(tag => {
+    if (typeof tag === 'string') {
+
+      if (tag === '#EXT-X-ENDLIST') {
+        playlist._ended = true
+      } else {
+        if (currentSegment) {
+          currentSegment.uri = tag
+          playlist.segments.push(currentSegment)
+          currentSegment = undefined
+        }
+      }
+    }
+
+    if (typeof tag == 'object') {
+      if (tag['#EXT-X-MAP']) {
+        if (tag['#EXT-X-MAP']['URI']) {
+          playlist.segments.push(new MediaInitializationSegment(tag['#EXT-X-MAP']['URI']))
+        }
+      }
+
+      if (tag['#EXTINF']) {
+        currentSegment = new MediaSegment(tag['#EXTINF'])
+      }
+
+      if (tag['#EXT-X-TARGETDURATION']) {
+        playlist.targetDuration = tag['#EXT-X-TARGETDURATION']
+      }
+
+      if (tag['#EXT-X-VERSION']) {
+        playlist.version = tag['#EXT-X-VERSION']
+      }
+
+      if (tag['#EXT-X-PLAYLIST-TYPE']) {
+        playlist._type = tag['#EXT-X-PLAYLIST-TYPE']
+      }
+
+      if (tag['#EXT-X-MEDIA_SEQUENCE']) {
+        playlist.mediaSequenceNumber = tag['#EXT-X-MEDIA_SEQUENCE']
+      }
+    }
+  })
+}
+
+/// User to configure a master playlist
+const configureMasterPlaylist = (playlist, struct) => {
+  var currentVariant = undefined
+  struct.forEach(tag => {
+    if (typeof tag === 'string') {
+      if (currentVariant) {
+        currentVariant.uri = tag
+        playlist.variants.push(currentVariant)
+        currentVariant = undefined
+      }
+    }
+
+    if (typeof tag == 'object') {
+      if (tag['#EXT-X-STREAM-INF']) {
+        currentVariant = new VariantStream(tag['#EXT-X-STREAM-INF'])
+      }
+    }
+  })
+}
+
+export { Parser, parseTagsAndAttributes, configureMediaPlaylist, configureMasterPlaylist }

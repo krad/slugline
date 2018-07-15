@@ -3,7 +3,7 @@ const fs   = require('fs')
 import { Playlist } from '../src/playlist'
 
 const vod     = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
-const master  = fs.readFileSync('./tests/fixtures/apple-advanced-fmp4/master.m3u8').toString()
+const master  = fs.readFileSync('./tests/fixtures/basic/master.m3u8').toString()
 
 test('basic attributes from a VOD playlist', t=>{
 
@@ -30,13 +30,19 @@ test('basic attributes from a VOD playlist', t=>{
   t.end()
 })
 
-// FIXME
 test('basic attributes from a Master playlist', t=> {
 
   const playlist = Playlist.parse(master)
   t.ok(playlist, 'got a playlist')
-  console.log(playlist);
+  t.equals('MasterPlaylist', playlist.constructor.name, 'got a MasterPlaylist')
+  t.equals(4, playlist.variants.length,                 'got correct amount of variants')
 
+  const variant = playlist.variants[0]
+  t.equals('http://example.com/low.m3u8', variant.uri,  'uri was correct')
+  t.equals(1280000, variant.bandwidth,                  'bandwidth was correct (variant 1)')
+  t.equals(1000000, variant.avgBandwidth,               'average bandwidth was correct (variant 2)')
+
+  const last = playlist.variants[playlist.variants.length-1]
+  t.equals('mp4a.40.5', last.codecs,                    'got codec info for the last variant')
   t.end()
-
 })
