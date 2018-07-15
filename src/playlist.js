@@ -112,11 +112,32 @@ class MasterPlaylist extends Playlist {
     this.variants = []
     configureMasterPlaylist(this, playlistStruct)
   }
+
+
+  /**
+   * get regularVariants - Get variant streams that are regular
+   *
+   * @return {Array<VariantStream>}  An array of variant streams that are 'regular' non-iFrame
+   */
+  get regularVariants() {
+    return this.variants.filter(vs => vs.isIFrame == false)
+  }
+
+
+  /**
+   * get iFrameVaraints - Get variant streams that are iFrame only
+   *
+   * @return {Array<VariantStream>} An array of variant streams that are iFrame only
+   */
+  get iFrameVaraints() {
+    return this.variants.filter(vs => vs.isIFrame == true)
+  }
 }
 
 class VariantStream {
   constructor(streamInfo) {
-    this.bandwidth = streamInfo['BANDWIDTH']
+    this.isIFrame   = false
+    this.bandwidth  = streamInfo['BANDWIDTH']
 
     if (streamInfo['AVERAGE-BANDWIDTH']) {
       this.avgBandwidth = streamInfo['AVERAGE-BANDWIDTH']
@@ -124,6 +145,30 @@ class VariantStream {
 
     if (streamInfo['CODECS']) {
       this.codecs = streamInfo['CODECS']
+    }
+
+    if (streamInfo['RESOLUTION']) {
+      this.resolution = streamInfo['RESOLUTION']
+    }
+
+    if (streamInfo['FRAME-RATE']) {
+      this.frameRate = streamInfo['FRAME-RATE']
+    }
+
+    if (streamInfo['CLOSED-CAPTIONS']) {
+      this.closedCaptionsIdent = streamInfo['CLOSED-CAPTIONS']
+    }
+
+    if (streamInfo['URI']) {
+      this.uri = streamInfo['URI']
+    }
+
+    if (streamInfo['AUDIO']) {
+      this.audioIdent = streamInfo['AUDIO']
+    }
+
+    if (streamInfo['SUBTITLES']) {
+      this.subtitlesIdent = streamInfo['SUBTITLES']
     }
 
   }

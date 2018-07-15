@@ -199,6 +199,12 @@ const configureMasterPlaylist = (playlist, struct) => {
       if (tag['#EXT-X-STREAM-INF']) {
         currentVariant = new VariantStream(tag['#EXT-X-STREAM-INF'])
       }
+
+      if (tag['#EXT-X-I-FRAME-STREAM-INF']) {
+        var variant       = new VariantStream(tag['#EXT-X-I-FRAME-STREAM-INF'])
+        variant.isIFrame  = true
+        playlist.variants.push(variant)
+      }
     }
   })
 }
