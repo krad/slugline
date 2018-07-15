@@ -209,4 +209,38 @@ const configureMasterPlaylist = (playlist, struct) => {
   })
 }
 
-export { Parser, parseTagsAndAttributes, configureMediaPlaylist, configureMasterPlaylist }
+const configureVariantStream = (variant, streamInfo) => {
+  if (streamInfo['AVERAGE-BANDWIDTH']) {
+    variant.avgBandwidth = streamInfo['AVERAGE-BANDWIDTH']
+  }
+
+  if (streamInfo['CODECS']) {
+    variant.codecs = streamInfo['CODECS']
+  }
+
+  if (streamInfo['RESOLUTION']) {
+    variant.resolution = streamInfo['RESOLUTION']
+  }
+
+  if (streamInfo['FRAME-RATE']) {
+    variant.frameRate = streamInfo['FRAME-RATE']
+  }
+
+  if (streamInfo['CLOSED-CAPTIONS']) {
+    variant.closedCaptionsIdent = streamInfo['CLOSED-CAPTIONS']
+  }
+
+  if (streamInfo['URI']) {
+    variant.uri = streamInfo['URI']
+  }
+
+  if (streamInfo['AUDIO']) {
+    variant.audioIdent = streamInfo['AUDIO']
+  }
+
+  if (streamInfo['SUBTITLES']) {
+    variant.subtitlesIdent = streamInfo['SUBTITLES']
+  }
+}
+
+export { Parser, parseTagsAndAttributes, configureMediaPlaylist, configureMasterPlaylist, configureVariantStream }

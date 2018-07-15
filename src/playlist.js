@@ -1,4 +1,4 @@
-import { Parser, configureMediaPlaylist, configureMasterPlaylist } from './parser'
+import { Parser, configureMediaPlaylist, configureMasterPlaylist, configureVariantStream } from './parser'
 
 /**
  * Playlist is the base type for all supported playlists
@@ -138,39 +138,7 @@ class VariantStream {
   constructor(streamInfo) {
     this.isIFrame   = false
     this.bandwidth  = streamInfo['BANDWIDTH']
-
-    if (streamInfo['AVERAGE-BANDWIDTH']) {
-      this.avgBandwidth = streamInfo['AVERAGE-BANDWIDTH']
-    }
-
-    if (streamInfo['CODECS']) {
-      this.codecs = streamInfo['CODECS']
-    }
-
-    if (streamInfo['RESOLUTION']) {
-      this.resolution = streamInfo['RESOLUTION']
-    }
-
-    if (streamInfo['FRAME-RATE']) {
-      this.frameRate = streamInfo['FRAME-RATE']
-    }
-
-    if (streamInfo['CLOSED-CAPTIONS']) {
-      this.closedCaptionsIdent = streamInfo['CLOSED-CAPTIONS']
-    }
-
-    if (streamInfo['URI']) {
-      this.uri = streamInfo['URI']
-    }
-
-    if (streamInfo['AUDIO']) {
-      this.audioIdent = streamInfo['AUDIO']
-    }
-
-    if (streamInfo['SUBTITLES']) {
-      this.subtitlesIdent = streamInfo['SUBTITLES']
-    }
-
+    configureVariantStream(this, streamInfo)
   }
 }
 
