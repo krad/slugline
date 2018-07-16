@@ -37,6 +37,7 @@ test('basic attributes from a Master playlist', t=> {
   t.ok(playlist, 'got a playlist')
   t.equals('MasterPlaylist', playlist.constructor.name, 'got a MasterPlaylist')
   t.equals(4, playlist.variants.length,                 'got correct amount of variants')
+  t.notOk(playlist.renditions,                           'renditions was undefined')
 
   const variant = playlist.variants[0]
   t.equals('http://example.com/low.m3u8', variant.uri,  'uri was correct')
@@ -68,11 +69,22 @@ test('attributes from an advanced Master Playlist', t=> {
   t.equals(true, iframeVariant.isIFrame,              'correctly identified as iFrame playlist')
   t.equals('v2/iframe_index.m3u8', iframeVariant.uri, 'correctly parsed/set uri')
 
-
   t.equals(24, playlist.regularVariants.length, 'correctly returned list of non iFrame variants')
   t.equals(6, playlist.iFrameVaraints.length,   'correctly return list of iFrame only variants')
 
-  // console.log(playlist.variants);
+  t.ok(playlist.renditions,               'renditions were present')
+  t.equals(5, playlist.renditions.length, 'got correct amount of renditions')
+
+  const rendition = playlist.renditions[0]
+  t.equals('AUDIO', rendition.type,             'got correct rendtion type')
+  t.equals('aud1', rendition.groupId,           'got correct group id')
+  t.equals('English', rendition.name,           'got correct name')
+  t.equals('a1/prog_index.m3u8', rendition.uri, 'got correct uri')
+  t.equals(true, rendition.default,             'got correct default pref')
+  t.equals(true, rendition.autoselect,          'got correct value of autoselect')
+  t.equals(false, rendition.forced,             'got correct value of forced')
+  t.equals(2, rendition.channels,               'got correct value of channels')
+  t.equals('en', rendition.language,            'got correct value of language')
 
   t.end()
 })

@@ -1,5 +1,5 @@
 import { Attribute } from './attribute_list'
-import { MediaPlaylist, MasterPlaylist, VariantStream } from './playlist'
+import { MediaPlaylist, MasterPlaylist, VariantStream, Rendition } from './playlist'
 import { MediaSegment, MediaInitializationSegment } from './media_segment'
 
 const BASIC_TAGS = ["EXTM3U", "EXT-X-VERSION"]
@@ -183,7 +183,7 @@ const configureMediaPlaylist = (playlist, struct) => {
   })
 }
 
-/// User to configure a master playlist
+/// Used to configure a master playlist
 const configureMasterPlaylist = (playlist, struct) => {
   var currentVariant = undefined
   struct.forEach(tag => {
@@ -205,10 +205,16 @@ const configureMasterPlaylist = (playlist, struct) => {
         variant.isIFrame  = true
         playlist.variants.push(variant)
       }
+
+      if (tag['#EXT-X-MEDIA']) {
+        if (!playlist.renditions) { playlist.renditions = [] }
+        playlist.renditions.push(new Rendition(tag['#EXT-X-MEDIA']))
+      }
     }
   })
 }
 
+/// Used to configure a variant stream
 const configureVariantStream = (variant, streamInfo) => {
   if (streamInfo['AVERAGE-BANDWIDTH']) {
     variant.avgBandwidth = streamInfo['AVERAGE-BANDWIDTH']
@@ -243,4 +249,42 @@ const configureVariantStream = (variant, streamInfo) => {
   }
 }
 
-export { Parser, parseTagsAndAttributes, configureMediaPlaylist, configureMasterPlaylist, configureVariantStream }
+/// Used to configure a rendition
+const configureRendition = (rendition, renditionInfo) => {
+  rendition.default    = optionalYesOrNo(renditionInfo['DEFAULT'])
+  rendition.autoselect = optionalYesOrNo(renditionInfo['AUTOSELECT'])
+  rendition.forced     = optionalYesOrNo(renditionInfo['FORCED'])
+  rendition.type       = renditionInfo['TYPE']
+  rendition.groupId    = renditionInfo['GROUP-ID']
+  rendition.name       = renditionInfo['NAME']
+
+  if (rendition.type != 'CLOSED-CAPTIONS') {
+    if (renditionInfo['URI']) {
+      rendition.uri  = renditionInfo['URI']
+    }
+  } else {
+    rendition.inStreamId = renditionInfo['INSTREAM-ID']
+  }
+
+  if (rendition.type == 'AUDIO') {
+    rendition.channels = renditionInfo['CHANNELS']
+  }
+
+  if (renditionInfo['LANGUAGE']) {
+    rendition.language = renditionInfo['LANGUAGE']
+  }
+
+  if (renditionInfo['ASSOC-LANGUAGE']) {
+    rendition.assocLanguage = renditionInfo['ASSOC-LANGUAGE']
+  }
+}
+
+const optionalYesOrNo = (value) => {
+  if (value && value.toLowerCase() == 'yes') {
+    return true
+  }
+  return false
+}
+
+
+export { Parser, parseTagsAndAttributes, configureMediaPlaylist, configureMasterPlaylist, configureVariantStream, configureRendition }

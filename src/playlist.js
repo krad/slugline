@@ -1,4 +1,9 @@
-import { Parser, configureMediaPlaylist, configureMasterPlaylist, configureVariantStream } from './parser'
+import {
+  Parser,
+  configureMediaPlaylist,
+  configureMasterPlaylist,
+  configureVariantStream,
+  configureRendition } from './parser'
 
 /**
  * Playlist is the base type for all supported playlists
@@ -142,10 +147,10 @@ class VariantStream {
   }
 }
 
-// class Rendition {
-//   constructor() {
-//
-//   }
-// }
+class Rendition {
+  constructor(renditionInfo) {
+    configureRendition(this, renditionInfo)
+  }
+}
 
-export { Playlist, MediaPlaylist, MasterPlaylist, VariantStream }
+export { Playlist, MediaPlaylist, MasterPlaylist, VariantStream, Rendition }
