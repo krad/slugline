@@ -2,16 +2,19 @@ import { Attribute } from './attribute_list'
 import { MediaPlaylist, MasterPlaylist, VariantStream, Rendition } from './playlist'
 import { MediaSegment, MediaInitializationSegment } from './media_segment'
 
-const BASIC_TAGS = ["EXTM3U", "EXT-X-VERSION"]
+const BASIC_TAGS = [
+  "#EXTM3U",
+  "#EXT-X-VERSION"
+]
 
 const MEDIA_SEGMENT_TAGS = [
-  "EXTINF",
-  "EXT-X-BYTERANGE",
-  "EXT-X-DISCONTINUITY",
-  "EXT-X-KEY",
-  "EXT-X-MAP",
-  "EXT-X-PROGRAM-DATE-TIME",
-  "EXT-X-DATERANGE"]
+  "#EXTINF",
+  "#EXT-X-BYTERANGE",
+  "#EXT-X-DISCONTINUITY",
+  "#EXT-X-KEY",
+  "#EXT-X-MAP",
+  "#EXT-X-PROGRAM-DATE-TIME",
+  "#EXT-X-DATERANGE"]
 
 /**
  * Tags that ONLY appear in Media Playlists
@@ -41,8 +44,8 @@ const MASTER_PLAYLIST_TAGS = [
  * Tags that can appear in BOTH Media and Master Playlists
  */
 const MASTER_AND_MEDIA_TAGS = [
-  "EXT-X-INDEPENDENT-SEGMENTS",
-  "EXT-X-START",
+  "#EXT-X-INDEPENDENT-SEGMENTS",
+  "#EXT-X-START",
 ]
 
 const ERRORS = {

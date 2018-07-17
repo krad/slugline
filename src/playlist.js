@@ -20,6 +20,19 @@ class Playlist {
     return Parser.parse(playlistBody)
   }
 
+
+  /**
+   * @static fetch - Fetch and parse a playlist from a URL
+   *
+   * @param  {String} playlistURL String to a URL that hosts a m3u8 playlist
+   * @return {Promise<Playlist>}  Returns a Promise with a
+   */
+  static fetch(playlistURL) {
+    return new Promise((resolve, reject) => {
+      
+    })
+  }
+
 }
 
 
