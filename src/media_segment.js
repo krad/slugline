@@ -1,6 +1,10 @@
 const url = require('url')
 import { MediaSegmetFetcher } from './fetcher'
 
+
+/**
+ * A Segment is a media asset that can be downloaded to facilitate playback
+ */
 class Segment {
   constructor() { }
 
@@ -33,6 +37,7 @@ class Segment {
   }
 
 }
+
 
 class MediaInitializationSegment extends Segment {
   constructor(uri) {

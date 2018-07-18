@@ -11,13 +11,16 @@ class Fetcher {
   fetch(onProgress) {
     this._promise = new Promise((resolve, reject) => {
 
-      const timer = setTimeout(() => {
+      const setupTimer = (timer, timeout) => {
         clearTimeout(timer)
-        reject(new Error('fetch timed out'))
-      }, this._timeout)
+        return setTimeout(() => { reject(new Error('fetch timed out')) }, timeout)
+      }
+
+      var timer = setupTimer(undefined, this._timeout)
 
       const request = http.get(this._url, (response) => {
         if (this._encoding) { response.setEncoding(this._encoding) }
+
         this.headers        = response.headers
         this._contentLength = parseInt(this.headers['content-length'], 10)
         var data            = ''
@@ -25,10 +28,14 @@ class Fetcher {
         response.on('data', (chunk) => {
           data += chunk
           this._contentRead += chunk.length
-          clearTimeout(timer)
-          if (onProgress) { onProgress(this.progress) }
+          timer = setupTimer(timer, this._timeout)      // Reset timeout so we don't die on long downloads
+          if (onProgress) { onProgress(this.progress) } // Call the onProgress callback if present
         }).on('end', () => {
           clearTimeout(timer)
+
+          // S3 doesn't always return content-length
+          if (this.contentLength == 0) { this._contentLength = this.contentRead }
+
           resolve(data)
         })
       })
