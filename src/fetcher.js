@@ -45,6 +45,7 @@ class Fetcher {
     return this._promise
   }
 
+
   get contentLength() {
     if (this._contentLength) {
       return this._contentLength
@@ -72,9 +73,7 @@ class PlaylistFetcher extends Fetcher {
     super(config)
   }
 
-  fetch() {
-    return super.fetch().then(body => Playlist.parse(body))
-  }
+  fetch() { return super.fetch().then(body => Playlist.parse(body)) }
 }
 
 class MediaSegmetFetcher extends Fetcher {

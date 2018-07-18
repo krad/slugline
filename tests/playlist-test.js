@@ -1,10 +1,13 @@
 const test = require('tape')
 const fs   = require('fs')
 import { Playlist } from '../src/playlist'
+import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-server'
 
 const vod       = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
 const master    = fs.readFileSync('./tests/fixtures/basic/master.m3u8').toString()
 const advMaster = fs.readFileSync('./tests/fixtures/apple-advanced-fmp4/master.m3u8').toString()
+
+const vodURL   = '/basic/krad.tv/tractor/vod.m3u8'
 
 test('basic attributes from a VOD playlist', t=>{
 
@@ -88,3 +91,35 @@ test('attributes from an advanced Master Playlist', t=> {
 
   t.end()
 })
+
+test.only('fetching a playlist', t=> {
+  t.test(setupServer,     'fetching a playlist - setup the fixture server')
+  t.test(fetchTest,       'fetching a playlist and segments')
+  t.test(tearDownServer,  'fetching a playlist - tore down the fixture server')
+  t.end()
+})
+
+const fetchTest = (t) => {
+  t.plan(26)
+  t.timeoutAfter(3000)
+
+  const url = hostAndPort()+vodURL
+  Playlist.fetch(url)
+  .then(playlist => {
+
+    t.ok(playlist, 'fetch completed with a response')
+    t.equals('MediaPlaylist', playlist.constructor.name, 'it was MediaPlaylist')
+    t.equals('VOD', playlist.type, 'it was a VOD')
+
+    const basePath = hostAndPort()+'/basic/krad.tv/tractor'
+    t.equals(basePath, playlist.basePath, 'base path was correct')
+
+    playlist.segments.forEach(segment => {
+      t.equals(basePath, segment.basePath, 'base path was correct ' + segment.uri)
+    })
+
+  }).catch(err => {
+    console.log(err);
+    t.fail('We should not have failed')
+  })
+}

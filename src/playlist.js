@@ -5,6 +5,8 @@ import {
   configureVariantStream,
   configureRendition } from './parser'
 
+import { PlaylistFetcher } from './fetcher'
+
 /**
  * Playlist is the base type for all supported playlists
  */
@@ -29,9 +31,19 @@ class Playlist {
    */
   static fetch(playlistURL) {
     return new Promise((resolve, reject) => {
-      
+      const fetcher = new PlaylistFetcher({url: playlistURL})
+      fetcher.fetch()
+      .then(res => {
+        res.setBasePath(playlistURL.split('/').slice(0, -1).join('/'))
+        resolve(res)
+      }).catch(err => {
+        reject(err)
+      })
     })
   }
+
+  setBasePath(val) { this._basePath = val }
+  get basePath() { return this._basePath }
 
 }
 
@@ -61,6 +73,10 @@ class MediaPlaylist extends Playlist {
     configureMediaPlaylist(this, playlistStruct)
   }
 
+  setBasePath(val) {
+    super.setBasePath(val)
+    this.segments.forEach(segment => segment.basePath = val)
+  }
 
   /**
    * get type - The type of playlist (VOD, EVENT, LIVE)

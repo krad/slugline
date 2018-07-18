@@ -1,18 +1,14 @@
 const test = require('tape')
 import { Fetcher, PlaylistFetcher } from '../src/fetcher'
-import {setupServer, tearDownServer, serverPort} from './fixture-server'
+import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-server'
 
-test.only('fetcher behavior', t=> {
-  t.test(setupServer,             'setup the fixture server')
+test('fetcher behavior', t=> {
+  t.test(setupServer,             'fetcher behavior - setup the fixture server')
   t.test(fetchingPlaylistTest,    'should fetch a file')
   t.test(timeoutTest,             'test fetcher timeout behavior')
-  t.test(tearDownServer,          'tore down the fixture server')
+  t.test(tearDownServer,          'fetcher behavior - tore down the fixture server')
   t.end()
 })
-
-const hostAndPort = () => {
-  return 'http://localhost:'+serverPort
-}
 
 const fetchingPlaylistTest = (t) => {
   t.plan(4)

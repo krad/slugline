@@ -29,4 +29,9 @@ const tearDownServer = (t) => {
   server.close(() => t.ok(1, 'Server closed on ' + serverPort))
 }
 
-export {setupServer, tearDownServer, serverPort}
+const hostAndPort = () => {
+  return 'http://localhost:'+serverPort
+}
+
+
+export {setupServer, tearDownServer, serverPort, hostAndPort}
