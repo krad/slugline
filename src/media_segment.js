@@ -1,8 +1,36 @@
+const url = require('url')
+import { MediaSegmetFetcher } from './fetcher'
+
 class Segment {
   constructor() { }
 
   set uri(val) { this._uri = val }
   get uri() { return this._uri }
+
+  get url() {
+    return url.parse([this.basePath,this._uri].join('/')).href
+  }
+
+  get progress() {
+    if (this._fetcher) {
+      return this._fetcher.progress
+    }
+    return 0
+  }
+
+  fetch() {
+    return new Promise((resolve, reject) => {
+      this._fetcher = new MediaSegmetFetcher({url: this.url})
+      this._fetcher.fetch()
+      .then(res => {
+        this.size = res.length
+        this.data = res
+        resolve(res)
+      }).catch(err => {
+        reject(err)
+      })
+    })
+  }
 
 }
 
@@ -20,7 +48,7 @@ class MediaSegment extends Segment {
     this.duration = info.duration
   }
 
-  // get bitRate() { return this.size / this.duration }
+  get bitRate() { return this.size / this.duration }
 }
 
 

@@ -95,7 +95,6 @@ class MediaPlaylist extends Playlist {
     }, 0)
   }
 
-
   /**
    * get ended - A bool marking if the stream is ended/complete (VOD playlists / Complete EVENT playlists)
    *

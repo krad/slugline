@@ -3,8 +3,9 @@ import { Playlist } from './playlist'
 
 class Fetcher {
   constructor(config) {
-    this._timeout   = config.timeout || 2000
-    this._url       = config.url
+    this._timeout       = config.timeout || 5000
+    this._url           = config.url
+    this._contentRead   = 0
   }
 
   fetch() {
@@ -15,25 +16,20 @@ class Fetcher {
         reject(new Error('fetch timed out'))
       }, this._timeout)
 
-      var request = http.get(this._url, (response) => {
-        var data = ''
-        response.setEncoding('utf8')
-        this._contentLength = response.headers['content-length']
-        switch (response.statusCode) {
-          case 404:
-            reject(new Error('404 Not Found'))
-            break
-          case 200:
-            response.on('data', (chunk) => {
-              data += chunk
-              this._contentRead = data.length
-            })
-            response.on('end', () => {
-              clearTimeout(timer)
-              resolve(data)
-             })
-            break
-        }
+      const request = http.get(this._url, (response) => {
+        if (this._encoding) { response.setEncoding(this._encoding) }
+        this.headers        = response.headers
+        this._contentLength = parseInt(this.headers['content-length'], 10)
+        var data            = ''
+
+        response.on('data', (chunk) => {
+          data += chunk
+          this._contentRead += chunk.length
+          clearTimeout(timer)
+        }).on('end', () => {
+          clearTimeout(timer)
+          resolve(data)
+        })
       })
 
       request.on('error', (err) => {
@@ -53,16 +49,11 @@ class Fetcher {
     return 0
   }
 
-  get contentRead() {
-    if (this._contentRead) {
-      return this._contentRead
-    }
-    return 0
-  }
+  get contentRead() { return this._contentRead }
 
   get progress() {
     if (this.contentLength && this.contentRead) {
-      return (this.contentLength / this.contentRead) * 100
+      return +(100.0 * this.contentRead / this.contentLength).toFixed(2)
     }
     return 0
   }
@@ -71,6 +62,7 @@ class Fetcher {
 class PlaylistFetcher extends Fetcher {
   constructor(config) {
     super(config)
+    this._encoding = 'utf8'
   }
 
   fetch() { return super.fetch().then(body => Playlist.parse(body)) }
@@ -79,7 +71,8 @@ class PlaylistFetcher extends Fetcher {
 class MediaSegmetFetcher extends Fetcher {
   constructor(config) {
     super(config)
+    this._encoding = 'binary'
   }
 }
 
-export { Fetcher, PlaylistFetcher }
+export { Fetcher, PlaylistFetcher, MediaSegmetFetcher }

@@ -92,7 +92,7 @@ test('attributes from an advanced Master Playlist', t=> {
   t.end()
 })
 
-test.only('fetching a playlist', t=> {
+test('fetching a playlist', t=> {
   t.test(setupServer,     'fetching a playlist - setup the fixture server')
   t.test(fetchTest,       'fetching a playlist and segments')
   t.test(tearDownServer,  'fetching a playlist - tore down the fixture server')
@@ -100,8 +100,8 @@ test.only('fetching a playlist', t=> {
 })
 
 const fetchTest = (t) => {
-  t.plan(26)
-  t.timeoutAfter(3000)
+  t.plan(114)
+  t.timeoutAfter(4000)
 
   const url = hostAndPort()+vodURL
   Playlist.fetch(url)
@@ -116,6 +116,16 @@ const fetchTest = (t) => {
 
     playlist.segments.forEach(segment => {
       t.equals(basePath, segment.basePath, 'base path was correct ' + segment.uri)
+      t.equals(basePath+'/'+segment.uri, segment.url, 'segment url was correct ' + segment.url)
+
+      segment.fetch().then(data => {
+        t.ok(data, 'got data back ' + segment.uri)
+        t.ok(segment.data, 'segment had data set ' + segment.uri)
+        t.equals(100, segment.progress, 'segment had progress ' + segment.uri)
+      }).catch(err => {
+        t.fail('Failed to fetch segment ' + segment.uri + ' ' + err)
+      })
+
     })
 
   }).catch(err => {
