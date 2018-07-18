@@ -8,7 +8,7 @@ class Fetcher {
     this._contentRead   = 0
   }
 
-  fetch() {
+  fetch(onProgress) {
     this._promise = new Promise((resolve, reject) => {
 
       const timer = setTimeout(() => {
@@ -26,6 +26,7 @@ class Fetcher {
           data += chunk
           this._contentRead += chunk.length
           clearTimeout(timer)
+          if (onProgress) { onProgress(this.progress) }
         }).on('end', () => {
           clearTimeout(timer)
           resolve(data)

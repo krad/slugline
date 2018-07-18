@@ -22,7 +22,6 @@ class Playlist {
     return Parser.parse(playlistBody)
   }
 
-
   /**
    * @static fetch - Fetch and parse a playlist from a URL
    *

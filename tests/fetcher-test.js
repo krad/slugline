@@ -1,15 +1,17 @@
 const test = require('tape')
-import { Fetcher, PlaylistFetcher } from '../src/fetcher'
+import { Fetcher, PlaylistFetcher, MediaSegmetFetcher } from '../src/fetcher'
 import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-server'
 
 test('fetcher behavior', t=> {
   t.test(setupServer,             'fetcher behavior - setup the fixture server')
   t.test(fetchingPlaylistTest,    'should fetch a playlist')
   t.test(fetchingAMediaFile,      'should fetch a media file')
+  t.test(fetchingWithProgress,    'should get progress info with downloads')
   t.test(timeoutTest,             'test fetcher timeout behavior')
   t.test(tearDownServer,          'fetcher behavior - tore down the fixture server')
   t.end()
 })
+
 
 const fetchingPlaylistTest = (t) => {
   t.plan(7)
@@ -32,12 +34,13 @@ const fetchingPlaylistTest = (t) => {
   })
 }
 
+/// Ensure that fetching a media file behaves as expected
 const fetchingAMediaFile = (t) => {
   t.plan(4)
   t.timeoutAfter(3000)
 
   const url     = hostAndPort()+'/basic/krad.tv/tractor/fileSeq1.mp4'
-  const fetcher = new Fetcher({url: url})
+  const fetcher = new MediaSegmetFetcher({url: url})
   t.equals(0, fetcher.progress, 'progress was zero')
 
   fetcher.fetch()
@@ -51,6 +54,34 @@ const fetchingAMediaFile = (t) => {
 
 }
 
+/// Ensure we can get download progress callbacks
+const fetchingWithProgress = (t) => {
+  t.plan(5)
+  t.timeoutAfter(3000)
+
+  var values = []
+  const addProgress = (progress) => {
+    values.push(progress)
+  }
+
+  const url     = hostAndPort()+'/basic/krad.tv/tractor/fileSeq1.mp4'
+  const fetcher = new MediaSegmetFetcher({url: url})
+  t.equals(0, fetcher.progress, 'progress was zero')
+  t.equals(0, values.length,    'no progress reported yet')
+
+  fetcher.fetch(addProgress)
+  .then(res => {
+    t.ok(res, 'response present')
+    t.notEqual(0, values.length,  'progress values present')
+    t.ok(values.length > 2,       'had some amount of progress')
+    console.log(values)
+  }).catch(err => {
+    t.fail('Should not have failed', err)
+  })
+
+}
+
+/// Test that request timeouts are configurable and actually timeout
 const timeoutTest = (t) => {
   t.plan(4)
   t.timeoutAfter(3000)
