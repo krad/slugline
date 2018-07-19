@@ -22,10 +22,10 @@ class Segment {
     return 0
   }
 
-  fetch() {
+  fetch(onProgress) {
     return new Promise((resolve, reject) => {
       this._fetcher = new MediaSegmetFetcher({url: this.url})
-      this._fetcher.fetch()
+      this._fetcher.fetch(onProgress)
       .then(res => {
         this.size = res.length
         this.data = res

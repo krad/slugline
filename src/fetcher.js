@@ -29,7 +29,10 @@ class Fetcher {
           data += chunk
           this._contentRead += chunk.length
           timer = setupTimer(timer, this._timeout)      // Reset timeout so we don't die on long downloads
-          if (onProgress) { onProgress(this.progress) } // Call the onProgress callback if present
+          if (onProgress) {
+            console.log(this.progress);
+            onProgress(this.progress)
+          } // Call the onProgress callback if present
         }).on('end', () => {
           clearTimeout(timer)
 
