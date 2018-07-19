@@ -21,6 +21,13 @@ class Fetcher {
       const request = http.get(this._url, (response) => {
         if (this._encoding) { response.setEncoding(this._encoding) }
 
+        switch (response.statusCode) {
+          case 500:
+            reject(new Error('500'))
+            return
+        }
+
+
         this.headers        = response.headers
         this._contentLength = parseInt(this.headers['content-length'], 10)
         var data            = ''
@@ -29,16 +36,11 @@ class Fetcher {
           data += chunk
           this._contentRead += chunk.length
           timer = setupTimer(timer, this._timeout)      // Reset timeout so we don't die on long downloads
-          if (onProgress) {
-            console.log(this.progress);
-            onProgress(this.progress)
-          } // Call the onProgress callback if present
+          if (onProgress) { onProgress(this.progress) } // Call the onProgress callback if present
         }).on('end', () => {
           clearTimeout(timer)
-
           // S3 doesn't always return content-length
           if (this.contentLength == 0) { this._contentLength = this.contentRead }
-
           resolve(data)
         })
       })
@@ -51,7 +53,6 @@ class Fetcher {
     })
     return this._promise
   }
-
 
   get contentLength() {
     if (this._contentLength) {

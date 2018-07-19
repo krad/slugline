@@ -12,7 +12,6 @@ test('fetcher behavior', t=> {
   t.end()
 })
 
-
 const fetchingPlaylistTest = (t) => {
   t.plan(7)
   t.timeoutAfter(3000)
