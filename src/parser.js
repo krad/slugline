@@ -179,6 +179,11 @@ const configureMediaPlaylist = (playlist, struct) => {
       if (tag['#EXT-X-MEDIA_SEQUENCE']) {
         playlist.mediaSequenceNumber = tag['#EXT-X-MEDIA_SEQUENCE']
       }
+
+      if (tag['#EXT-X-MEDIA-SEQUENCE']) {
+        playlist.mediaSequenceNumber = tag['#EXT-X-MEDIA-SEQUENCE']
+      }
+
     }
   })
 }
