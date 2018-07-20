@@ -36,6 +36,13 @@ class Segment {
     })
   }
 
+  get downloaded() {
+    if (this._fetcher) {
+      return this._fetcher.contentRead
+    }
+    return 0
+  }
+
 }
 
 

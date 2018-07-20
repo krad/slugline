@@ -29,19 +29,11 @@ class Playlist {
    * @return {Promise<Playlist>}  Returns a Promise with a
    */
   static fetch(playlistURL) {
-    return new Promise((resolve, reject) => {
-      const fetcher = new PlaylistFetcher({url: playlistURL})
-      fetcher.fetch()
-      .then(res => {
-        res.setBasePath(playlistURL.split('/').slice(0, -1).join('/'))
-        resolve(res)
-      }).catch(err => {
-        reject(err)
-      })
-    })
+    const fetcher = new PlaylistFetcher({url: playlistURL})
+    return fetcher.fetch()
   }
 
-  setBasePath(val) { this._basePath = val }
+  set basePath(val) { this._basePath = val }
   get basePath() { return this._basePath }
 
 }
@@ -72,8 +64,8 @@ class MediaPlaylist extends Playlist {
     configureMediaPlaylist(this, playlistStruct)
   }
 
-  setBasePath(val) {
-    super.setBasePath(val)
+  set basePath(val) {
+    super.basePath = val
     this.segments.forEach(segment => segment.basePath = val)
   }
 

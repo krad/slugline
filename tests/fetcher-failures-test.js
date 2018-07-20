@@ -5,7 +5,7 @@ import { Fetcher } from '../src/fetcher'
 test.only('fetcher failure scenarios', t=> {
   t.test(setupServer,         'setup the fail server')
   t.test(testFailServerFails, 'ensure the fail server fails')
-  t.test(testRetry,           'ensure we retry when a request bombs out')
+  t.test(testRetryOn500,      'ensure we retry on error 500')
   t.test(tearDownServer,      'tore down the fail server')
   t.end()
 })
@@ -32,12 +32,26 @@ const testFailServerFails = (t) => {
     nextFetch.fetch().then(res => {
       t.ok(res, 'we got a successful response')
     }).catch(err => {
-      t.fail('We should not have failed this time')
+      t.fail('We should not have failed this time ' + err)
     })
   })
 }
 
-const testRetry = (t) => {
+const testRetryOn500 = (t) => {
+  t.plan(1)
+  t.timeoutAfter(3000)
 
-  t.end()
+  server.failCount  = 1
+  server.failCode   = 500
+  server.fixture    = './tests/fixtures/basic/vod.m3u8'
+
+  const url = hostAndPort()+'/fail-decr'
+  const fetcher = new Fetcher({url: url, retryCount: 2})
+
+  fetcher.fetch().then(res => {
+    t.ok(res, 'successfully retried until things were a success')
+  }).catch(err => {
+    t.fail('We should not have failed ' + err)
+  })
+
 }
