@@ -243,6 +243,7 @@ class PlaylistFetcher extends Fetcher {
     return super.fetch()
     .then(body => Playlist.parse(body))
     .then(playlist => {
+      url.parse(this.url)
       playlist.basePath = this.url.split('/').slice(0, -1).join('/')
       return playlist
     })

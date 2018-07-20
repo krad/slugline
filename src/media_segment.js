@@ -1,5 +1,5 @@
 const url = require('url')
-import { MediaSegmetFetcher } from './fetcher'
+import { MediaSegmentFetcher } from './fetcher'
 
 
 /**
@@ -24,7 +24,7 @@ class Segment {
 
   fetch(onProgress) {
     return new Promise((resolve, reject) => {
-      this._fetcher = new MediaSegmetFetcher({url: this.url})
+      this._fetcher = new MediaSegmentFetcher({url: this.url})
       this._fetcher.fetch(onProgress)
       .then(res => {
         this.size = res.length

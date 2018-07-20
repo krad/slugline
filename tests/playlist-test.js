@@ -106,7 +106,6 @@ const fetchTest = (t) => {
   const url = hostAndPort()+vodURL
   Playlist.fetch(url)
   .then(playlist => {
-
     t.ok(playlist, 'fetch completed with a response')
     t.equals('MediaPlaylist', playlist.constructor.name, 'it was MediaPlaylist')
     t.equals('VOD', playlist.type, 'it was a VOD')

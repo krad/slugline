@@ -69,6 +69,8 @@ class MediaPlaylist extends Playlist {
     this.segments.forEach(segment => segment.basePath = val)
   }
 
+  get basePath() { return this._basePath }
+
   /**
    * get type - The type of playlist (VOD, EVENT, LIVE)
    *
