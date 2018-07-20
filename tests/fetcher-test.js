@@ -1,5 +1,5 @@
 const test = require('tape')
-import { Fetcher, PlaylistFetcher, MediaSegmetFetcher } from '../src/fetcher'
+import { Fetcher, PlaylistFetcher, MediaSegmentFetcher } from '../src/fetcher'
 import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-server'
 
 test('fetcher behavior', t=> {
@@ -39,7 +39,7 @@ const fetchingAMediaFile = (t) => {
   t.timeoutAfter(3000)
 
   const url     = hostAndPort()+'/basic/krad.tv/tractor/fileSeq1.mp4'
-  const fetcher = new MediaSegmetFetcher({url: url})
+  const fetcher = new MediaSegmentFetcher({url: url})
   t.equals(0, fetcher.progress, 'progress was zero')
 
   fetcher.fetch()
@@ -64,7 +64,7 @@ const fetchingWithProgress = (t) => {
   }
 
   const url     = hostAndPort()+'/basic/krad.tv/tractor/fileSeq1.mp4'
-  const fetcher = new MediaSegmetFetcher({url: url})
+  const fetcher = new MediaSegmentFetcher({url: url})
   t.equals(0, fetcher.progress, 'progress was zero')
   t.equals(0, values.length,    'no progress reported yet')
 
@@ -87,12 +87,14 @@ const timeoutTest = (t) => {
 
   const url = hostAndPort()+'/delay/1000'
   const fetcher = new Fetcher({url: url, timeout: 100})
-  t.equals(0, fetcher.progress,     'progress was zero')
-  t.equals(100, fetcher._timeout,   'default timeout was 100ms')
-  t.equals(url, fetcher._url,   'got correct url')
+  t.equals(0, fetcher.progress,   'progress was zero')
+  t.equals(100, fetcher.timeout,  'default timeout was 100ms')
+  t.equals(url, fetcher.url,      'got correct url')
 
   fetcher.fetch()
-  .then(res => { t.fail('We should have timed out') })
+  .then(res => {
+    t.fail('We should have timed out')
+  })
   .catch(err => {
     t.equals(err.message, 'fetch timed out', 'got timeout error')
   })

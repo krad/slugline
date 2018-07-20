@@ -20,9 +20,10 @@ class Fetcher {
   }
 
   constructor(config) {
-    this._timeout         = config.timeout || 5000
+    this.timeout          = config.timeout || 5000
     this._url             = config.url
-    this._contentRead     = 0
+    this.contentRead      = 0
+    this.encoding         = config.encoding || 'utf8'
     this.followRedirects  = config.followRedirects || true
     this.redirects        = []
 
@@ -41,18 +42,6 @@ class Fetcher {
    */
   get url() { return this._url }
 
-
-  /**
-   * get contentLength - Content-Length reported by the server
-   *
-   * @return {Optional<Integer>} Sometimes servers don't return content-length, when they do it's an integer
-   */
-  get contentLength() {
-    if (this._contentLength) { return this._contentLength }
-    return undefined
-  }
-
-
   /**
    * get headers - Headers returned from the response
    *
@@ -64,22 +53,13 @@ class Fetcher {
     this._contentLength = parseInt(this.headers['content-length'], 10)
   }
 
-
-  /**
-   * get contentRead - How much data was read from the response
-   *
-   * @return {Integer} An integer describing how much content data was ready from the server
-   */
-  get contentRead() { return this._contentRead }
-
-
   /**
    * get progress - Computed property that shows the progress of a fetch
    *
    * @return {Float} Float describing the percentage complete
    */
   get progress() {
-    if (this.contentLength && this.contentRead) {
+    if (this.contentLength) {
       return +(100.0 * this.contentRead / this.contentLength).toFixed(2)
     }
     return 0
@@ -99,10 +79,15 @@ class Fetcher {
         this.newLocation = location
         this.redirects.push(location)
       }
+      const onProgressWrapper = (progress) => {
+        this.contentLength = progress.size
+        this.contentRead   = progress.downloaded
+        if (onProgress) { onProgress(Object.assign(progress, {progress: this.progress})) }
+      }
 
       var params = { url: this.url,
                  timeout: this.timeout,
-              onProgress: onProgress,
+              onProgress: onProgressWrapper,
               onResponse: onResponse,
                 encoding: this.encoding,
          followRedirects: this.followRedirects}
@@ -173,7 +158,9 @@ const simpleGet = (params) => {
 
     const setupTimer = (timer, timeout) => {
       clearTimeout(timer)
-      return setTimeout(() => { reject(new Error('fetch timed out')) }, timeout)
+      return setTimeout(() => {
+        reject(new Error('fetch timed out'))
+      }, timeout)
     }
 
     var timer = setupTimer(undefined, timeout)
@@ -212,10 +199,8 @@ const simpleGet = (params) => {
           onProgress({size: contentLength, downloaded: data.length})
 
         }).on('end', () => {
-
           clearTimeout(timer)
           resolve(data)
-
         })
 
       }
@@ -251,7 +236,7 @@ const checkLocation = (originalURL, newLocation) => {
 class PlaylistFetcher extends Fetcher {
   constructor(config) {
     super(config)
-    this._encoding = 'utf8'
+    this.encoding = 'utf8'
   }
 
   fetch() {
@@ -268,11 +253,11 @@ class PlaylistFetcher extends Fetcher {
 /**
  * MediaSegmentFetcher can be used to fetch a media segment
  */
-class MediaSegmetFetcher extends Fetcher {
+class MediaSegmentFetcher extends Fetcher {
   constructor(config) {
     super(config)
-    this._encoding = 'binary'
+    this.encoding = 'binary'
   }
 }
 
-export { Fetcher, PlaylistFetcher, MediaSegmetFetcher }
+export { Fetcher, PlaylistFetcher, MediaSegmentFetcher }

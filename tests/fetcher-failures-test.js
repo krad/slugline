@@ -2,7 +2,7 @@ const test = require('tape')
 import {server, setupServer, tearDownServer, hostAndPort} from './fail-server'
 import { Fetcher } from '../src/fetcher'
 
-test.only('fetcher failure scenarios', t=> {
+test('fetcher failure scenarios', t=> {
   t.test(setupServer,                 'setup the fail server')
   t.test(testFailServerFails,         'ensure the fail server fails')
   t.test(testRetryOn500,              'ensure we retry on error 500')
