@@ -2,7 +2,7 @@ import { Playlist } from './playlist'
 import { PlaylistFetcher } from './fetcher'
 
 class Slugline {
-  constructor() {
+  constructor () {
 
   }
 }

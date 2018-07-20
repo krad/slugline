@@ -1,34 +1,32 @@
+import { Playlist } from './playlist'
 const http = require('http')
 const url = require('url')
-import { Playlist } from './playlist'
-
 
 /**
  * Base class for performing fetches for playlists and assets defined in them
  */
 class Fetcher {
-
   /**
    * @static fetch - static method used
    *
    * @param  {Object} config Object containing configuration data for the fetch
    * @return {Promise<Result>} Returns a promise with self contained retry logic
    */
-  static fetch(config) {
+  static fetch (config) {
     const fetcher = new this(config)
     return fetcher.fetch()
   }
 
-  constructor(config) {
-    this.timeout          = config.timeout || 5000
-    this._url             = config.url
-    this.contentRead      = 0
-    this.encoding         = config.encoding || 'utf8'
-    this.followRedirects  = config.followRedirects || true
-    this.redirects        = []
+  constructor (config) {
+    this.timeout = config.timeout || 5000
+    this._url = config.url
+    this.contentRead = 0
+    this.encoding = config.encoding || 'utf8'
+    this.followRedirects = config.followRedirects || true
+    this.redirects = []
 
     // The maximum amount of times to retry
-    this.maxRetries     = config.maxRetries
+    this.maxRetries = config.maxRetries
     if (this.maxRetries == undefined) { this.maxRetries = 1 }
 
     // The number of fetches made.
@@ -40,15 +38,15 @@ class Fetcher {
    *
    * @return {String} A string containing a URl
    */
-  get url() { return this._url }
+  get url () { return this._url }
 
   /**
    * get headers - Headers returned from the response
    *
    * @return {Optional<Object>} An object containing the key/value pairs of the header
    */
-  get headers() { return this._headers }
-  set headers(val) {
+  get headers () { return this._headers }
+  set headers (val) {
     this._headers = val
     this._contentLength = parseInt(this.headers['content-length'], 10)
   }
@@ -58,13 +56,12 @@ class Fetcher {
    *
    * @return {Float} Float describing the percentage complete
    */
-  get progress() {
+  get progress () {
     if (this.contentLength) {
       return +(100.0 * this.contentRead / this.contentLength).toFixed(2)
     }
     return 0
   }
-
 
   /**
    * fetch - Execute the fetch
@@ -72,52 +69,50 @@ class Fetcher {
    * @param  {Function} onProgress A function that gets called with progress updates
    * @return {Promise}             A promise for the fetch
    */
-  fetch(onProgress) {
+  fetch (onProgress) {
     const execute = () => {
-      const onResponse = (response) => {this.headers = response.headers }
+      const onResponse = (response) => { this.headers = response.headers }
       const onRedirect = (location) => {
         this.newLocation = location
         this.redirects.push(location)
       }
       const onProgressWrapper = (progress) => {
         this.contentLength = progress.size
-        this.contentRead   = progress.downloaded
+        this.contentRead = progress.downloaded
         if (onProgress) { onProgress(Object.assign(progress, {progress: this.progress})) }
       }
 
       var params = { url: this.url,
-                 timeout: this.timeout,
-              onProgress: onProgressWrapper,
-              onResponse: onResponse,
-                encoding: this.encoding,
-         followRedirects: this.followRedirects}
+        timeout: this.timeout,
+        onProgress: onProgressWrapper,
+        onResponse: onResponse,
+        encoding: this.encoding,
+        followRedirects: this.followRedirects}
 
-        if (this.followRedirects) {
-          params = Object.assign(params, {onRedirect: onRedirect})
-          if (this.newLocation) { params.url = this.newLocation }
-        }
-
-        this.fetchCount += 1
-        return simpleGet(params)
+      if (this.followRedirects) {
+        params = Object.assign(params, {onRedirect: onRedirect})
+        if (this.newLocation) { params.url = this.newLocation }
       }
+
+      this.fetchCount += 1
+      return simpleGet(params)
+    }
 
     return execute().catch(err => retry(execute, this.maxRetries, err))
   }
-
 }
 
 /**
  * Simple function to catch and retry a function until we run out of attempts
  */
- const retry = (fn, retries, err) => {
-   if (retries >= 1) {
-     if (shouldAttemptRetry(err)) {
-       return fn().catch(err => retry(fn, (retries - 1), err))
-     }
-   }
-   return Promise.reject(err)
+const retry = (fn, retries, err) => {
+  if (retries >= 1) {
+    if (shouldAttemptRetry(err)) {
+      return fn().catch(err => retry(fn, (retries - 1), err))
+    }
+  }
+  return Promise.reject(err)
 }
-
 
 /**
  * Simple checks to prevent us from needlessly retrying calls
@@ -133,7 +128,6 @@ const shouldAttemptRetry = (err) => {
 
   return true
 }
-
 
 /**
  * Rules for retrying based on HTTP status code
@@ -157,12 +151,11 @@ const shouldAttemptRetryByStatusCode = (statusCode) => {
   }
 }
 
-
 /**
  * Rules for retrying based on network errors
  */
 const shouldAttemptRetryByNetworkError = (errCode) => {
-  switch(errCode) {
+  switch (errCode) {
     case 'ECONNRESET':
     case 'ECONNREFUSED':
     case 'EPIPE':
@@ -175,21 +168,19 @@ const shouldAttemptRetryByNetworkError = (errCode) => {
   }
 }
 
-
 /**
  * Simple get request for fetching something
  */
 const simpleGet = (params) => {
-  const url             = params.url
-  const timeout         = params.timeout  || 5000
-  const onProgress      = params.onProgress || (() => {})
-  const onResponse      = params.onResponse || (() => {})
-  const onRedirect      = params.onRedirect || (() => {})
-  const encoding        = params.encoding || 'utf8'
+  const url = params.url
+  const timeout = params.timeout || 5000
+  const onProgress = params.onProgress || (() => {})
+  const onResponse = params.onResponse || (() => {})
+  const onRedirect = params.onRedirect || (() => {})
+  const encoding = params.encoding || 'utf8'
   const followRedirects = params.followRedirects || true
 
   return new Promise((resolve, reject) => {
-
     const setupTimer = (timer, timeout) => {
       clearTimeout(timer)
       return setTimeout(() => {
@@ -213,7 +204,6 @@ const simpleGet = (params) => {
 
         // Reject if we didn't get 200
         reject(response.statusCode)
-
       } else {
         // Set the encoding
         response.setEncoding(encoding)
@@ -231,12 +221,10 @@ const simpleGet = (params) => {
 
           // Call the onProgress callback if present
           onProgress({size: contentLength, downloaded: data.length})
-
         }).on('end', () => {
           clearTimeout(timer)
           resolve(data)
         })
-
       }
     })
 
@@ -245,10 +233,8 @@ const simpleGet = (params) => {
       clearTimeout(timer)
       reject(err)
     })
-
   })
 }
-
 
 /**
  * Used to resolve URLs returned from 301's
@@ -268,7 +254,7 @@ const checkLocation = (originalURL, newLocation) => {
  * PlaylistFetcher can be used to fetch and parse a playlist
  */
 class PlaylistFetcher extends Fetcher {
-  constructor(config) {
+  constructor (config) {
     super(config)
     this.encoding = 'utf8'
   }
@@ -278,23 +264,22 @@ class PlaylistFetcher extends Fetcher {
    *
    * @return {Promise<Playlist>} A promise with either a MediaPlaylist or a MasterPlaylist
    */
-  fetch() {
+  fetch () {
     this._fetcher = super.fetch()
-    .then(body => Playlist.parse(body))
-    .then(playlist => {
-      playlist.basePath = this.url.split('/').slice(0, -1).join('/')
-      return playlist
-    })
+      .then(body => Playlist.parse(body))
+      .then(playlist => {
+        playlist.basePath = this.url.split('/').slice(0, -1).join('/')
+        return playlist
+      })
     return this._fetcher
   }
 }
-
 
 /**
  * MediaSegmentFetcher can be used to fetch a media segment
  */
 class MediaSegmentFetcher extends Fetcher {
-  constructor(config) {
+  constructor (config) {
     super(config)
     this.encoding = 'binary'
   }

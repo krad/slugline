@@ -11,14 +11,13 @@ import { PlaylistFetcher } from './fetcher'
  * Playlist is the base type for all supported playlists
  */
 class Playlist {
-
   /**
    * @static parse - Parse a playlist body
    *
    * @param  {String} playlistBody The contents of a m3u8 playlist
    * @return {Playlist}            Returns either a MediaPlaylist or a MasterPlaylist object
    */
-  static parse(playlistBody) {
+  static parse (playlistBody) {
     return Parser.parse(playlistBody)
   }
 
@@ -28,15 +27,13 @@ class Playlist {
    * @param  {String} playlistURL String to a URL that hosts a m3u8 playlist
    * @return {Promise<Playlist>}  Returns a Promise with a
    */
-  static fetch(playlistURL) {
+  static fetch (playlistURL) {
     return new PlaylistFetcher({url: playlistURL}).fetch()
   }
 
-  set basePath(val) { this._basePath = val }
-  get basePath() { return this._basePath }
-
+  set basePath (val) { this._basePath = val }
+  get basePath () { return this._basePath }
 }
-
 
 /**
  * A Media Playlist contains a list of Media Segments, which when played
@@ -55,37 +52,36 @@ class Playlist {
    http://media.example.com/third.ts
  */
 class MediaPlaylist extends Playlist {
-
-  constructor(playlistStruct, body) {
+  constructor (playlistStruct, body) {
     super()
-    this._ended   = false
+    this._ended = false
     this.segments = []
-    this._body    = body
+    this._body = body
     configureMediaPlaylist(this, playlistStruct)
   }
 
-  set basePath(val) {
+  set basePath (val) {
     super.basePath = val
     this.segments.forEach(segment => segment.basePath = val)
   }
 
-  get basePath() { return this._basePath }
+  get basePath () { return this._basePath }
 
   /**
    * get type - The type of playlist (VOD, EVENT, LIVE)
    *
    * @return {String}  String describing the type of playlist
    */
-  get type() { return this._type }
+  get type () { return this._type }
 
-  get totalDuration() {
+  get totalDuration () {
     return this.segments
-    .filter(segment => {
-      return segment.constructor.name == 'MediaSegment'
-    }).
-    reduce((acc, curr) => {
-      return acc + curr.duration
-    }, 0)
+      .filter(segment => {
+        return segment.constructor.name == 'MediaSegment'
+      })
+      .reduce((acc, curr) => {
+        return acc + curr.duration
+      }, 0)
   }
 
   /**
@@ -93,13 +89,13 @@ class MediaPlaylist extends Playlist {
    *
    * @return {bool} true if the playlist is complete
    */
-  get ended() { return this._ended }
+  get ended () { return this._ended }
 
- //  The peak segment bit rate of a Media Playlist is the largest bit rate
- // of any contiguous set of segments whose total duration is between 0.5
- // and 1.5 times the target duration.  The bit rate of a set is
- // calculated by dividing the sum of the segment sizes by the sum of the
- // segment durations.
+  //  The peak segment bit rate of a Media Playlist is the largest bit rate
+  // of any contiguous set of segments whose total duration is between 0.5
+  // and 1.5 times the target duration.  The bit rate of a set is
+  // calculated by dividing the sum of the segment sizes by the sum of the
+  // segment durations.
   // get peakBitRate() {
   //   return undefined
   // }
@@ -112,7 +108,6 @@ class MediaPlaylist extends Playlist {
   // get avgBitRate() {
   //   return undefined
   // }
-
 }
 
 /**
@@ -133,44 +128,42 @@ class MediaPlaylist extends Playlist {
 
  */
 class MasterPlaylist extends Playlist {
-  constructor(playlistStruct, body) {
+  constructor (playlistStruct, body) {
     super()
     this.variants = []
-    this._body    = body
+    this._body = body
     configureMasterPlaylist(this, playlistStruct)
   }
-
 
   /**
    * get regularVariants - Get variant streams that are regular
    *
    * @return {Array<VariantStream>}  An array of variant streams that are 'regular' non-iFrame
    */
-  get regularVariants() {
+  get regularVariants () {
     return this.variants.filter(vs => vs.isIFrame == false)
   }
-
 
   /**
    * get iFrameVaraints - Get variant streams that are iFrame only
    *
    * @return {Array<VariantStream>} An array of variant streams that are iFrame only
    */
-  get iFrameVaraints() {
+  get iFrameVaraints () {
     return this.variants.filter(vs => vs.isIFrame == true)
   }
 }
 
 class VariantStream {
-  constructor(streamInfo) {
-    this.isIFrame   = false
-    this.bandwidth  = streamInfo['BANDWIDTH']
+  constructor (streamInfo) {
+    this.isIFrame = false
+    this.bandwidth = streamInfo['BANDWIDTH']
     configureVariantStream(this, streamInfo)
   }
 }
 
 class Rendition {
-  constructor(renditionInfo) {
+  constructor (renditionInfo) {
     configureRendition(this, renditionInfo)
   }
 }

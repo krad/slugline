@@ -3,49 +3,49 @@ import { MediaPlaylist, MasterPlaylist, VariantStream, Rendition } from './playl
 import { MediaSegment, MediaInitializationSegment } from './media_segment'
 
 const BASIC_TAGS = [
-  "#EXTM3U",
-  "#EXT-X-VERSION"
+  '#EXTM3U',
+  '#EXT-X-VERSION'
 ]
 
 const MEDIA_SEGMENT_TAGS = [
-  "#EXTINF",
-  "#EXT-X-BYTERANGE",
-  "#EXT-X-DISCONTINUITY",
-  "#EXT-X-KEY",
-  "#EXT-X-MAP",
-  "#EXT-X-PROGRAM-DATE-TIME",
-  "#EXT-X-DATERANGE"]
+  '#EXTINF',
+  '#EXT-X-BYTERANGE',
+  '#EXT-X-DISCONTINUITY',
+  '#EXT-X-KEY',
+  '#EXT-X-MAP',
+  '#EXT-X-PROGRAM-DATE-TIME',
+  '#EXT-X-DATERANGE']
 
 /**
  * Tags that ONLY appear in Media Playlists
  */
 const MEDIA_PLAYLIST_TAGS = [
-  "#EXT-X-TARGETDURATION",
-  "#EXT-X-MEDIA-SEQUENCE",
-  "#EXT-X-MEDIA_SEQUENCE",
-  "#EXT-X-DISCONTINUITY-SEQUENCE",
-  "#EXT-X-ENDLIST",
-  "#EXT-X-PLAYLIST-TYPE",
-  "#EXT-X-I-FRAMES-ONLY"
+  '#EXT-X-TARGETDURATION',
+  '#EXT-X-MEDIA-SEQUENCE',
+  '#EXT-X-MEDIA_SEQUENCE',
+  '#EXT-X-DISCONTINUITY-SEQUENCE',
+  '#EXT-X-ENDLIST',
+  '#EXT-X-PLAYLIST-TYPE',
+  '#EXT-X-I-FRAMES-ONLY'
 ]
 
 /**
  * Tags that ONLY appear in Master Playlists
  */
 const MASTER_PLAYLIST_TAGS = [
-  "#EXT-X-MEDIA",
-  "#EXT-X-STREAM-INF",
-  "#EXT-X-I-FRAME-STREAM-INF",
-  "#EXT-X-SESSION-DATA",
-  "#EXT-X-SESSION-KEY"
+  '#EXT-X-MEDIA',
+  '#EXT-X-STREAM-INF',
+  '#EXT-X-I-FRAME-STREAM-INF',
+  '#EXT-X-SESSION-DATA',
+  '#EXT-X-SESSION-KEY'
 ]
 
 /**
  * Tags that can appear in BOTH Media and Master Playlists
  */
 const MASTER_AND_MEDIA_TAGS = [
-  "#EXT-X-INDEPENDENT-SEGMENTS",
-  "#EXT-X-START",
+  '#EXT-X-INDEPENDENT-SEGMENTS',
+  '#EXT-X-START'
 ]
 
 const ERRORS = {
@@ -54,12 +54,12 @@ const ERRORS = {
 }
 
 class Parser {
-  static parse(body) {
+  static parse (body) {
     if (body.slice(0, 7) !== '#EXTM3U') { throwError(ERRORS.INVALID) }
     const playlistStruct = parseTagsAndAttributes(body)
 
-    const isMedia   = isMediaPlaylist(playlistStruct)
-    const isMaster  = isMasterPlaylist(playlistStruct)
+    const isMedia = isMediaPlaylist(playlistStruct)
+    const isMaster = isMasterPlaylist(playlistStruct)
 
     // If we have tags for both Media and Master type playlists, something is wrong
     if (isMedia && isMaster) { throwError(ERRORS.MIXED_TAGS) }
@@ -81,7 +81,6 @@ const isMediaPlaylist = (playlistStruct) => {
   return findOne(tagsFrom(playlistStruct), MEDIA_PLAYLIST_TAGS)
 }
 
-
 /**
  * Used to determine is a parsed playlist struct is a master playlist
  */
@@ -95,7 +94,6 @@ const isMasterPlaylist = (playlistStruct) => {
 const tagsFrom = (playlistStruct) => {
   return flattenPlaylist(playlistStruct).filter(tag => tag.slice(0, 1) == '#')
 }
-
 
 /**
  * Used to extract tags / playlist entries WITHOUT attribuets from a parsed playlist struct
@@ -123,7 +121,7 @@ const componentsFromString = (body) => {
  */
 const parseTagsAndAttributes = (body) => {
   return componentsFromString(body).map(line => {
-    const comps = line.split(":")
+    const comps = line.split(':')
     if (comps.length > 1 && comps[0] !== 'http') {
       return {[comps[0]]: Attribute.parse(comps)}
     } else {
@@ -144,7 +142,6 @@ const configureMediaPlaylist = (playlist, struct) => {
   var currentSegment = undefined
   struct.forEach(tag => {
     if (typeof tag === 'string') {
-
       if (tag === '#EXT-X-ENDLIST') {
         playlist._ended = true
       } else {
@@ -156,7 +153,7 @@ const configureMediaPlaylist = (playlist, struct) => {
       }
     }
 
-    if (typeof tag == 'object') {
+    if (typeof tag === 'object') {
       if (tag['#EXT-X-MAP']) {
         if (tag['#EXT-X-MAP']['URI']) {
           playlist.segments.push(new MediaInitializationSegment(tag['#EXT-X-MAP']['URI']))
@@ -198,14 +195,14 @@ const configureMasterPlaylist = (playlist, struct) => {
       }
     }
 
-    if (typeof tag == 'object') {
+    if (typeof tag === 'object') {
       if (tag['#EXT-X-STREAM-INF']) {
         currentVariant = new VariantStream(tag['#EXT-X-STREAM-INF'])
       }
 
       if (tag['#EXT-X-I-FRAME-STREAM-INF']) {
-        var variant       = new VariantStream(tag['#EXT-X-I-FRAME-STREAM-INF'])
-        variant.isIFrame  = true
+        var variant = new VariantStream(tag['#EXT-X-I-FRAME-STREAM-INF'])
+        variant.isIFrame = true
         playlist.variants.push(variant)
       }
 
@@ -254,16 +251,16 @@ const configureVariantStream = (variant, streamInfo) => {
 
 /// Used to configure a rendition
 const configureRendition = (rendition, renditionInfo) => {
-  rendition.default    = optionalYesOrNo(renditionInfo['DEFAULT'])
+  rendition.default = optionalYesOrNo(renditionInfo['DEFAULT'])
   rendition.autoselect = optionalYesOrNo(renditionInfo['AUTOSELECT'])
-  rendition.forced     = optionalYesOrNo(renditionInfo['FORCED'])
-  rendition.type       = renditionInfo['TYPE']
-  rendition.groupId    = renditionInfo['GROUP-ID']
-  rendition.name       = renditionInfo['NAME']
+  rendition.forced = optionalYesOrNo(renditionInfo['FORCED'])
+  rendition.type = renditionInfo['TYPE']
+  rendition.groupId = renditionInfo['GROUP-ID']
+  rendition.name = renditionInfo['NAME']
 
   if (rendition.type != 'CLOSED-CAPTIONS') {
     if (renditionInfo['URI']) {
-      rendition.uri  = renditionInfo['URI']
+      rendition.uri = renditionInfo['URI']
     }
   } else {
     rendition.inStreamId = renditionInfo['INSTREAM-ID']
@@ -288,6 +285,5 @@ const optionalYesOrNo = (value) => {
   }
   return false
 }
-
 
 export { Parser, parseTagsAndAttributes, configureMediaPlaylist, configureMasterPlaylist, configureVariantStream, configureRendition }
