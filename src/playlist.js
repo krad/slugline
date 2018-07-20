@@ -72,7 +72,13 @@ class MediaPlaylist extends Playlist {
    *
    * @return {String}  String describing the type of playlist
    */
-  get type () { return this._type }
+  get type () {
+    if (this._type) {
+      return this._type
+    }
+
+    if (!this.ended) { return 'LIVE' }
+  }
 
 
   /**

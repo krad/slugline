@@ -6,8 +6,11 @@ import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-se
 const vod       = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
 const master    = fs.readFileSync('./tests/fixtures/basic/master.m3u8').toString()
 const advMaster = fs.readFileSync('./tests/fixtures/apple-advanced-fmp4/master.m3u8').toString()
+const weirdLive = fs.readFileSync('./tests/fixtures/basic/live-without-ident.m3u8').toString()
 
 const vodURL   = '/basic/krad.tv/tractor/vod.m3u8'
+
+
 
 test('basic attributes from a VOD playlist', t=>{
 
@@ -89,6 +92,12 @@ test('attributes from an advanced Master Playlist', t=> {
   t.equals(2, rendition.channels,               'got correct value of channels')
   t.equals('en', rendition.language,            'got correct value of language')
 
+  t.end()
+})
+
+test('identifying a live playlist', t=> {
+  const playlist = Playlist.parse(weirdLive)
+  t.equals('LIVE', playlist.type, 'correctly identified as LIVE')
   t.end()
 })
 
