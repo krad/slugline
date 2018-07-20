@@ -74,6 +74,12 @@ class MediaPlaylist extends Playlist {
    */
   get type () { return this._type }
 
+
+  /**
+   * get totalDuration - The duration of all segments in the playlist
+   *
+   * @return {Float} Number of seconds of all durations in the playlist
+   */
   get totalDuration () {
     return this.segments
       .filter(segment => {
@@ -108,6 +114,36 @@ class MediaPlaylist extends Playlist {
   // get avgBitRate() {
   //   return undefined
   // }
+
+
+  /**
+   * fetchSequentially - Fetch segments in the playlist one at a time
+   *
+   * @param  {Function} onNext     Callback executed before each fetch
+   * @param  {Function} onProgress Callback executed as a segment downloads
+   * @return {Promise<Playlist>}   Returns a promise the fulfills with the mutated playlist
+   */
+  fetchSequentially(onNext, onProgress) {
+    return new Promise((resolve, reject) => {
+
+      const fetch = (idx) => {
+        const progressWrapper = (progress) => {
+          if (onProgress) { onProgress(Object.assign(progress, {uri: segment.uri})) }
+        }
+
+        const segment = this.segments[idx]
+        if (segment) {
+          onNext(segment)
+          segment.fetch(progressWrapper).then(res => fetch(idx+1)).catch(err => reject(err))
+        } else {
+          resolve(this)
+        }
+      }
+
+      fetch(0)
+
+    })
+  }
 }
 
 /**
