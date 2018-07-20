@@ -53,7 +53,7 @@ const ERRORS = {
   MIXED_TAGS: 'playlist had media & master tags'
 }
 
-class Parser {
+class PlaylistParser {
   static parse (body) {
     if (body.slice(0, 7) !== '#EXTM3U') { throwError(ERRORS.INVALID) }
     const playlistStruct = parseTagsAndAttributes(body)
@@ -155,9 +155,7 @@ const configureMediaPlaylist = (playlist, struct) => {
 
     if (typeof tag === 'object') {
       if (tag['#EXT-X-MAP']) {
-        if (tag['#EXT-X-MAP']['URI']) {
-          playlist.segments.push(new MediaInitializationSegment(tag['#EXT-X-MAP']['URI']))
-        }
+        playlist.segments.push(new MediaInitializationSegment(tag['#EXT-X-MAP']))
       }
 
       if (tag['#EXTINF']) {
@@ -291,4 +289,4 @@ const optionalYesOrNo = (value) => {
   return false
 }
 
-export { Parser, parseTagsAndAttributes, configureMediaPlaylist, configureMasterPlaylist, configureVariantStream, configureRendition }
+export { PlaylistParser, parseTagsAndAttributes, configureMediaPlaylist, configureMasterPlaylist, configureVariantStream, configureRendition }

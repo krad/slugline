@@ -1,6 +1,6 @@
 const test = require('tape')
 const fs   = require('fs')
-import { Parser, parseTagsAndAttributes } from '../src/parser'
+import { PlaylistParser, parseTagsAndAttributes } from '../src/playlist-parser'
 
 const vod     = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
 const master  = fs.readFileSync('./tests/fixtures/basic/master.m3u8').toString()
@@ -8,10 +8,10 @@ const invalid = fs.readFileSync('./tests/fixtures/basic/invalid.m3u8').toString(
 
 test('that we throw when we attempt to parse something that is not a playlist', t=>{
 
-  const throwFunc   = () => { Parser.parse('hi') }
-  const noThrowFunc = () => { Parser.parse(vod) }
-  const invalidFunc = () => { Parser.parse(invalid) }
-  const badFunc     = () => { Parser.parse('#EXTM3U')}
+  const throwFunc   = () => { PlaylistParser.parse('hi') }
+  const noThrowFunc = () => { PlaylistParser.parse(vod) }
+  const invalidFunc = () => { PlaylistParser.parse(invalid) }
+  const badFunc     = () => { PlaylistParser.parse('#EXTM3U')}
 
   t.throws(throwFunc, /not valid playlist/,  'threw not valid playlist')
   t.doesNotThrow(noThrowFunc)
@@ -43,11 +43,11 @@ test('that we can build a raw structure from a playlist', t=> {
 
 test('that we can tell the difference between media & master playlists', t=>{
 
-  const mediaPlaylist = Parser.parse(vod)
+  const mediaPlaylist = PlaylistParser.parse(vod)
   t.ok(mediaPlaylist, 'successfully parsed playlist')
   t.equals('MediaPlaylist', mediaPlaylist.constructor.name, 'playlist was a MediaPlaylist')
 
-  const masterPlaylist = Parser.parse(master)
+  const masterPlaylist = PlaylistParser.parse(master)
   t.ok(masterPlaylist, 'successfully parsed playlist')
   t.equals('MasterPlaylist', masterPlaylist.constructor.name, 'playlist was a MasterPlaylist')
 

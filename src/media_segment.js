@@ -11,20 +11,23 @@ class Segment {
     return url.parse([this.basePath, this.uri].join('/')).href
   }
 
-  get progress () {
-    if (this._fetcher) {
-      return this._fetcher.progress
-    }
-    return 0
-  }
-
   fetch (onProgress) {
     return new Promise((resolve, reject) => {
+
+      const progressWrapper = (progress) => {
+        this.size       = progress.size
+        this.downloaded = progress.downloaded
+        this.progress   = progress.progress
+        if (onProgress) { onProgress(progress) }
+      }
+
+      this.isDownloading = true
       this._fetcher = new MediaSegmentFetcher({url: this.url})
-      this._fetcher.fetch(onProgress)
+      this._fetcher.fetch(progressWrapper)
         .then(res => {
           this.size = res.length
           this.data = res
+          this.isDownloading = false
           resolve(res)
         }).catch(err => {
           reject(err)
@@ -32,23 +35,16 @@ class Segment {
     })
   }
 
-  /**
-   * get downloaded - How much of the segment has been downloaded
-   *
-   * @return {Inteer} Number of bytes that have been downloaded
-   */
-  get downloaded () {
-    if (this._fetcher) {
-      return this._fetcher.contentRead
-    }
-    return 0
-  }
 }
 
 class MediaInitializationSegment extends Segment {
-  constructor (uri) {
+  constructor (info) {
     super()
-    this.uri = uri
+    this.uri = info['URI']
+
+    if (info['BYTERANGE']) {
+      this.byteRange = info['BYTERANGE']
+    }
   }
 }
 
@@ -59,7 +55,12 @@ class MediaSegment extends Segment {
     this.duration = info.duration
   }
 
-  get bitRate () { return this.size / this.duration }
+  fetch (onProgress) {
+    return super.fetch(onProgress).then(res => {
+      this.bitRate = this.size / this.duration
+      return res
+    })
+  }
 }
 
 export { MediaSegment, MediaInitializationSegment }

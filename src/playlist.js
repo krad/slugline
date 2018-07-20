@@ -1,9 +1,9 @@
 import {
-  Parser,
+  PlaylistParser,
   configureMediaPlaylist,
   configureMasterPlaylist,
   configureVariantStream,
-  configureRendition } from './parser'
+  configureRendition } from './playlist-parser'
 
 import { PlaylistFetcher } from './fetcher'
 
@@ -18,7 +18,7 @@ class Playlist {
    * @return {Playlist}            Returns either a MediaPlaylist or a MasterPlaylist object
    */
   static parse (playlistBody) {
-    return Parser.parse(playlistBody)
+    return PlaylistParser.parse(playlistBody)
   }
 
   /**
