@@ -29,8 +29,7 @@ class Playlist {
    * @return {Promise<Playlist>}  Returns a Promise with a
    */
   static fetch(playlistURL) {
-    const fetcher = new PlaylistFetcher({url: playlistURL})
-    return fetcher.fetch()
+    return new PlaylistFetcher({url: playlistURL}).fetch()
   }
 
   set basePath(val) { this._basePath = val }
@@ -57,10 +56,11 @@ class Playlist {
  */
 class MediaPlaylist extends Playlist {
 
-  constructor(playlistStruct) {
+  constructor(playlistStruct, body) {
     super()
     this._ended   = false
     this.segments = []
+    this._body    = body
     configureMediaPlaylist(this, playlistStruct)
   }
 
@@ -133,9 +133,10 @@ class MediaPlaylist extends Playlist {
 
  */
 class MasterPlaylist extends Playlist {
-  constructor(playlistStruct) {
+  constructor(playlistStruct, body) {
     super()
     this.variants = []
+    this._body    = body
     configureMasterPlaylist(this, playlistStruct)
   }
 

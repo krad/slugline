@@ -9,6 +9,7 @@ test('fetcher failure scenarios', t=> {
   t.test(testRetryOn404,              'ensure we fail immediately on error 404')
   t.test(testExhaustingRetryAttempts, 'ensure we can exhaust retry attempts')
   t.test(testRetryon301,              'ensure we follow 301')
+  t.test(testServerDropsConnection,   'ensure we retry on connection drops')
   t.test(tearDownServer,              'tore down the fail server')
   t.end()
 })
@@ -110,7 +111,7 @@ const testRetryon301 = (t) => {
   const fetcher = new Fetcher({url: url, maxRetries: 2})
 
   fetcher.fetch().then(res => {
-    t.ok(res)
+    t.ok(res, 'we got a response')
     t.equal(3, fetcher.fetchCount,        'made correct amount of fetches')
     t.equals(url, fetcher.url,            'original url stayed intact')
     t.equals(1, fetcher.redirects.length, 'kept a path of urls redirected to')
@@ -118,4 +119,23 @@ const testRetryon301 = (t) => {
   }).catch(err => {
     t.fail('we should not have failed')
   })
+}
+
+const testServerDropsConnection = (t) => {
+  t.plan(2)
+  t.timeoutAfter(3000)
+
+  server.failCount  = 1
+  server.fixture    = './tests/fixtures/basic/vod.m3u8'
+
+  const url     = hostAndPort()+'/drop'
+  const fetcher = new Fetcher({url: url, maxRetries: 2})
+
+  fetcher.fetch().then(res => {
+    t.ok(res, 'we got a response')
+    t.equal(2, fetcher.fetchCount, 'made correct amount of fetches')
+  }).catch(err => {
+    t.fail('we should not have failed ' + err)
+  })
+
 }

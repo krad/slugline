@@ -9,12 +9,14 @@ It can be used in node.js and in the browser.
 
 ### Features
 
-  * Fetching playlists
-  * Fetching media segments
-  * Parsing Media Playlists
-  * Parsing Master Playlists
-  * Periodic fetching of event & live playlists
-  * Retry logic (timeout, 500, network error, etc)
+  * ✅ Fetching playlists
+  * ✅ Fetching media segments
+  * ✅ Parsing Media Playlists
+  * ✅ Parsing Master Playlists
+  * ✅ Retry logic (timeout, 500, network error, etc)
+  * ❎ Parsing Media Segments
+  * ❎ Range Requests
+  * ❎ Periodic fetching of event & live playlists
 
 # Usage
 

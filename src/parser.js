@@ -63,8 +63,8 @@ class Parser {
 
     // If we have tags for both Media and Master type playlists, something is wrong
     if (isMedia && isMaster) { throwError(ERRORS.MIXED_TAGS) }
-    if (isMedia) { return new MediaPlaylist(playlistStruct) } // return a MediaPlaylist
-    if (isMaster) { return new MasterPlaylist(playlistStruct) } // return a MasterPlaylist
+    if (isMedia) { return new MediaPlaylist(playlistStruct, body) } // return a MediaPlaylist
+    if (isMaster) { return new MasterPlaylist(playlistStruct, body) } // return a MasterPlaylist
 
     throwError(ERRORS.INVALID)
   }

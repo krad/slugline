@@ -9,8 +9,12 @@ const app        = express()
 
 const server = {
   _server: http.createServer(app),
-  failCount: 0
+  failCount: 0,
+  _listener: undefined,
+  sockets: {}
 }
+
+var socketID = 0
 
 app.get('/fail-decr', (req, res) => {
   if (server.failCount > 0) {
@@ -32,9 +36,32 @@ app.get('/redirect', (req, res) => {
   res.end()
 })
 
+app.get('/drop', (req, res) => {
+  if (server.failCount > 0) {
+    server.failCount -= 1
+
+    Object.keys(server.sockets).forEach(socketId => {
+      server.sockets[socketId].end()
+    })
+
+  } else {
+    // If we have a fixture stream it
+    if (server.fixture) { fs.createReadStream(server.fixture).pipe(res) }
+    else { res.end() }
+  }
+})
+
 const setupServer = (t) => {
   t.plan(1)
-  server._server.listen(serverPort, () => {
+  t.timeoutAfter(2000)
+
+  server._listener = server._server.listen(serverPort, () => {
+
+    server._listener.on('connection', (c) => {
+      socketID += 1
+      server.sockets[socketID] = c
+    })
+
     t.ok(1, 'Server started listening on ' + serverPort)
   })
 }

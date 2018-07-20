@@ -123,7 +123,23 @@ class Fetcher {
  * Simple checks to prevent us from needlessly retrying calls
  */
 const shouldAttemptRetry = (err) => {
-  switch (err) {
+  if (typeof err === 'number') {
+    return shouldAttemptRetryByStatusCode(err)
+  }
+
+  if (typeof err === 'object' && err.code) {
+    return shouldAttemptRetryByNetworkError(err.code)
+  }
+
+  return true
+}
+
+
+/**
+ * Rules for retrying based on HTTP status code
+ */
+const shouldAttemptRetryByStatusCode = (statusCode) => {
+  switch (statusCode) {
     case 400:
     case 401:
     case 402:
@@ -138,6 +154,24 @@ const shouldAttemptRetry = (err) => {
       return false
     default:
       return true
+  }
+}
+
+
+/**
+ * Rules for retrying based on network errors
+ */
+const shouldAttemptRetryByNetworkError = (errCode) => {
+  switch(errCode) {
+    case 'ECONNRESET':
+    case 'ECONNREFUSED':
+    case 'EPIPE':
+    case 'ETIMEDOUT':
+      return true
+    case 'ENOTFOUND':
+      return false
+    default:
+      return false
   }
 }
 
@@ -239,14 +273,19 @@ class PlaylistFetcher extends Fetcher {
     this.encoding = 'utf8'
   }
 
+  /**
+   * fetch - Fetch the playlist
+   *
+   * @return {Promise<Playlist>} A promise with either a MediaPlaylist or a MasterPlaylist
+   */
   fetch() {
-    return super.fetch()
+    this._fetcher = super.fetch()
     .then(body => Playlist.parse(body))
     .then(playlist => {
-      url.parse(this.url)
       playlist.basePath = this.url.split('/').slice(0, -1).join('/')
       return playlist
     })
+    return this._fetcher
   }
 }
 

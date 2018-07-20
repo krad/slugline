@@ -8,11 +8,8 @@ import { MediaSegmentFetcher } from './fetcher'
 class Segment {
   constructor() { }
 
-  set uri(val) { this._uri = val }
-  get uri() { return this._uri }
-
   get url() {
-    return url.parse([this.basePath,this._uri].join('/')).href
+    return url.parse([this.basePath,this.uri].join('/')).href
   }
 
   get progress() {
@@ -36,6 +33,11 @@ class Segment {
     })
   }
 
+  /**
+   * get downloaded - How much of the segment has been downloaded
+   *
+   * @return {Inteer} Number of bytes that have been downloaded
+   */
   get downloaded() {
     if (this._fetcher) {
       return this._fetcher.contentRead
@@ -49,7 +51,7 @@ class Segment {
 class MediaInitializationSegment extends Segment {
   constructor(uri) {
     super()
-    this._uri = uri
+    this.uri = uri
   }
 }
 
