@@ -13,7 +13,6 @@ const server = {
 }
 
 app.get('/fail-decr', (req, res) => {
-
   if (server.failCount > 0) {
     const responseCode = server.failCode || 500
     res.status(responseCode)
@@ -26,6 +25,11 @@ app.get('/fail-decr', (req, res) => {
     if (server.fixture) { fs.createReadStream(server.fixture).pipe(res) }
     else { res.end() }
   }
+})
+
+app.get('/redirect', (req, res) => {
+  res.redirect(301, '/fail-decr')
+  res.end()
 })
 
 const setupServer = (t) => {
