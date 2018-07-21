@@ -3,8 +3,11 @@ const express = require('express')
 const path    = require('path')
 const fs      = require('fs')
 
+const minPort = 1025
+const maxPort = 65535
+
 /// Pick a random non-privleged port to listen on
-const serverPort = Math.floor(Math.random() * 65535-1026) + 1025
+const serverPort = Math.floor(Math.random() * (maxPort - minPort + 1) + minPort)
 const app        = express()
 
 const server = {
