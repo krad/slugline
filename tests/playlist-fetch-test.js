@@ -1,4 +1,4 @@
-import { Playlist } from '../src/playlist'
+import { Playlist } from '../src/playlists/playlist'
 import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-server'
 const test = require('tape')
 const fs = require('fs')

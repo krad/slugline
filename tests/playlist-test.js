@@ -1,6 +1,6 @@
 const test = require('tape')
 const fs   = require('fs')
-import { Playlist } from '../src/playlist'
+import { Playlist } from '../src/playlists/playlist'
 import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-server'
 
 const vod       = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()

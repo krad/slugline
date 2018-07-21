@@ -1,6 +1,6 @@
 const test = require('tape')
 const fs   = require('fs')
-import { PlaylistParser, parseTagsAndAttributes } from '../src/playlist-parser'
+import { PlaylistParser, parseTagsAndAttributes } from '../src/parsers/playlist/playlist-parser'
 
 const vod     = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
 const master  = fs.readFileSync('./tests/fixtures/basic/master.m3u8').toString()

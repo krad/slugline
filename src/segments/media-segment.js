@@ -1,4 +1,4 @@
-import { MediaSegmentFetcher } from './fetcher'
+import { MediaSegmentFetcher } from '../fetchers/fetcher'
 const url = require('url')
 
 /**

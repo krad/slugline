@@ -1,6 +1,6 @@
 const test = require('tape')
 import {server, setupServer, tearDownServer, hostAndPort} from './fail-server'
-import { Fetcher } from '../src/fetcher'
+import { Fetcher } from '../src/fetchers/fetcher'
 
 test('fetcher failure scenarios', t=> {
   t.test(setupServer,                 'setup the fail server')

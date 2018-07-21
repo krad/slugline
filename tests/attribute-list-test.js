@@ -1,6 +1,6 @@
 const test = require('tape')
 const fs   = require('fs')
-import { Attribute, splitComponents } from '../src/attribute_list'
+import { Attribute, splitComponents } from '../src/parsers/playlist/attribute_list'
 
 
 test('parsing a complex attribute list', t=>{

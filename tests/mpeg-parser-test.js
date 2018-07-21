@@ -1,4 +1,4 @@
-import MPEGParser from '../src/mpeg-parser'
+import MPEGParser from '../src/parsers/container/mpeg-parser'
 const test = require('tape')
 const fs   = require('fs')
 

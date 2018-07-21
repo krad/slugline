@@ -1,6 +1,6 @@
-import AtomParser from './atom-parser'
-import Atom from './atom'
-import AtomTree from './atom-tree'
+import AtomParser from './fmp4/atom-parser'
+import Atom from './fmp4/atom'
+import AtomTree from './fmp4/atom-tree'
 
 const MPEGParser = {
 

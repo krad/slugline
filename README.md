@@ -15,9 +15,12 @@ It can be used in node.js and in the browser.
   * ✅ Parsing Media Playlists
   * ✅ Parsing Master Playlists
   * ✅ Retry logic (timeout, 500, network error, etc)
-  * ❎ Parsing Media Segments
+  * ✅ Parsing Media Segments
+    * ✅ Fragmented MP4
+    * ❎ Transport Stream
+    * ❎ FLV
+  * ✅ Periodic fetching of event & live playlists
   * ❎ Range Requests
-  * ❎ Periodic fetching of event & live playlists
 
 # Usage
 

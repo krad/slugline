@@ -1,5 +1,5 @@
 const test = require('tape')
-import { Fetcher, PlaylistFetcher, MediaSegmentFetcher } from '../src/fetcher'
+import { Fetcher, PlaylistFetcher, MediaSegmentFetcher } from '../src/fetchers/fetcher'
 import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-server'
 
 test('fetcher behavior', t=> {
