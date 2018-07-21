@@ -40,7 +40,7 @@ const colr = (atom, payload) => { }
  * @param  {Atom} atom          An 'avcC' type atom
  * @param  {Uint8Array} payload Uint8 array of atom data starting AFTER the 4 byte atom name
  */
-const avcc = (atom, payload) => {
+const avcC = (atom, payload) => {
   var view                  = new DataView(payload.buffer, 0, 4)
   atom.version              = view.getUint8(0)
   atom.profile              = view.getUint8(1)
@@ -77,7 +77,7 @@ const mp4a = (atom, payload) => { }
   *
   * @return {AudioSpecificConfig} A constructed audio specific config
   */
-class AudioSpecificConfig() {
+class AudioSpecificConfig {
 
   constructor(payload) {
     this.type          = payload[0] >> 3
@@ -92,7 +92,7 @@ class AudioSpecificConfig() {
  * @param  {Atom} atom          An 'esds' type atom
  * @param  {Uint8Array} payload Uint8 array of atom data starting AFTER the 4 byte atom name
  */
-const parseESDS = (atom, payload) => {
+const esds = (atom, payload) => {
 
   /// It's an elementary stream.  Chunk it up.
   var chunks = []
@@ -133,7 +133,7 @@ const AtomParser = {
   "hdlr": hdlr,
   "vmhd": vmhd,
   "dref": dref,
-  "dinf": ding,
+  "dinf": dinf,
   "stco": stco,
   "stsz": stsz,
   "stsc": stsc,

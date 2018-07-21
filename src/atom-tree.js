@@ -9,42 +9,6 @@ class AtomTree {
     this.root = []
   }
 
-  /**
-   * @static parse - Method to parse mpeg data
-   *
-   * @param  {Uint8Array} arrayBuffer An Uint8array that represents the contents of an mpeg file
-   * @return {AtomTree}               An AtomTree
-   */
-  static parse(arrayBuffer) {
-    let cursor = 0
-    let tree = new AtomTree()
-    while (cursor <= arraybuffer.length) {
-
-      let atomIdent = arraybuffer.slice(cursor, cursor+4)
-      let atomName  = String.fromCharCode.apply(null, atomIdent)
-
-      if (Object.keys(ATOMS).includes(atomName)) {
-        var sizeBytes = arraybuffer.buffer.slice(cursor-4, cursor)
-        var view      = new DataView(sizeBytes)
-        var atomSize  = view.getUint32(0)
-
-        var payload = arraybuffer.slice(cursor+4, (cursor+atomSize)-4)
-        var atom    = new Atom(atomName, cursor-4, atomSize, payload)
-        tree.insert(atom)
-        cursor += 4
-        continue
-      }
-      cursor += 1
-    }
-
-    let parsedCodecs = parseCodecs(tree)
-    if (parsedCodecs) {
-      tree.codecs = parsedCodecs
-      tree.codecsString = createCodecsString(tree.codecs)
-    }
-    return tree
-  }
-
   get length() {
     return this.root.length
   }
@@ -81,5 +45,35 @@ class AtomTree {
   }
 
 }
+
+/**
+ * explode - Used to recursively unwrap an Atom's children into a flat array
+ *
+ * @param  {Atom} atom An Atom object with children
+ * @return {Array<Atom>} A 1 dimensional array including an atom and all of it's children (and there children and so forth)
+ */
+const explode = (atom) => {
+  if (atom.children) {
+    var exploded = atom.children.flatMap(function(x){ return explode(x) })
+    return [atom].concat(exploded)
+  } else {
+    return [atom]
+  }
+}
+
+/**
+ * isChild - Simple check if an atom is a descendant (direct and otherwise) of a parent atom
+ *
+ * @param  {Atom} subject The Atom that may be a child
+ * @param  {Atom} suspect The Atom that may be the parent
+ * @return {Boolean} A bool.  true if the subject falls within the range of the parent
+ */
+function isChild(subject, suspect) {
+  if (subject.location < (suspect.location + suspect.size)) {
+    return true
+  }
+  return false
+}
+
 
 export default AtomTree
