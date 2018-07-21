@@ -97,11 +97,54 @@ class MediaPlaylist extends Playlist {
   }
 
   /**
+   * get avgDuration - Averate duration across all segments
+   *
+   * @return {Float} The average of all the segments in the playlist
+   */
+  get avgDuration() {
+    return this.totalDuration / this.segments.length
+  }
+
+  /**
+   * get refreshInterval - The rate at which we will auto-refresh a playlist
+   *
+   * @return {Integer} Number of miliseconds to wait between auto refresh requests
+   */
+  get refreshInterval() {
+    // It MUST be made available relative to the time that the previous version of the Playlist file
+    // was made available: no earlier than one-half the target duration
+    // after that time, and no later than 1.5 times the target duration
+    // after that time.
+    // TODO: possibly use cache/etags to handle this better?
+    if (this.avgDuration < (this.targetDuration/2) || this.avgDuration > (this.targetDuration*1.5)) {
+      return this.targetDuration * 1000
+    }
+    return this.avgDuration * 1000
+  }
+
+  startAutoRefresh(onRefresh) {
+    const fetch = () => {
+      this.refresh()
+      .then(playlist => {
+        onRefresh(playlist)
+      })
+      .catch(err => onRefresh(err))
+    }
+
+    this.refreshTimer = setInterval(fetch, this.refreshInterval)
+  }
+
+  /**
    * get ended - A bool marking if the stream is ended/complete (VOD playlists / Complete EVENT playlists)
    *
    * @return {bool} true if the playlist is complete
    */
   get ended () { return this._ended }
+
+  set ended(val) {
+    this._ended = val
+    if (this._ended) { cancelInterval(this.refreshTimer) }
+  }
 
   //  The peak segment bit rate of a Media Playlist is the largest bit rate
   // of any contiguous set of segments whose total duration is between 0.5
@@ -149,6 +192,25 @@ class MediaPlaylist extends Playlist {
       fetch(0)
 
     })
+  }
+
+  refresh() {
+    return new Promise((resolve, reject) => {
+      if ((this.type != 'LIVE' && this.type != 'EVENT') || this.ended) {
+        reject("Can't refresh playlist")
+      }
+
+      Playlist.fetch(this.url).then(refreshedPlaylist => {
+        this.updateSegments(refreshedPlaylist.segments)
+        this._ended = refreshedPlaylist.ended
+        resolve(this)
+      }).catch(err => reject(err))
+
+    })
+  }
+
+  updateSegments(segments) {
+    this.segments = segments
   }
 }
 
