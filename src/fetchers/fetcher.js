@@ -1,4 +1,4 @@
-import { Playlist } from '../playlists/playlist'
+import { Playlist } from '../playlist'
 const http = require('http')
 const url = require('url')
 
