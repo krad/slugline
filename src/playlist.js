@@ -134,6 +134,11 @@ class MediaPlaylist extends Playlist {
     this.refreshTimer = setInterval(fetch, this.refreshInterval)
   }
 
+  stopAutoRefresh() {
+    clearInterval(this.refreshTimer)
+    delete this['refreshTimer']
+  }
+
   /**
    * get ended - A bool marking if the stream is ended/complete (VOD playlists / Complete EVENT playlists)
    *
@@ -143,7 +148,8 @@ class MediaPlaylist extends Playlist {
 
   set ended(val) {
     this._ended = val
-    if (this._ended) { cancelInterval(this.refreshTimer) }
+    // If we have ended and there is a timer, clear it.
+    if (this._ended && this.refreshTimer) { this.stopAutoRefresh() }
   }
 
   //  The peak segment bit rate of a Media Playlist is the largest bit rate
@@ -202,7 +208,7 @@ class MediaPlaylist extends Playlist {
 
       Playlist.fetch(this.url).then(refreshedPlaylist => {
         this.updateSegments(refreshedPlaylist.segments)
-        this._ended = refreshedPlaylist.ended
+        this.ended = refreshedPlaylist.ended
         resolve(this)
       }).catch(err => reject(err))
 

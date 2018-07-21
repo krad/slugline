@@ -10,7 +10,7 @@ const srcD = './tests/fixtures/basic/event-inprogress-d.m3u8'
 const srcE = './tests/fixtures/basic/event-inprogress-e.m3u8'
 const dst  = './tests/fixtures/basic/event-inprogress-scratch.m3u8'
 
-test.only('refreshing an event playlist', t=> {
+test('refreshing an event playlist', t=> {
   t.test(setupServer,     'refreshing an event playlist - started fixture server')
   t.test(testRefresh,     'refreshing an event playlist')
   t.test(testAutoRefresh, 'refreshing an event playlist at an interval')
@@ -46,7 +46,7 @@ const testRefresh = (t) => {
 }
 
 const testAutoRefresh = (t) => {
-  t.plan(14)
+  t.plan(12)
 
   /// Reset the playlist
   fs.copyFileSync(srcB, dst)
@@ -54,16 +54,16 @@ const testAutoRefresh = (t) => {
   let playlistUpdates   = [srcD, srcE]
   const refreshCallback = (playlist) => {
     const nextPlaylist = playlistUpdates.shift()
-    console.log(nextPlaylist);
+
     if (nextPlaylist) {
+      console.log(nextPlaylist);
       fs.copyFileSync(nextPlaylist, dst)
       t.equals(false, playlist.ended, 'playlist not over yet')
-      t.ok(playlist.refreshTimer,     'refresh timer still present')
+      t.ok(playlist.refreshTimer,     'refreshTimer still present')
     } else {
       t.equals(true, playlist.ended, 'playlist is over now')
-      t.notOk(playlist.refreshTimer, 'refresh timer was removed')
+      t.notOk(playlist.refreshTimer, 'refreshTimer was removed')
     }
-
   }
 
   const url = hostAndPort() + '/basic/event-inprogress-scratch.m3u8'
