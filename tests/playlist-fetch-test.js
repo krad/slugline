@@ -27,10 +27,12 @@ const testRefresh = (t) => {
   const url = hostAndPort() + '/basic/event-inprogress-scratch.m3u8'
 
   Playlist.fetch(url).then(playlist => {
+
     t.equals('MediaPlaylist', playlist.constructor.name, 'got MediaPlaylist')
     t.equals(11, playlist.segments.length, 'has 11 segments')
     t.equals(false, playlist.ended, 'event has not ended')
     fs.copyFileSync(srcB, dst)
+
     playlist.refresh().then(refreshed => {
       t.equals('MediaPlaylist', refreshed.constructor.name, 'refreshed MediaPlaylist')
       t.equals(12, playlist.segments.length, 'appended new segments')
@@ -46,38 +48,42 @@ const testRefresh = (t) => {
 }
 
 const testAutoRefresh = (t) => {
-  t.plan(12)
+  t.plan(13)
 
-  /// Reset the playlist
-  fs.copyFileSync(srcB, dst)
-
+  // Create a refresh callback that shuffles the next playlists and
+  // runs assertions on the refreshed playlist
   let playlistUpdates   = [srcD, srcE]
   const refreshCallback = (playlist) => {
     const nextPlaylist = playlistUpdates.shift()
 
     if (nextPlaylist) {
-      console.log(nextPlaylist);
+      console.log(nextPlaylist, '/ Segment count:', playlist.segments.length);
       fs.copyFileSync(nextPlaylist, dst)
-      t.equals(false, playlist.ended, 'playlist not over yet')
+      t.equals(false, playlist.ended, 'playlist not ended yet')
       t.ok(playlist.refreshTimer,     'refreshTimer still present')
     } else {
-      t.equals(true, playlist.ended, 'playlist is over now')
+      t.equals(true, playlist.ended, 'playlist is ended now')
       t.notOk(playlist.refreshTimer, 'refreshTimer was removed')
     }
   }
 
-  const url = hostAndPort() + '/basic/event-inprogress-scratch.m3u8'
+  /// Reset the playlist
+  fs.copyFileSync(srcB, dst)
 
+  // Fetch the original playlist
+  const url = hostAndPort() + '/basic/event-inprogress-scratch.m3u8'
   Playlist.fetch(url).then(playlist => {
 
-    t.equals('MediaPlaylist', playlist.constructor.name, 'got MediaPlaylist')
-    t.equals(12,                   playlist.segments.length,  'has 12 segments')
-    t.equals(false,                playlist.ended,            'event has not ended')
-    t.equals(4.490116084436116,    playlist.avgDuration,      'had correct avg duration')
+    // Verify some assumptions about the initial playlist
+    t.equals('MediaPlaylist',           playlist.constructor.name, 'got MediaPlaylist')
+    t.equals(12,                        playlist.segments.length,  'has 12 segments')
+    t.equals(false,                     playlist.ended,            'event has not ended')
+    t.equals(4.490116084436116,         playlist.avgDuration,      'had correct avg duration')
     t.equals(playlist.avgDuration*1000, playlist.refreshInterval,  'refresh interval correct')
-
+    t.equals(false,                     playlist.ended,            'playlist not ended')
     t.notOk(playlist.refreshTimer, 'refreshTimer was not present')
 
+    // Prepare the next playlist and start the auto refresh
     fs.copyFileSync(srcC, dst)
     playlist.startAutoRefresh(refreshCallback)
 
