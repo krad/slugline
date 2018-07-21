@@ -2,6 +2,7 @@ slugline
 ========
 
 [![Build Status](https://travis-ci.com/krad/slugline.svg?branch=master)](https://travis-ci.com/krad/slugline)
+[![Coverage Status](https://coveralls.io/repos/github/krad/slugline/badge.svg?branch=master)](https://coveralls.io/github/krad/slugline?branch=master)
 
 slugline is a library for consuming HLS playlists.
 
