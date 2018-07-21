@@ -265,14 +265,14 @@ class PlaylistFetcher extends Fetcher {
    * @return {Promise<Playlist>} A promise with either a MediaPlaylist or a MasterPlaylist
    */
   fetch () {
-    this._fetcher = super.fetch()
+    return super.fetch()
       .then(body => Playlist.parse(body))
       .then(playlist => {
         playlist.url      = this.url
+        playlist.headers  = this.headers
         playlist.basePath = this.url.split('/').slice(0, -1).join('/')
         return playlist
       })
-    return this._fetcher
   }
 }
 

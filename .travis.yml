@@ -6,3 +6,6 @@ node_js:
 install:
   - ./tests/fixtures/fetch.sh
   - npm install
+after_script:
+  - npm run covhtml
+  - cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js

@@ -22,12 +22,13 @@ class Segment {
       }
 
       this.isDownloading = true
-      this._fetcher = new MediaSegmentFetcher({url: this.url})
-      this._fetcher.fetch(progressWrapper)
+      const fetcher =  new MediaSegmentFetcher({url: this.url})
+      fetcher.fetch(progressWrapper)
         .then(res => {
-          this.size = res.length
-          this.data = res
+          this.size          = res.length
+          this.data          = res
           this.isDownloading = false
+          this.headers       = fetcher.headers
           resolve(res)
         }).catch(err => {
           reject(err)

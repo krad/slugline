@@ -11,6 +11,10 @@ import { PlaylistFetcher } from './fetcher'
  * Playlist is the base type for all supported playlists
  */
 class Playlist {
+
+  constructor(struct, body) {
+    this.body = body
+  }
   /**
    * @static parse - Parse a playlist body
    *
@@ -53,10 +57,9 @@ class Playlist {
  */
 class MediaPlaylist extends Playlist {
   constructor (playlistStruct, body) {
-    super()
-    this._ended = false
+    super(playlistStruct, body)
+    this._ended   = false
     this.segments = []
-    this._body = body
     configureMediaPlaylist(this, playlistStruct)
   }
 
@@ -137,6 +140,14 @@ class MediaPlaylist extends Playlist {
   stopAutoRefresh() {
     clearInterval(this.refreshTimer)
     delete this['refreshTimer']
+  }
+
+  get segments() { return this._segments }
+  set segments(val) {
+    this._segments = val
+    if (this.segments) {
+      this.segmentCount = this._segments.length
+    }
   }
 
   /**
@@ -239,9 +250,8 @@ class MediaPlaylist extends Playlist {
  */
 class MasterPlaylist extends Playlist {
   constructor (playlistStruct, body) {
-    super()
+    super(playlistStruct, body)
     this.variants = []
-    this._body = body
     configureMasterPlaylist(this, playlistStruct)
   }
 
