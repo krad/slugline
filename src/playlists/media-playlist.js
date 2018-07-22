@@ -196,9 +196,21 @@ class MediaPlaylist extends Playlist {
    */
   updateSegments(segments) {
     let results = []
+    var startsWithInitSegment = false
     for (var i = 0; i < segments.length; i++) {
       var oldSegment   = this.segments[i]
       const newSegment = segments[i]
+
+      if (i == 0) {
+        if (oldSegment.constructor.name === 'MediaSegment' &&
+            newSegment.constructor.name === 'MediaSegment')
+        {
+          startsWithInitSegment = false
+          oldSegment = this.segments[i+1]
+        } else {
+          startsWithInitSegment = true
+        }
+      }
 
       if (this.type == 'LIVE') {
         if (i > 0) { oldSegment = this.segments[i+1] }

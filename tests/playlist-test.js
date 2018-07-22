@@ -115,6 +115,7 @@ test('sequentially fetching segments in a playlist', t=> {
 
 test('preventing segment update overwrites', t=> {
 
+  ////// Test event segment shuffling
   const srcA = fs.readFileSync('./tests/fixtures/basic/event-inprogress-a.m3u8').toString()
   const srcB = fs.readFileSync('./tests/fixtures/basic/event-inprogress-b.m3u8').toString()
 
@@ -149,6 +150,7 @@ test('preventing segment update overwrites', t=> {
   t.equals(true, playlistA.segments[10].tainted,  'segment still marked as tained #11')
   t.equals(undefined, playlistA.segments[11].tainted, 'new segment was not tainted #12')
 
+  ////// Test live segment shuffling (fmp4 with init map)
   const srcC = fs.readFileSync('./tests/fixtures/basic/live-inprogress-a.m3u8').toString()
   const srcD = fs.readFileSync('./tests/fixtures/basic/live-inprogress-b.m3u8').toString()
 
@@ -169,9 +171,33 @@ test('preventing segment update overwrites', t=> {
   playlistC.updateSegments(playlistD.segments)
 
   t.equals(true, playlistC.segments[0].tainted, 'segment still marked as tained #1')
-  t.equals(true, playlistC.segments[1].tainted, 'segment still marked as tained #1')
-  t.equals(true, playlistC.segments[2].tainted, 'segment still marked as tained #1')
+  t.equals(true, playlistC.segments[1].tainted, 'segment still marked as tained #2')
+  t.equals(true, playlistC.segments[2].tainted, 'segment still marked as tained #3')
   t.equals(undefined, playlistC.segments[3].tainted, 'new segment not tainted')
+
+  ////// Test live segment shuffling (ts without init map)
+  const srcE = fs.readFileSync('./tests/fixtures/basic/live-inprogress-ts-a.m3u8').toString()
+  const srcF = fs.readFileSync('./tests/fixtures/basic/live-inprogress-ts-b.m3u8').toString()
+
+  const playlistE = Playlist.parse(srcE)
+  t.ok(playlistE, 'parsed original live playlist')
+  t.equals('LIVE', playlistE.type, 'it is a live playlist')
+  t.equals(3, playlistE.segments.length, 'correct amount of segments')
+
+  const playlistF = Playlist.parse(srcF)
+  t.ok(playlistF, 'parsed new live playlist')
+  t.ok(playlistF, 'parsed original live playlist')
+  t.equals('LIVE', playlistF.type, 'it is a live playlist')
+  t.equals(3, playlistF.segments.length, 'correct amount of segments')
+
+  t.notDeepEqual(playlistE, playlistF, 'they are not equal')
+
+  playlistE.segments.forEach(segment => segment.tainted = true )
+  playlistE.updateSegments(playlistF.segments)
+
+  t.equals(true, playlistE.segments[0].tainted, 'segment still marked as tained #1')
+  t.equals(true, playlistE.segments[1].tainted, 'segment still marked as tained #2')
+  t.equals(undefined, playlistE.segments[2].tainted, 'new segment not tainted')
 
   t.end()
 })
