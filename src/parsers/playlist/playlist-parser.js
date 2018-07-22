@@ -1,6 +1,6 @@
 import { Attribute } from './attribute_list'
 import { MediaPlaylist, MasterPlaylist, VariantStream, Rendition } from '../../playlist'
-import { MediaSegment, MediaInitializationSegment } from '../../segments/media-segment'
+import { MediaSegment, MediaInitializationSegment } from '../../segment'
 
 const BASIC_TAGS = [
   '#EXTM3U',
