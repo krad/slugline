@@ -105,14 +105,6 @@ class MediaPlaylist extends Playlist {
     delete this['refreshTimer']
   }
 
-  get segments() { return this._segments }
-  set segments(val) {
-    this._segments = val
-    if (this.segments) {
-      this.segmentCount = this._segments.length
-    }
-  }
-
   /**
    * get ended - A bool marking if the stream is ended/complete (VOD playlists / Complete EVENT playlists)
    *
@@ -174,6 +166,12 @@ class MediaPlaylist extends Playlist {
     })
   }
 
+
+  /**
+   * refresh - Refetch the playlist and update all relevant values
+   *
+   * @return {Promise<Playlist>} Will return a reference to the current playlist (mutated)
+   */
   refresh() {
     return new Promise((resolve, reject) => {
       if ((this.type != 'LIVE' && this.type != 'EVENT') || this.ended) {
@@ -189,9 +187,36 @@ class MediaPlaylist extends Playlist {
     })
   }
 
+  /**
+   * updateSegments - Used by refresh to only replace entries in the segment array that have changed.
+   * This prevents data from being blown away whenever we're interacting with live or event placelists
+   * VOD playlists can just use the setter
+   *
+   * @param  {Array<Segment>} segments An array of segments
+   */
   updateSegments(segments) {
-    this.segments = segments
+    let results = []
+    for (var i = 0; i < segments.length; i++) {
+      var oldSegment   = this.segments[i]
+      const newSegment = segments[i]
+
+      if (this.type == 'LIVE') {
+        if (i > 0) { oldSegment = this.segments[i+1] }
+      }
+
+      if (oldSegment) {
+        if (newSegment.uri == oldSegment.uri) {
+          results.push(oldSegment)
+        } else {
+          results.push(newSegment)
+        }
+      } else {
+        results.push(newSegment)
+      }
+    }
+    this.segments = results
   }
 }
+
 
 export default MediaPlaylist

@@ -10,8 +10,6 @@ const weirdLive = fs.readFileSync('./tests/fixtures/basic/live-without-ident.m3u
 
 const vodURL   = '/basic/krad.tv/tractor/vod.m3u8'
 
-
-
 test('basic attributes from a VOD playlist', t=>{
 
   const playlist = Playlist.parse(vod)
@@ -112,6 +110,69 @@ test('sequentially fetching segments in a playlist', t=> {
   t.test(setupServer,           'fetching playlist segments sequentially - setup the fixture server')
   t.test(sequentialFetchTest,   'fetching a playlists segments ')
   t.test(tearDownServer,        'fetching playlist segments sequentially  - tore down the fixture server')
+  t.end()
+})
+
+test('preventing segment update overwrites', t=> {
+
+  const srcA = fs.readFileSync('./tests/fixtures/basic/event-inprogress-a.m3u8').toString()
+  const srcB = fs.readFileSync('./tests/fixtures/basic/event-inprogress-b.m3u8').toString()
+
+  // Parse the first playlist
+  const playlistA = Playlist.parse(srcA)
+  t.ok(playlistA, 'parsed original playlist')
+  t.equals(11, playlistA.segments.length, 'segment length was correct')
+
+  // Parse the updated playlist
+  const playlistB = Playlist.parse(srcB)
+  t.ok(playlistB, 'parsed updated playlist')
+  t.equals(12, playlistB.segments.length, 'segment length was correct')
+
+  // Make sure they're not equal
+  t.notDeepEqual(playlistA, playlistB)
+
+  // Taint the original playlist's segments
+  playlistA.segments.forEach(segment => segment.tainted = true )
+  playlistA.updateSegments(playlistB.segments)
+  t.equals(12, playlistB.segments.length, 'segment length was bumped')
+
+  t.equals(true, playlistA.segments[0].tainted,   'segment still marked as tained #1')
+  t.equals(true, playlistA.segments[1].tainted,   'segment still marked as tained #2')
+  t.equals(true, playlistA.segments[2].tainted,   'segment still marked as tained #3')
+  t.equals(true, playlistA.segments[3].tainted,   'segment still marked as tained #4')
+  t.equals(true, playlistA.segments[4].tainted,   'segment still marked as tained #5')
+  t.equals(true, playlistA.segments[5].tainted,   'segment still marked as tained #6')
+  t.equals(true, playlistA.segments[6].tainted,   'segment still marked as tained #7')
+  t.equals(true, playlistA.segments[7].tainted,   'segment still marked as tained #8')
+  t.equals(true, playlistA.segments[8].tainted,   'segment still marked as tained #9')
+  t.equals(true, playlistA.segments[9].tainted,   'segment still marked as tained #10')
+  t.equals(true, playlistA.segments[10].tainted,  'segment still marked as tained #11')
+  t.equals(undefined, playlistA.segments[11].tainted, 'new segment was not tainted #12')
+
+  const srcC = fs.readFileSync('./tests/fixtures/basic/live-inprogress-a.m3u8').toString()
+  const srcD = fs.readFileSync('./tests/fixtures/basic/live-inprogress-b.m3u8').toString()
+
+  const playlistC = Playlist.parse(srcC)
+  t.ok(playlistC, 'parsed original live playlist')
+  t.equals('LIVE', playlistC.type, 'it is a live playlist')
+  t.equals(4, playlistC.segments.length, 'correct amount of segments')
+
+  const playlistD = Playlist.parse(srcD)
+  t.ok(playlistD, 'parsed new live playlist')
+  t.ok(playlistD, 'parsed original live playlist')
+  t.equals('LIVE', playlistD.type, 'it is a live playlist')
+  t.equals(4, playlistD.segments.length, 'correct amount of segments')
+
+  t.notDeepEqual(playlistC, playlistD, 'they are not equal')
+
+  playlistC.segments.forEach(segment => segment.tainted = true )
+  playlistC.updateSegments(playlistD.segments)
+
+  t.equals(true, playlistC.segments[0].tainted, 'segment still marked as tained #1')
+  t.equals(true, playlistC.segments[1].tainted, 'segment still marked as tained #1')
+  t.equals(true, playlistC.segments[2].tainted, 'segment still marked as tained #1')
+  t.equals(undefined, playlistC.segments[3].tainted, 'new segment not tainted')
+
   t.end()
 })
 

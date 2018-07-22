@@ -60,7 +60,7 @@ const testAutoRefresh = (t) => {
       fs.copyFileSync(nextPlaylist, dst)
       t.equals(false, playlist.ended, 'playlist not ended yet')
       t.ok(playlist.refreshTimer,     'refreshTimer still present')
-      console.log(nextPlaylist, '/ Segment count:', playlist.segmentCount);
+      console.log(nextPlaylist, '/ Segment count:', playlist.segments.length);
     } else {
       t.equals(true, playlist.ended, 'playlist is ended now')
       t.notOk(playlist.refreshTimer, 'refreshTimer was removed')
