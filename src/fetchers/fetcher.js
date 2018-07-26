@@ -1,6 +1,7 @@
 import { Playlist } from '../playlist'
 const https = require('https')
-const url = require('url')
+const http  = require('http')
+const url   = require('url')
 
 /**
  * Base class for performing fetches for playlists and assets defined in them
@@ -95,7 +96,14 @@ class Fetcher {
       }
 
       this.fetchCount += 1
-      return simpleGet(params)
+      console.log(params);
+
+      if (params.url.substring(0, 5) === 'https') {
+        return simpleGet(params, https)
+      } else {
+        return simpleGet(params, http)
+      }
+
     }
 
     return execute().catch(err => retry(execute, this.maxRetries, err))
@@ -171,7 +179,7 @@ const shouldAttemptRetryByNetworkError = (errCode) => {
 /**
  * Simple get request for fetching something
  */
-const simpleGet = (params) => {
+const simpleGet = (params, proto) => {
   const url = params.url
   const timeout = params.timeout || 5000
   const onProgress = params.onProgress || (() => {})
@@ -190,7 +198,7 @@ const simpleGet = (params) => {
 
     var timer = setupTimer(undefined, timeout)
 
-    const request = https.get(url, (response) => {
+    const request = proto.get(url, (response) => {
       // Call the onResponse callback
       onResponse(response)
 
