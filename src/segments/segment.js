@@ -5,7 +5,7 @@ const url = require('url')
  * A Segment is a media asset that can be downloaded to facilitate playback
  */
 class Segment {
-  
+
   constructor () { }
 
   get url () {
@@ -32,6 +32,7 @@ class Segment {
           this.headers       = fetcher.headers
           resolve(res)
         }).catch(err => {
+          console.log(err);
           reject(err)
         })
     })

@@ -1,5 +1,5 @@
 import { Playlist } from '../playlist'
-const http = require('http')
+const https = require('https')
 const url = require('url')
 
 /**
@@ -190,7 +190,7 @@ const simpleGet = (params) => {
 
     var timer = setupTimer(undefined, timeout)
 
-    const request = http.get(url, (response) => {
+    const request = https.get(url, (response) => {
       // Call the onResponse callback
       onResponse(response)
 

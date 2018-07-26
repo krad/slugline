@@ -17,6 +17,8 @@ It can be used in node.js and in the browser.
   * ✅ Retry logic (timeout, 500, network error, etc)
   * ✅ Parsing Media Segments
     * ✅ Fragmented MP4
+      * ✅ H264
+      * ❎ HEVC
     * ❎ Transport Stream
     * ❎ FLV
   * ✅ Periodic fetching of event & live playlists

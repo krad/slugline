@@ -89,15 +89,9 @@ class MediaPlaylist extends Playlist {
   }
 
   startAutoRefresh(onRefresh) {
-    const fetch = () => {
-      this.refresh()
-      .then(playlist => {
-        onRefresh(playlist)
-      })
-      .catch(err => onRefresh(err))
-    }
-
-    this.refreshTimer = setInterval(fetch, this.refreshInterval)
+    this.onRefresh    = onRefresh
+    this.refresh      = this.refresh.bind(this)
+    this.refreshTimer = setInterval(this.refresh, this.refreshInterval)
   }
 
   stopAutoRefresh() {
@@ -180,7 +174,9 @@ class MediaPlaylist extends Playlist {
 
       Playlist.fetch(this.url).then(refreshedPlaylist => {
         this.updateSegments(refreshedPlaylist.segments)
-        this.ended = refreshedPlaylist.ended
+        this.ended               = refreshedPlaylist.ended
+        this.mediaSequenceNumber = refreshedPlaylist.mediaSequenceNumber
+        if (this.onRefresh) { this.onRefresh(this) }
         resolve(this)
       }).catch(err => reject(err))
 
