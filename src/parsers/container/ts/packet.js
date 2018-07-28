@@ -15,8 +15,19 @@ class TransportStreamParser {
     }
 
     if (header.PID === this.PMT_ID) {
-      return new PMT(header, new DataView(arrayBuffer.buffer, 4))
+      const pmt       = new PMT(header, new DataView(arrayBuffer.buffer, 4))
+      this.tracks     = pmt.tracks
+      this.trackPIDs  = pmt.tracks.map(t => t.elementaryPID)
+      return pmt
     }
+
+    if (this.trackPIDs.includes(header.PID)) {
+      const track       = this.tracks.filter(t => t.elementaryPID === header.PID)[0]
+      const mediaPacket = new MediaPacket(header, new DataView(arrayBuffer.buffer, 4), track.streamType)
+      return mediaPacket
+    }
+
+
 
   }
 }
@@ -123,7 +134,7 @@ class PMT extends Packet {
     this.pcrPID                 = dataView.getUint16(9) & 0x1fff
     this.programInfoLength      = dataView.getUint16(11) & 0xfff
     this.tracks                 = []
-    
+
     let nextIdx = 13 + this.programInfoLength
     while (nextIdx < this.sectionLength) {
       let track = {}
@@ -144,15 +155,10 @@ class PMT extends Packet {
   }
 }
 
-class Video extends Packet {
-  constructor(header, dataView) {
+class MediaPacket extends Packet {
+  constructor(header, dataView, streamType) {
     super(header, dataView)
-  }
-}
-
-class Audio extends Packet {
-  constructor(header, dataView) {
-    super(header, dataView)
+    this.streamType = streamType
   }
 }
 
