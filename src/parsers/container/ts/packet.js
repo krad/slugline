@@ -8,14 +8,14 @@ class TransportStreamParser {
     let view          = new DataView(arrayBuffer.buffer)
     const headerBytes = view.getUint32(0)
     const header      = new PacketHeader(headerBytes)
-    switch (header.PID) {
-      case 0:
-        const pat = new PAT(header, new DataView(arrayBuffer.buffer, 4))
-        this.PMT_ID = pat.pmtID
-        return pat
-      case this.PMT_ID: new PMT(header, new DataView(arrayBuffer.buffer, 4))
-      default:
-        // console.log(header.PID);
+    if (header.PID === 0) {
+      const pat   = new PAT(header, new DataView(arrayBuffer.buffer, 4))
+      this.PMT_ID = pat.pmtID
+      return pat
+    }
+
+    if (header.PID === this.PMT_ID) {
+      return new PMT(header, new DataView(arrayBuffer.buffer, 4))
     }
 
   }
@@ -85,7 +85,9 @@ class PAT extends Packet {
       if (programNumber === 0) { program.networkPID = next & 0x1FFF }
       else                     { program.mapID = next & 0x1FFF }
       this.programs.push(program)
+      nextIdx += 4
     }
+    this.crc = dataView.getUint32(nextIdx)
   }
 
   get pmtID() {
@@ -107,24 +109,51 @@ class PAT extends Packet {
 class PMT extends Packet {
   constructor(header, dataView) {
     super(header, dataView)
-  }
-}
 
-class CAT extends Packet {
-  constructor(header, dataView) {
-    super(header, dataView)
-  }
-}
+    this.tableId                = dataView.getUint8(1)
+    let next                    = dataView.getUint16(2)
+    this.sectionSyntaxIndicator = (next & 0x8000)
+    this.sectionLength          = (next & 0xfff)
+    this.programNumber          = dataView.getUint16(4)
 
-class TSDT extends Packet {
-  constructor(header, dataView) {
-    super(header, dataView)
-  }
-}
+    next                        = dataView.getUint8(6)
+    this.version                = (next & 0x3e)
+    this.currentNextIndicator   = (next & 0x1)
+    this.sectionNumber          = dataView.getUint8(7)
+    this.lastSectionNumber      = dataView.getUint8(8)
+    this.pcrPID                 = dataView.getUint16(9) & 0x1fff
+    this.programInfoLength      = dataView.getUint16(11) & 0xfff
 
-class IPMP extends Packet {
-  constructor(header, dataView) {
-    super(header, dataView)
+    let nextIdx = this.programInfoLength + 13
+    let bytesRemaining = this.sectionLength - 9 - this.programInfoLength - 4
+
+    while (bytesRemaining > 0) {
+      const streamType    = dataView.getUint8(nextIdx)
+
+      nextIdx += 1
+      const elementaryPID = dataView.getUint16(nextIdx) & 0x1ff
+      console.log(elementaryPID);
+
+      nextIdx += 2
+      const esInfoLength  = dataView.getUint16(nextIdx) & 0xfff
+
+      console.log(streamType);
+      bytesRemaining      = esInfoLength
+
+      nextIdx += 2
+      const descLength = dataView.getUint8(nextIdx)
+      while(bytesRemaining >= 2) {
+        nextIdx += 1
+        const tag = dataView.getUint8(nextIdx)
+
+        nextIdx += 1
+        const descLength = dataView.getUint8(nextIdx+7)
+        bytesRemaining -= descLength + 2
+      }
+
+      nextIdx += 1
+      bytesRemaining -= 5 + esInfoLength
+    }
   }
 }
 
@@ -135,12 +164,6 @@ class Video extends Packet {
 }
 
 class Audio extends Packet {
-  constructor(header, dataView) {
-    super(header, dataView)
-  }
-}
-
-class Null extends Packet {
   constructor(header, dataView) {
     super(header, dataView)
   }

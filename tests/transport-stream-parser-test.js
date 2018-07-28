@@ -24,9 +24,11 @@ test.only('we can parse ts files', t=> {
   t.equals(1, pat.programs[0].programNumber,  'got correct program number')
   t.equals(480, pat.programs[0].mapID,        'got correct pmt id')
   t.equals(480, pat.pmtID,                    'computed property for default pmt id works')
+  t.ok(pat.crc,                               'crc was present')
+
   const pmt = stream.packets[1]
+  t.equals('PMT', pmt.constructor.name, 'Got a program map table')
   // console.log(pmt);
-  // t.equals('PMT', pmt.constructor.name, 'Got a program map table')
 
   t.end()
 })
