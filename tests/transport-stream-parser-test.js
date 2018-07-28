@@ -28,7 +28,13 @@ test.only('we can parse ts files', t=> {
 
   const pmt = stream.packets[1]
   t.equals('PMT', pmt.constructor.name, 'Got a program map table')
-  // console.log(pmt);
+  t.equals(481,   pmt.pcrPID,           'clock pid was present')
+  t.ok(pmt.tracks,                      'tracks were present')
+
+  const trackA = pmt.tracks[0]
+  t.ok(trackA, 'track present')
+  t.equals(27, trackA.streamType,     'marked as a video track')
+  t.equals(481, trackA.elementaryPID, 'es pid present')
 
   t.end()
 })

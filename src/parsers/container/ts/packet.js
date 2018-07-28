@@ -112,7 +112,6 @@ class PMT extends Packet {
 
     this.tableId                = dataView.getUint8(1)
     let next                    = dataView.getUint16(2)
-    this.sectionSyntaxIndicator = (next & 0x8000)
     this.sectionLength          = (next & 0xfff)
     this.programNumber          = dataView.getUint16(4)
 
@@ -123,36 +122,24 @@ class PMT extends Packet {
     this.lastSectionNumber      = dataView.getUint8(8)
     this.pcrPID                 = dataView.getUint16(9) & 0x1fff
     this.programInfoLength      = dataView.getUint16(11) & 0xfff
-
-    let nextIdx = this.programInfoLength + 13
-    let bytesRemaining = this.sectionLength - 9 - this.programInfoLength - 4
-
-    while (bytesRemaining > 0) {
-      const streamType    = dataView.getUint8(nextIdx)
-
-      nextIdx += 1
-      const elementaryPID = dataView.getUint16(nextIdx) & 0x1ff
-      console.log(elementaryPID);
-
-      nextIdx += 2
-      const esInfoLength  = dataView.getUint16(nextIdx) & 0xfff
-
-      console.log(streamType);
-      bytesRemaining      = esInfoLength
-
-      nextIdx += 2
-      const descLength = dataView.getUint8(nextIdx)
-      while(bytesRemaining >= 2) {
-        nextIdx += 1
-        const tag = dataView.getUint8(nextIdx)
-
-        nextIdx += 1
-        const descLength = dataView.getUint8(nextIdx+7)
-        bytesRemaining -= descLength + 2
-      }
+    this.tracks                 = []
+    
+    let nextIdx = 13 + this.programInfoLength
+    while (nextIdx < this.sectionLength) {
+      let track = {}
+      track.streamType = dataView.getUint8(nextIdx)
 
       nextIdx += 1
-      bytesRemaining -= 5 + esInfoLength
+      track.elementaryPID = dataView.getUint16(nextIdx) & 0x1ff
+
+      nextIdx += 2
+      track.esInfoLength = dataView.getUint16(nextIdx) & 0xfff
+
+      nextIdx += 2
+      track.descLength = dataView.getUint8(nextIdx)
+
+      nextIdx += track.esInfoLength
+      this.tracks.push(track)
     }
   }
 }
