@@ -1,4 +1,4 @@
-import TransportStreamParser from './packet'
+import TransportStreamParser from './parser'
 
 class TransportStream {
   static parse(arrayBuffer) {
