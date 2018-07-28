@@ -15,9 +15,13 @@ class PMT extends Packet {
   constructor(header, dataView) {
     super(header, dataView)
 
+    this.ptrField               = dataView.getUint8(0)
     this.tableId                = dataView.getUint8(1)
     let next                    = dataView.getUint16(2)
+
+    this.sectionSyntaxIndicator = (next & 1)
     this.sectionLength          = (next & 0xfff)
+
     this.programNumber          = dataView.getUint16(4)
 
     next                        = dataView.getUint8(6)
@@ -25,6 +29,7 @@ class PMT extends Packet {
     this.currentNextIndicator   = (next & 0x1)
     this.sectionNumber          = dataView.getUint8(7)
     this.lastSectionNumber      = dataView.getUint8(8)
+
     this.pcrPID                 = dataView.getUint16(9) & 0x1fff
     this.programInfoLength      = dataView.getUint16(11) & 0xfff
     this.tracks                 = []
@@ -52,6 +57,7 @@ class PMT extends Packet {
       nextIdx += track.esInfoLength
       this.tracks.push(track)
     }
+
   }
 }
 

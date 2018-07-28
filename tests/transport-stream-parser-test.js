@@ -30,6 +30,8 @@ test.only('we can parse ts files', t=> {
   t.equals('PMT', pmt.constructor.name, 'Got a program map table')
   t.equals(257,   pmt.pcrPID,           'clock pid was present')
   t.ok(pmt.tracks,                      'tracks were present')
+  t.equals(2, pmt.tableId,              'table id was correct')
+  t.equals(1, pmt.sectionSyntaxIndicator, 'section syntax indicator was correct')
 
   const trackA = pmt.tracks[0]
   t.ok(trackA, 'track present')
@@ -40,19 +42,12 @@ test.only('we can parse ts files', t=> {
   t.equals('MediaPacket', mediaPacket.constructor.name, 'got a media packet')
   t.ok(mediaPacket.streamType, 'stream type was present')
 
-  console.log(mediaPacket.data.getUint8(0), mediaPacket.data.byteLength);
-  console.log(mediaPacket.streamType);
+  const videoPackets = stream.packets.filter(p => p.header.PID === trackA.elementaryPID)
+  videoPackets.forEach(v =>  {
+    v.parse()
+    console.log(v.nalus);
+  })
 
-  console.log(pmt.tracks[1].esInfo);
-
-  // for (var i = 0; i < mediaPacket.data.byteLength; i++)  {
-  //   const x = mediaPacket.data.getUint8(i)
-  //   // if ((x & 0x20) && mediaPacket.data.getUint8(i+1) > 0) {
-  //   //   if (mediaPacket.data.getUint8(i+2) & 0x40) {
-  //   //     console.log('---', x, mediaPacket.data.getUint8(i+1));
-  //   //   }
-  //   // }
-  // }
   t.end()
 })
 

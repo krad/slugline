@@ -6,13 +6,53 @@ class Packet {
   }
 }
 
-
 class MediaPacket extends Packet {
   constructor(header, dataView, streamType) {
     super(header, dataView)
     this.streamType = streamType
+    this.nalus      = []
+  }
+
+  parse() {
+    for (var i = 0; i < this.data.byteLength; i++)  {
+      if (i < this.data.byteLength - 4) {
+        if(this.data.getUint8(i) === 0x00) {
+          if (this.data.getUint8(i+1) === 0x00) {
+            if (this.data.getUint8(i+2) === 0x00) {
+              if (this.data.getUint8(i+3) === 0x01) {
+
+                const lastNaluIdx = this.nalus.length-1
+                let lastNalu = this.nalus[lastNaluIdx]
+                if (lastNalu) {
+                  lastNalu.end = i-1
+                  this.nalus[lastNaluIdx] = lastNalu
+                }
+
+                let nalu    = {}
+                nalu.start  = i+4
+                nalu.type   = this.data.getUint8(i+4) & 0x1f
+                this.nalus.push(nalu)
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
+
+class SPS {
+  constructor(bytes) {
+    console.log(bytes);
+  }
+}
+
+class PPS {
+  constructor(bytes) {
+
+  }
+}
+
 
 /// FIXME: Use this.
 const isBigEndianSystem = () => {
