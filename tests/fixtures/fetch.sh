@@ -36,3 +36,6 @@ for number in $(seq 1 3); do
   wget -N $PLAYLIST_URL -P $OUTPUT
   #wget -N $AUDIO_URL -P $OUTPUT
 done
+
+echo "Fetching a single ts file for now"
+wget -N https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/fileSequence0.ts -P $SCRIPTPATH

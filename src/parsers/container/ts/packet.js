@@ -6,29 +6,49 @@ class TransportStreamParser {
 
   parse(arrayBuffer) {
     let view          = new DataView(arrayBuffer.buffer)
-    const headerBytes = view.getUint32(0)
-    const header      = new PacketHeader(headerBytes)
+    const header      = new PacketHeader(view)
+
+    /// 0 Signals we have a PAT
     if (header.PID === 0) {
       const pat   = new PAT(header, new DataView(arrayBuffer.buffer, 4))
-      this.PMT_ID = pat.pmtID
+      this.pmtPID = pat.pmtID
       return pat
     }
 
-    if (header.PID === this.PMT_ID) {
+    // Header matches the pmtPID we got from the PAT
+    if (header.PID === this.pmtPID) {
       const pmt       = new PMT(header, new DataView(arrayBuffer.buffer, 4))
       this.tracks     = pmt.tracks
       this.trackPIDs  = pmt.tracks.map(t => t.elementaryPID)
       return pmt
     }
 
+    // Check if the pid matches any of the pids from the tracks we parsed from the PMT
     if (this.trackPIDs.includes(header.PID)) {
       const track       = this.tracks.filter(t => t.elementaryPID === header.PID)[0]
       const mediaPacket = new MediaPacket(header, new DataView(arrayBuffer.buffer, 4), track.streamType)
       return mediaPacket
     }
 
+  }
+}
 
+class PacketHeader {
+  constructor(headerBytes) {
+    this.data     = headerBytes
+    this.syncByte = headerBytes.getUint8(0)
 
+    let next      = headerBytes.getUint16(1)
+    this.TEI      = next & 0x8000
+    this.PUSI     = next & 0x4000
+    this.PRIORITY = next & 0x2000
+    this.PID      = next & 0x1fff
+
+    next                        = headerBytes.getUint8(3)
+    this.TSC                    = next & 0xc0
+    this.AdaptationFieldControl = next & 0x30
+    this.CountinuityCounter     = next & 0xf
+    this.length                 = 4
   }
 }
 
@@ -37,20 +57,6 @@ class Packet {
     this.header = header
     this.data   = dataView
     this.length = header.length + dataView.byteLength
-  }
-}
-
-class PacketHeader {
-  constructor(headerBytes) {
-    this.syncByte               = headerBytes >> 24
-    this.TEI                    = (headerBytes >> 8) & 0x000008
-    this.PUSI                   = (headerBytes >> 8) & 0x000004
-    this.PRIORITY               = (headerBytes >> 8) & 0x000002
-    this.PID                    = (headerBytes >> 8) & 0x001fff
-    this.TSC                    = (headerBytes >> 4) & 0xc0
-    this.AdaptationFieldControl = (headerBytes >> 4) & 0x30
-    this.continuityCounter      = headerBytes & 0xf
-    this.length                 = 4
   }
 }
 
@@ -149,6 +155,12 @@ class PMT extends Packet {
       nextIdx += 2
       track.descLength = dataView.getUint8(nextIdx)
 
+      let esInfo = []
+      for (var i = 0; i < (nextIdx+track.esInfoLength)-nextIdx; i++) {
+        esInfo.push(dataView.getUint8(nextIdx+i))
+      }
+      track.esInfo = new Uint8Array(esInfo)
+
       nextIdx += track.esInfoLength
       this.tracks.push(track)
     }
@@ -174,4 +186,4 @@ const isBigEndianSystem = () => {
   throw new Error("Something wrong with system memory.  Can't determine endianness")
 }
 
-export { Packet, TransportStreamParser }
+export default TransportStreamParser

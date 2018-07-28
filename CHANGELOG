@@ -1,0 +1,28 @@
+# Changelog
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+- Transport Stream Parsing
+- Transport Stream transmuxing to fragmented mp4
+- Parallel sequential fetching
+- Release with vanilla javascript support
+- UMD packaging
+- Range Requests
+- AES128 support
+- Published documentation accessible via the web
+- Examples of how to use slugline included in README
+- Examples of projects that use slugline
+
+## [1.0.0] - 2018-01-21
+### Added
+- Fetching Playlists
+- Fetching Media segments
+- Retry Logic (timeout, 500, network error, etc)
+- Parsing Media Playlists
+- Parsing Master Playlists
+- Parsing Media segments
+  - Fragmented MP4
+- Periodic fetch of event & live playlists
