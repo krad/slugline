@@ -9,47 +9,75 @@ class Packet {
 class MediaPacket extends Packet {
   constructor(header, dataView, streamType) {
     super(header, dataView)
-    this.streamType = streamType
-    this.nalus      = []
+    this.streamType   = streamType
+    this.naluRanges   = parseNALUranges(this.data)
+    this.nalus        = []
+    // this.parse()
   }
 
   parse() {
-    for (var i = 0; i < this.data.byteLength; i++)  {
-      if (i < this.data.byteLength - 4) {
-        if(this.data.getUint8(i) === 0x00) {
-          if (this.data.getUint8(i+1) === 0x00) {
-            if (this.data.getUint8(i+2) === 0x00) {
-              if (this.data.getUint8(i+3) === 0x01) {
+    this.naluRanges.forEach(range => {
+      const naluSize  = range.end - range.start
+      const end       = range.end === undefined ? this.data.byteLength : range.end
+      const view      = new DataView(this.data.buffer, range.start, range.end)
+      switch (range.type) {
+        case 7:
+          this.nalus.push(new SPS(view))
+          break
+        case 8:
+          this.nalus.push(new PPS(view))
+          break
+      }
+    })
+  }
+}
 
-                const lastNaluIdx = this.nalus.length-1
-                let lastNalu = this.nalus[lastNaluIdx]
-                if (lastNalu) {
-                  lastNalu.end = i-1
-                  this.nalus[lastNaluIdx] = lastNalu
-                }
+const parseNALUranges = (dataView) => {
+  let nalus = []
+  for (var i = 0; i < dataView.byteLength; i++)  {
+    if (i < dataView.byteLength - 4) {
+      if(dataView.getUint8(i) === 0x00) {
+        if (dataView.getUint8(i+1) === 0x00) {
+          if (dataView.getUint8(i+2) === 0x00) {
+            if (dataView.getUint8(i+3) === 0x01) {
 
-                let nalu    = {}
-                nalu.start  = i+4
-                nalu.type   = this.data.getUint8(i+4) & 0x1f
-                this.nalus.push(nalu)
+              const lastNaluIdx = nalus.length-1
+              let lastNalu = nalus[lastNaluIdx]
+              if (lastNalu) {
+                lastNalu.end = i-1
+                nalus[lastNaluIdx] = lastNalu
               }
+
+              let nalu    = {}
+              nalu.start  = i+4
+              nalu.type   = dataView.getUint8(i+4) & 0x1f
+              nalus.push(nalu)
             }
           }
         }
       }
     }
   }
+
+  if (nalus.length > 1) {
+    let lastNalu = nalus[nalus.length-1]
+    console.log(lastNalu);
+  }
+
+  return nalus
 }
 
 class SPS {
-  constructor(bytes) {
-    console.log(bytes);
+  constructor(dataView) {
+    let startIdx = dataView.byteOffset
+    console.log(dataView.getUint8(startIdx) & 0x1f);
   }
 }
 
 class PPS {
-  constructor(bytes) {
-
+  constructor(dataView) {
+    let startIdx = dataView.byteOffset
+    console.log(dataView.getUint8(startIdx) & 0x1f);
   }
 }
 

@@ -41,12 +41,10 @@ test.only('we can parse ts files', t=> {
   const mediaPacket = stream.packets[2]
   t.equals('MediaPacket', mediaPacket.constructor.name, 'got a media packet')
   t.ok(mediaPacket.streamType, 'stream type was present')
+  mediaPacket.parse()
 
-  const videoPackets = stream.packets.filter(p => p.header.PID === trackA.elementaryPID)
-  videoPackets.forEach(v =>  {
-    v.parse()
-    console.log(v.nalus);
-  })
+  console.log(mediaPacket.nalus);
+
 
   t.end()
 })
