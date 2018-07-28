@@ -78,4 +78,8 @@ typings/
 
 apple-advanced-fmp4/
 krad.tv/
+*.mp4
+*.ts
+*.mp2
+*.mp3
 # End of https://www.gitignore.io/api/node
