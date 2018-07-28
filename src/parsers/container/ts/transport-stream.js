@@ -1,11 +1,12 @@
-import Packet from './packet'
+import { Packet, TransportStreamParser } from './packet'
 
 class TransportStream {
   static parse(arrayBuffer) {
+    let parser     = new TransportStreamParser()
     let stream     = new TransportStream()
     let packetSize = detectPacketSize(arrayBuffer.slice(0, 205))
     for (var i = 0; i < arrayBuffer.length; i+=packetSize) {
-      let packet = Packet.parse(arrayBuffer.slice(i, i+packetSize))
+      let packet = parser.parse(arrayBuffer.slice(i, i+packetSize))
       if (packet) { stream.packets.push(packet) }
     }
     return stream

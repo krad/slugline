@@ -1,24 +1,31 @@
-class Packet {
-  static parse(arrayBuffer) {
-    let view          = new DataView(arrayBuffer.buffer)
-    const headerBytes = view.getUint32(0)
-
-    const header = new PacketHeader(headerBytes)
-    switch (header.PID) {
-      case 0:   return new PAT(header, view)
-      case 1:   return new CAT(header, view)
-      case 2:   return new TSDT(header, view)
-      case 3:   return new IPMP(header, view)
-      case 480: return new PMT(header, view)
-      case 481: return new Video(header, view)
-      case 482: return new Audio(header, view)
-      default:
-        console.log(header.PID);
-    }
+class TransportStreamParser {
+  constructor() {
+    this.PAT    = undefined
+    this.PMT_ID = undefined
   }
 
+  parse(arrayBuffer) {
+    let view          = new DataView(arrayBuffer.buffer)
+    const headerBytes = view.getUint32(0)
+    const header      = new PacketHeader(headerBytes)
+    switch (header.PID) {
+      case 0:
+        const pat = new PAT(header, new DataView(arrayBuffer.buffer, 4))
+        this.PMT_ID = pat.pmtID
+        return pat
+      case this.PMT_ID: new PMT(header, new DataView(arrayBuffer.buffer, 4))
+      default:
+        // console.log(header.PID);
+    }
+
+  }
+}
+
+class Packet {
   constructor(header, dataView) {
     this.header = header
+    this.data   = dataView
+    this.length = header.length + dataView.byteLength
   }
 }
 
@@ -32,6 +39,7 @@ class PacketHeader {
     this.TSC                    = (headerBytes >> 4) & 0xc0
     this.AdaptationFieldControl = (headerBytes >> 4) & 0x30
     this.continuityCounter      = headerBytes & 0xf
+    this.length                 = 4
   }
 }
 
@@ -42,7 +50,46 @@ class PacketHeader {
 // TS packets containing PAT information always have PID 0x0000.
 class PAT extends Packet {
   constructor(header, dataView) {
-    super(dataView)
+    super(header, dataView)
+    /// There's a header flag we should check to see if we should pad this or not
+    // I don't *THINK* that rules applies to HLS streams at this time.
+    this.tableId                = dataView.getUint8(1)
+    let next                    = dataView.getUint16(2)
+    this.sectionSyntaxIndicator = next >> 15
+
+    // These are here so I can tell I am in fact getting the correct bits
+    const priv          = (next >> 14) & 0x1
+    const res           = (next >> 12) & 0x3
+    const unused        = (next >> 10) & 0x3
+
+    /// Ok, actual work stuff
+    this.sectionLength        = (next & 0x3FF)
+    this.streamId             = dataView.getUint16(4)
+
+    next                      = dataView.getUint8(6)
+    const res2                = next & 0xc0
+    this.version              = next & 0x1f
+    this.currentNextIndicator = next & 0x1
+
+    this.sectionNumber        = dataView.getUint8(7)
+    this.lastSectionNumber    = dataView.getUint8(8)
+
+    let numProgramBytes = ((this.sectionLength - 5) - 4)
+    this.programs        = []
+    let nextIdx         = 9
+    for (var i = 0; i < numProgramBytes / 4; i++) {
+      let program = {}
+      const programNumber   = dataView.getUint16(nextIdx)
+      program.programNumber = programNumber
+      next                  = dataView.getUint16(nextIdx+2)
+      if (programNumber === 0) { program.networkPID = next & 0x1FFF }
+      else                     { program.mapID = next & 0x1FFF }
+      this.programs.push(program)
+    }
+  }
+
+  get pmtID() {
+    return this.programs[0].mapID
   }
 }
 
@@ -59,46 +106,47 @@ class PAT extends Packet {
 // Each elementary stream is labeled with a stream_type value.
 class PMT extends Packet {
   constructor(header, dataView) {
-    super(dataView)
+    super(header, dataView)
   }
 }
 
 class CAT extends Packet {
   constructor(header, dataView) {
-    super(dataView)
+    super(header, dataView)
   }
 }
 
 class TSDT extends Packet {
   constructor(header, dataView) {
-    super(dataView)
+    super(header, dataView)
   }
 }
 
 class IPMP extends Packet {
   constructor(header, dataView) {
-    super(dataView)
+    super(header, dataView)
   }
 }
 
 class Video extends Packet {
   constructor(header, dataView) {
-    super(dataView)
+    super(header, dataView)
   }
 }
 
 class Audio extends Packet {
   constructor(header, dataView) {
-    super(dataView)
+    super(header, dataView)
   }
 }
 
 class Null extends Packet {
   constructor(header, dataView) {
-    super(dataView)
+    super(header, dataView)
   }
 }
 
+/// FIXME: Use this.
 const isBigEndianSystem = () => {
   let buffer  = new ArrayBuffer(2)
   let array   = new Uint8Array(buffer)
@@ -110,4 +158,4 @@ const isBigEndianSystem = () => {
   throw new Error("Something wrong with system memory.  Can't determine endianness")
 }
 
-export default Packet
+export { Packet, TransportStreamParser }
