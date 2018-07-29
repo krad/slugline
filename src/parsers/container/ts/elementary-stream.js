@@ -1,7 +1,9 @@
+import { SPS, PPS, AUD } from './packet'
+
 class ElementaryStream {
 
   static parse(transportStream, streamType) {
-    let elementaryStream = new ElementaryStream(streamType)
+    let es    = new ElementaryStream(streamType)
 
     const pmt   = transportStream.packets.filter(p => p.constructor.name === 'PMT')[0]
     const track = pmt.tracks.filter(t => t.streamType === streamType)[0]
@@ -10,42 +12,35 @@ class ElementaryStream {
     if (!track) { throw 'Track for stream type not found' }
 
     const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
+    let packetIdx       = 0
+    let nalu            = []
+    let gotFirst        = false
+    while (packetIdx < streamPackets.length) {
+      let packet = streamPackets[packetIdx]
+      let data   = packet.data
+      let cursor = 0
 
-    let prevNalu
-    let prevPacket
-    streamPackets.forEach(packet => {
-      let data = packet.data
-      for (var i = 0; i < data.byteLength; i++) {
-        if (i < data.byteLength - 4) {
-          if (data.getUint8(i) === 0x00) {
-            if (data.getUint8(i+1) === 0x00) {
-              if (data.getUint8(i+2) === 0x00) {
-                if (data.getUint8(i+3) === 0x01) {
-
-                  if (prevNalu) {
-                    if (prevNalu.ContinuityCounter != packet.header.ContinuityCounter) {
-                      console.log('Last Packet');
-                    } else {
-                      console.log('Current Packet');
-                    }
-                  }
-
-                  let nalu                = {}
-                  nalu.ContinuityCounter  = packet.header.ContinuityCounter
-                  nalu.start              = i+4
-                  nalu.type               = data.getUint8(i+4) & 0x1f
-
-                  prevNalu = nalu
-                }
-              }
-            }
+      while (cursor < data.byteLength) {
+        const found = foundDelimiter(data, cursor)
+        if (found[0]) {
+          if (gotFirst) {
+            es.nalus.push(nalu)
+            nalu = []
+          } else {
+            gotFirst = true
           }
+          cursor += found[1]
+        } else {
+          if (gotFirst) { nalu.push(data.getUint8(cursor)) }
+          cursor += 1
         }
-      }
-      prevPacket = packet
-    })
 
-    return elementaryStream
+      }
+
+      packetIdx += 1
+    }
+
+    return es
   }
 
   constructor(streamType) {
@@ -55,5 +50,18 @@ class ElementaryStream {
 
 }
 
+const foundDelimiter = (data, cursor) => {
+  if (cursor < data.byteLength - 4) {
+    if (data.getUint8(cursor) === 0x00) {
+      if (data.getUint8(cursor+1) === 0x00) {
+        if (data.getUint8(cursor+2) === 0x01) { return [true, 3] }
+        if (data.getUint8(cursor+2) === 0x00) {
+          if (data.getUint8(cursor+3) === 0x01) { return [true, 4] }
+        }
+      }
+    }
+  }
+  return [false, 1]
+}
 
 export default ElementaryStream
