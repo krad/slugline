@@ -61,7 +61,6 @@ const parseNALUranges = (dataView) => {
 
   if (nalus.length > 1) {
     let lastNalu = nalus[nalus.length-1]
-    console.log(lastNalu);
   }
 
   return nalus

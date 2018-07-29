@@ -1,10 +1,11 @@
 const test  = require('tape')
 const fs    = require('fs')
 import TransportStream from '../src/parsers/container/ts/transport-stream'
+import ElementaryStream from '../src/parsers/container/ts/elementary-stream'
 
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
 
-test.only('we can parse ts files', t=> {
+test('we can parse ts files', t=> {
 
   let byteArray = new Uint8Array(ts)
   const stream = TransportStream.parse(byteArray)
@@ -41,9 +42,18 @@ test.only('we can parse ts files', t=> {
   const mediaPacket = stream.packets[2]
   t.equals('MediaPacket', mediaPacket.constructor.name, 'got a media packet')
   t.ok(mediaPacket.streamType, 'stream type was present')
-  mediaPacket.parse()
 
-  console.log(mediaPacket.nalus);
+  t.end()
+})
+
+test.only('building an elementary stream out of a bunch of packets', t=> {
+
+  let byteArray = new Uint8Array(ts)
+  const stream = TransportStream.parse(byteArray)
+  t.equals(stream.packets.length, 1551, 'got correct amount of packets')
+
+  let elementaryStream = ElementaryStream.parse(stream, 27)
+  console.log(elementaryStream);
 
 
   t.end()

@@ -12,7 +12,7 @@ class PacketHeader {
     next                        = this.data.getUint8(3)
     this.TSC                    = next & 0xc0
     this.AdaptationFieldControl = next & 0x30
-    this.CountinuityCounter     = next & 0xf
+    this.ContinuityCounter      = next & 0xf
     this.length                 = this.data.byteLength
   }
 }
