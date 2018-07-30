@@ -96,7 +96,6 @@ class Fetcher {
       }
 
       this.fetchCount += 1
-      console.log(params);
 
       if (params.url.substring(0, 5) === 'https') {
         return simpleGet(params, https)
@@ -231,7 +230,14 @@ const simpleGet = (params, proto) => {
           onProgress({size: contentLength, downloaded: data.length})
         }).on('end', () => {
           clearTimeout(timer)
-          resolve(data)
+
+          if (encoding == 'binary') {
+            // Convert string to a Uint8Array
+            resolve(Uint8Array.from(data, (x) => x.charCodeAt(0)))
+          } else {
+            resolve(data)
+          }
+
         })
       }
     })
