@@ -2,6 +2,7 @@ const test  = require('tape')
 const fs    = require('fs')
 import TransportStream from '../src/parsers/container/ts/transport-stream'
 import ElementaryStream from '../src/parsers/container/ts/elementary-stream'
+import base64ArrayBuffer from '../src/parsers/container/ts/base64'
 
 // const ts = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
@@ -48,22 +49,20 @@ test('we can parse ts files', t=> {
   t.end()
 })
 
-test.only('building an elementary stream out of a bunch of packets', t=> {
+test('building an elementary stream out of a bunch of packets', t=> {
 
   let byteArray = new Uint8Array(ts)
   const stream = TransportStream.parse(byteArray)
-  // t.equals(stream.packets.length, 1551, 'got correct amount of packets')
+  t.equals(stream.packets.length, 1551, 'got correct amount of packets')
 
   let elementaryStream = ElementaryStream.parse(stream, 27)
-  console.log(elementaryStream.nalus[0][0] & 0x1f, elementaryStream.nalus[0].length);
-  console.log(elementaryStream.nalus[1][0] & 0x1f, elementaryStream.nalus[1].length);
-  console.log(elementaryStream.nalus[2][0] & 0x1f, elementaryStream.nalus[2].length);
-  console.log(elementaryStream.nalus[3][0] & 0x1f, elementaryStream.nalus[3].length);
-  console.log(elementaryStream.nalus[4][0] & 0x1f, elementaryStream.nalus[4].length);
-  console.log(elementaryStream.nalus[5][0] & 0x1f, elementaryStream.nalus[5].length);
-  console.log(elementaryStream.nalus[6][0] & 0x1f, elementaryStream.nalus[6].length);
-  console.log(elementaryStream.nalus[7][0] & 0x1f, elementaryStream.nalus[7].length);
+  t.ok(elementaryStream, 'got an elementary stream back')
+  t.equals(elementaryStream.nalus.length, 1499, 'got correct amount of video nalus')
 
+  t.equals(elementaryStream.nalus[2][0] & 0x1f, 7, 'got a SPS nalu')
+  t.equals(elementaryStream.nalus[3][0] & 0x1f, 8, 'got a PPS nalu')
+  t.equals(elementaryStream.nalus[4][0] & 0x1f, 6, 'got a SEI nalu')
+  t.equals(elementaryStream.nalus[7][0] & 0x1f, 5, 'got a IDR nalu')
 
   t.end()
 })

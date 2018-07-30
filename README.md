@@ -18,9 +18,9 @@ It can be used in node.js and in the browser.
   * ✅ Parsing Media Segments
     * ✅ Fragmented MP4
       * ✅ H264
-      * ❎ HEVC
     * ❎ Transport Stream
     * ❎ FLV
+  * ❎ Transmuxing transport streams to fragmented mp4
   * ✅ Periodic fetching of event & live playlists
   * ❎ Range Requests
 

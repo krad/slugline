@@ -26,7 +26,7 @@ const testParse = (t) => {
   segment.fetch()
   .then(segment => {
     t.ok(segment, 'we fetched the segment')
-    console.log(segment);
+    // console.log(segment);
   }).catch(err => {
     t.fail('Segment fetch failed:' + err)
   })
