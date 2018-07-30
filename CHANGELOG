@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Examples of how to use slugline included in README
 - Examples of projects that use slugline
 
-## [1.0.0] - 2018-01-21
+## [1.0.0] - 2018-07-21
 ### Added
 - Fetching Playlists
 - Fetching Media segments
