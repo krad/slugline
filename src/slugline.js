@@ -1,5 +1,5 @@
 import { Playlist } from './playlist'
-import { PlaylistFetcher } from './fetcher'
+import { PlaylistFetcher } from './fetchers/fetcher'
 
 class Slugline {
   constructor () {
