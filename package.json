@@ -2,14 +2,15 @@
   "name": "@krad/slugline",
   "version": "1.1.0",
   "description": "A library for parsing HLS playlists",
-  "main": "src/slugline.js",
+  "main": "distribution/slugline.js",
   "scripts": {
     "test": "babel-tape-runner tests/**/*.js | tap-spec",
     "autotest": "tape-watch -c -r babel-register tests/**/*-test.js | tap-spec",
     "docs": "jsdoc src/* -d docs",
     "cov": "NODE_ENV=test ./node_modules/nyc/bin/nyc.js npm test",
     "covhtml": "NODE_ENV=test ./node_modules/nyc/bin/nyc.js report --reporter=html --reporter=lcov",
-    "lint": "eslint src/*"
+    "lint": "eslint src/*",
+    "build": "babel src --presets babel-preset-es2015 --out-dir distribution"
   },
   "keywords": [
     "hls",
