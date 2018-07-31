@@ -7,13 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## [Unreleased]
 - Transport Stream transmuxing to fragmented mp4
 - Parallel sequential fetching
-- Release with vanilla javascript support
 - UMD packaging
 - Range Requests
 - AES128 support
 - Published documentation accessible via the web
 - Examples of how to use slugline included in README
 - Examples of projects that use slugline
+
+## [1.1.1] - 2018-07-31
+- Release with vanilla javascript support
 
 ## [1.1.0] - 2018-07-31
 - Transport Stream Parsing
