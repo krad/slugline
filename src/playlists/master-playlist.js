@@ -19,6 +19,7 @@ import { configureMasterPlaylist } from '../parsers/playlist/playlist-parser'
 
  */
 class MasterPlaylist extends Playlist {
+  
   constructor (playlistStruct, body) {
     super(playlistStruct, body)
     this.variants = []

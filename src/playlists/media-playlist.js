@@ -183,6 +183,27 @@ class MediaPlaylist extends Playlist {
     })
   }
 
+  getCodecsInformation() {
+    return new Promise((resolve, reject) => {
+      if (!this.segments) { reject('No segments in playlist') }
+      if (this.segments.length <= 0) { reject('No segments in playlist') }
+
+      const initSegments = this.segments.filter(s => s.constructor.name === 'MediaInitializationSegment')
+      if (initSegments.length > 0) {
+        initSegments[0].fetch().then(codecs => {
+          this.codecs = codecs.codecs
+          this.codecsString = codecs.codecsString
+          resolve(codecs)
+        }).catch(err => {
+          reject(err)
+        })
+        return
+      } else {
+        reject('Playlist did not have an init segment.  Possible transport stream')
+      }
+    })
+  }
+
   /**
    * updateSegments - Used by refresh to only replace entries in the segment array that have changed.
    * This prevents data from being blown away whenever we're interacting with live or event placelists

@@ -1,4 +1,5 @@
 import Segment from './segment'
+import MPEGParser from '../parsers/container/mpeg-parser'
 
 /**
  * A MediaInitializationSegment represents a media asset that contains information
@@ -12,6 +13,14 @@ class MediaInitializationSegment extends Segment {
     if (info['BYTERANGE']) {
       this.byteRange = info['BYTERANGE']
     }
+  }
+
+  fetch() {
+    return super.fetch().then(segment => {
+      return MPEGParser.parse(segment)
+    }).then(parsedSegment => {
+      return {codecs: parsedSegment.codecs, codecsString: parsedSegment.codecsString}
+    })
   }
 }
 
