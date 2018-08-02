@@ -1,1 +1,6 @@
 src
+*.mp4
+*.m3u8
+*.ts
+.nyc_output/
+coverage/
