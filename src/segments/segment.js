@@ -13,7 +13,7 @@ class Segment {
   }
 
   fetch (onProgress) {
-    return new Promise((resolve, reject) => {
+    this.fetchPromise = new Promise((resolve, reject) => {
 
       const progressWrapper = (progress) => {
         this.size       = progress.size
@@ -36,6 +36,7 @@ class Segment {
           reject(err)
         })
     })
+    return this.fetchPromise
   }
 
 }
