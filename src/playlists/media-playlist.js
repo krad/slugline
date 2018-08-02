@@ -199,10 +199,11 @@ class MediaPlaylist extends Playlist {
 
       const initSegments = this.segments.filter(s => s.constructor.name === 'MediaInitializationSegment')
       if (initSegments.length > 0) {
-        initSegments[0].fetch().then(codecs => {
-          this.codecs = codecs.codecs
-          this.codecsString = codecs.codecsString
-          resolve(codecs.codecs)
+        const initSegment = initSegments[0]
+        initSegment.fetch().then(s => {
+          this.codecs       = initSegment.codecs.codecs
+          this.codecsString = initSegment.codecs.codecsString
+          resolve(initSegment.codecs.codecs)
         }).catch(err => {
           reject(err)
         })

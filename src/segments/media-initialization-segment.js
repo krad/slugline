@@ -16,10 +16,13 @@ class MediaInitializationSegment extends Segment {
   }
 
   fetch(onProgress) {
+    let segmentData
     return super.fetch(onProgress).then(segment => {
+      segmentData = segment
       return MPEGParser.parse(segment)
     }).then(parsedSegment => {
-      return {codecs: parsedSegment.codecs, codecsString: parsedSegment.codecsString}
+      this.codecs = {codecs: parsedSegment.codecs, codecsString: parsedSegment.codecsString}
+      return segmentData
     })
   }
 }
