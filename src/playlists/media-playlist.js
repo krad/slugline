@@ -183,8 +183,17 @@ class MediaPlaylist extends Playlist {
     })
   }
 
+  /**
+   * getCodecsInformation - If no codec information is attached to the playlist this will
+   * either download the first segment and attempt to determine what it is.
+   * In playlists that contain fragmented mp4's this is an init segment which is typically about 1.4k in size
+   * In playlists that contain transport streams, this is usually a full media segment
+   *
+   * @return {Promise<Object>} Returns a promise the resolves to an object containing codec information
+   */
   getCodecsInformation() {
     return new Promise((resolve, reject) => {
+      if (this.codecs) { resolve(this.codecs) }
       if (!this.segments) { reject('No segments in playlist') }
       if (this.segments.length <= 0) { reject('No segments in playlist') }
 
@@ -193,7 +202,7 @@ class MediaPlaylist extends Playlist {
         initSegments[0].fetch().then(codecs => {
           this.codecs = codecs.codecs
           this.codecsString = codecs.codecsString
-          resolve(codecs)
+          resolve(codecs.codecs)
         }).catch(err => {
           reject(err)
         })

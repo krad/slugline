@@ -162,4 +162,19 @@ const AtomParser = {
   "esds": esds,
 }
 
+
+/**
+ * Array.prototype.flatMap - flatMap over arrays
+ *
+ * @param  {Function} lambda Map function
+ * @return {Array}        Mapped array flattened with undefined/null removed
+ */
+Array.prototype.flatMap = function(lambda) {
+  return Array.prototype.concat
+  .apply([], this.map(lambda))
+  .filter(function(x){
+    if (x) { return x }
+  })
+}
+
 export default AtomParser

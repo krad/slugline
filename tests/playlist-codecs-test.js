@@ -12,13 +12,14 @@ const vodURL   = '/basic/krad.tv/tractor/vod.m3u8'
 
 test('playlist codec identification', t=> {
   t.test(setupServer, 'playlist codec identification - setup fixture server')
-  t.test(identifyByFetchTest, 'identify codecs for a playlist by fetching (fragmented mp4)')
+  t.test(identifyByFetchTestFMP4, 'identify codecs for a playlist by fetching (fragmented mp4)')
+  t.test(identifyByFetchTestTS, 'identify codecs for a playlist by fetching (transport stream)')
   t.test(tearDownServer, 'playlist codec identification - teardown fixture server')
   t.end()
 })
 
-const identifyByFetchTest = (t) => {
-  t.plan(7)
+const identifyByFetchTestFMP4 = (t) => {
+  t.plan(6)
   t.timeoutAfter(3000)
 
   const url = hostAndPort() + vodURL
@@ -29,10 +30,9 @@ const identifyByFetchTest = (t) => {
 
     playlist.getCodecsInformation().then(codecInfo => {
       t.ok(codecInfo, 'got codec info back')
-      t.ok(codecInfo.codecs, 'had a codec info key')
-      t.ok(codecInfo.codecsString, 'had a codec info string')
-      t.deepEquals(codecInfo.codecs, ['avc1.42001E', 'mp4a.40.2'], 'audio and video tracks correct')
-      t.equals(codecInfo.codecsString, 'video/mp4; codecs="avc1.42001E,mp4a.40.2"', 'codecs string was correct')
+      t.deepEquals(codecInfo, ['avc1.42001E', 'mp4a.40.2'], 'audio and video tracks correct')
+      t.deepEquals(playlist.codecs, ['avc1.42001E', 'mp4a.40.2'], 'audio and video tracks correct (on playlist)')
+      t.equals(playlist.codecsString, 'video/mp4; codecs="avc1.42001E,mp4a.40.2"', 'codecs string was correct (on playlist)')
     }).catch(err => {
       t.fail('Could not get codec information: ' + err)
     })
@@ -40,4 +40,8 @@ const identifyByFetchTest = (t) => {
   }).catch(err => {
     t.fail('Could not fetch playlist' + err)
   })
+}
+
+const identifyByFetchTestTS = (t) => {
+  t.end()
 }
