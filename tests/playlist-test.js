@@ -62,12 +62,13 @@ test('attributes from an advanced Master Playlist', t=> {
   t.equals(30, playlist.variants.length,                'got correct amount of variants')
 
   const variant = playlist.variants[0]
-  t.equals('v5/prog_index.m3u8', variant.uri,   'uri was correct')
-  t.equals('960x540', variant.resolution,       'resolution was correct')
-  t.equals(60.0, variant.frameRate,             'frameRate was correct')
-  t.equals('cc1', variant.closedCaptionsIdent,  'closedCaptionsIdent was correct')
-  t.equals('aud1', variant.audioIdent,          'audioIdent was correct')
-  t.equals('sub1', variant.subtitlesIdent,      'subtitlesIdent was correct')
+  t.equals('v5/prog_index.m3u8', variant.uri,       'uri was correct')
+  t.equals('960x540', variant.resolution,           'resolution was correct')
+  t.equals(60.0, variant.frameRate,                 'frameRate was correct')
+  t.equals('cc1', variant.closedCaptionsIdent,      'closedCaptionsIdent was correct')
+  t.equals('aud1', variant.audioIdent,              'audioIdent was correct')
+  t.equals('sub1', variant.subtitlesIdent,          'subtitlesIdent was correct')
+  t.equals('avc1.640020,mp4a.40.2', variant.codecs, 'codecs were set')
 
   const iframeVariant = playlist.variants[29]
   t.equals(true, iframeVariant.isIFrame,              'correctly identified as iFrame playlist')
