@@ -14,38 +14,4 @@ class MediaPacket extends Packet {
 
 }
 
-
-class SPS {
-  constructor(dataView) {
-    let startIdx = dataView.byteOffset
-    console.log(dataView.getUint8(startIdx) & 0x1f);
-  }
-}
-
-class PPS {
-  constructor(dataView) {
-    // let startIdx = dataView.byteOffset
-    // console.log(dataView.getUint8(startIdx) & 0x1f);
-  }
-}
-
-class AUD {
-  constructor(dataView) {
-
-  }
-}
-
-
-/// FIXME: Use this.
-const isBigEndianSystem = () => {
-  let buffer  = new ArrayBuffer(2)
-  let array   = new Uint8Array(buffer)
-  let array16 = new Uint16Array(buffer)
-  array[0] = 0xAA
-  array[1] = 0xBB
-  if (array16[0] === 0xBBAA) { return false }
-  if (array16[1] === 0xAABB) { return true }
-  throw new Error("Something wrong with system memory.  Can't determine endianness")
-}
-
-export { Packet, MediaPacket, SPS, PPS, AUD }
+export { Packet, MediaPacket }

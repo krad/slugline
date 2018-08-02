@@ -1,5 +1,3 @@
-import { SPS, PPS, AUD } from './packet'
-
 class ElementaryStream {
 
   static parse(transportStream, streamType) {
