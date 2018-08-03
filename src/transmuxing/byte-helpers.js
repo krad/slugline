@@ -33,6 +33,18 @@ export const u32 = (lng) => {
   return arr.reverse()
 }
 
+export const u16 = (int) => {
+  return new Uint8Array(2)
+}
+
+export const s16 = (int) => {
+  return new Uint8Array(2)
+}
+
+export const u64 = (int) => {
+  return new Uint8Array(8)
+}
+
 /**
  * Convert a string to a Uint8Array
  */
