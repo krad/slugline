@@ -22,7 +22,7 @@ class ElementaryStream {
         const found = foundDelimiter(data, cursor)
         if (found[0]) {
           if (gotFirst) {
-            es.nalus.push(nalu)
+            es.chunks.push(nalu)
             nalu = []
           } else {
             gotFirst = true
@@ -43,13 +43,13 @@ class ElementaryStream {
 
   constructor(streamType) {
     this.streamType = streamType
-    this.nalus      = []
+    this.chunks      = []
   }
 
   get codec() {
     // Video
-    if (this.streamType == 27) {
-      const videoParams = this.nalus.filter(nalu => {
+    if (this.streamType === 27) {
+      const videoParams = this.chunks.filter(nalu => {
         const naluType = nalu[0] & 0x1f
         if (naluType === 7) { return nalu }
       })
@@ -68,6 +68,23 @@ class ElementaryStream {
       }).join('');
 
       return ['avc1', params].join('.')
+    }
+
+    if (this.streamType === 15) {
+      // console.log('hiiii');
+      // var chunks = []
+      // var currentChunk
+      // for (var i = 4; i < payload.length; i++) {
+      //   if (payload[i+1] == 0x80) {
+      //     if (payload[i+2] == 0x80) {
+      //       if (payload[i+3] == 0x80) {
+      //         if (currentChunk) { chunks.push(currentChunk) }
+      //         currentChunk = []
+      //       }
+      //     }
+      //   }
+      //   currentChunk.push(payload[i])
+      // }
     }
 
     return undefined
