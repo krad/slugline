@@ -10,7 +10,7 @@ const ftyp = (atom, payload) => {
   atom.majorBrand       = String.fromCharCode.apply(null, majorBrandBytes)
   atom.minorVersion     = view.getUint32(0)
   atom.compatibleBrands = []
-
+  
   let i = 8
   while (i < payload.length) {
     let brandSlice = payload.slice(i, i+4)
