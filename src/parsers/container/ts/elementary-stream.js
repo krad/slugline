@@ -46,6 +46,33 @@ class ElementaryStream {
     this.nalus      = []
   }
 
+  get codec() {
+    // Video
+    if (this.streamType == 27) {
+      const videoParams = this.nalus.filter(nalu => {
+        const naluType = nalu[0] & 0x1f
+        if (naluType === 7) { return nalu }
+      })
+
+      if (videoParams.length <= 0) { return undefined }
+
+      const arrayBuffer           = Uint8Array.from(videoParams[0])
+      const view                  = new DataView(arrayBuffer.buffer)
+      const version               = view.getUint8(0)
+      const profile               = view.getUint8(1)
+      const profileCompatibility  = view.getUint8(2)
+      const levelIndication       = view.getUint8(3)
+
+      const params = [profile, profileCompatibility, levelIndication].map(function(i) {
+        return ('0' + i.toString(16).toUpperCase()).slice(-2)
+      }).join('');
+
+      return ['avc1', params].join('.')
+    }
+
+    return undefined
+  }
+
 }
 
 const foundDelimiter = (data, cursor) => {

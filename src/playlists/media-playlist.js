@@ -1,5 +1,7 @@
 import Playlist from './base-playlist'
 import { configureMediaPlaylist } from '../parsers/playlist/playlist-parser'
+import TransportStream from '../parsers/container/ts/transport-stream'
+import ElementaryStream from '../parsers/container/ts/elementary-stream'
 
 /**
  * A Media Playlist contains a list of Media Segments, which when played
@@ -201,6 +203,7 @@ class MediaPlaylist extends Playlist {
       if (initSegments.length > 0) {
         const initSegment = initSegments[0]
         initSegment.fetch().then(s => {
+          this.segmentsType = 'fmp4'
           this.codecs       = initSegment.codecs.codecs
           this.codecsString = initSegment.codecs.codecsString
           resolve(initSegment.codecs.codecs)
@@ -208,8 +211,26 @@ class MediaPlaylist extends Playlist {
           reject(err)
         })
         return
+
       } else {
-        reject('Playlist did not have an init segment.  Possible transport stream')
+
+        if (this.segments.count <= 0) { reject('Playlist had no segments.') }
+        const firstSegment = this.segments[0]
+
+        firstSegment.fetch().then(s => {
+          this.segmentsType = 'ts'
+
+          const ts            = TransportStream.parse(s)
+          const pmt           = ts.packets.filter(p => p.constructor.name == 'PMT')[0]
+          const trackPackets = pmt.tracks.map(t => {
+            return ElementaryStream.parse(ts, t.streamType)
+          })
+
+          resolve(trackPackets.map(tp => tp.codec))
+        }).catch(err => {
+          reject(err)
+        })
+
       }
     })
   }
