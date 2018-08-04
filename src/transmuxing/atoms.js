@@ -5,14 +5,20 @@ export const ftyp = () => {
     bytes.strToUint8('ftyp'),
     bytes.strToUint8('mp42'),
     bytes.u32(1), // minor version
-    ['mp41', 'mp42', 'isom', 'hlsf'].map(b => bytes.strToUint8(b))
+
+    bytes.strToUint8('mp41'),
+    bytes.strToUint8('mp42'),
+    bytes.strToUint8('isom'),
+    bytes.strToUint8('hlsf')
   ]
 }
 
 export const moov = (config) => {
   return [
     bytes.strToUint8('moov'),
-    mvhd(config)
+    mvhd(config),             // movie header atom
+    trak(config),             // tracks
+    mvex(config),             // mvex atom
   ]
 }
 
@@ -41,9 +47,9 @@ export const mvhd = (config) => {
 
 export const trak = (config) => {
   return [
-    bytes.strToUint8('trak')
-    [tkhd(config)],
-    [mdia(config)],
+    bytes.strToUint8('trak'),
+    tkhd(config),
+    mdia(config),
   ]
 }
 
@@ -57,7 +63,7 @@ export const tkhd = (config) => {
     bytes.u32(2),               // track id
     bytes.u32(0),               // reserved
     bytes.u32(0),               // duration
-    bytes.u64(0),               // reserved
+    // bytes.u64(0),               // reserved
     bytes.u16(0),               // layer
     bytes.u16(0),               // alternate group
     bytes.u16(0),               // volume
@@ -70,9 +76,10 @@ export const tkhd = (config) => {
 
 export const mdia = (config) => {
   return [
-    bytes.strToUint8('mdia')
-    [mdhd(config)],
-    [hdlr(config)],
+    bytes.strToUint8('mdia'),
+    mdhd(config),
+    hdlr(config),
+    minf(config),
   ]
 }
 
@@ -107,10 +114,10 @@ export const hdlr = (config) => {
 export const minf = (config) => {
   return [
     bytes.strToUint8('minf'),
-    [vmhd(config)], // video media information atom
-    [smhd(config)], // sound media information atom
-    [dinf(config)], // data information atom
-    [stbl(config)], // sample table atom
+    vmhd(config), // video media information atom
+    smhd(config), // sound media information atom
+    dinf(config), // data information atom
+    stbl(config), // sample table atom
   ]
 }
 
@@ -120,7 +127,9 @@ export const vmhd = (config) => {
     new Uint8Array(1),                          // version
     new Uint8Array([0, 0, 1]),                  // flags
     bytes.u16(0),                               // graphics mode
-    [bytes.u16(0), bytes.u16(0), bytes.u16(0)]  // op color
+    bytes.u16(0),                               // op color
+    bytes.u16(0),                               // op color
+    bytes.u16(0),                               // op color
   ]
 }
 
@@ -137,7 +146,7 @@ export const smhd = (config) => {
 export const dinf = (config) => {
   return [
     bytes.strToUint8('dinf'),
-    [dref(config)],
+    dref(config),
   ]
 }
 
@@ -147,7 +156,7 @@ export const dref = (config) => {
     new Uint8Array(1),         // version
     new Uint8Array([0, 0, 0]), // flags
     bytes.u32(1),              // number of entries
-    [dreference(config)]
+    dreference(config)
   ]
 }
 
@@ -162,11 +171,11 @@ export const dreference = (config) => {
 export const stbl = (config) => {
   return [
     bytes.strToUint8('stbl'),
-    [stsd(config)],             // sample description atom
-    [stts(config)],             // time to sample atom
-    [stsc(config)],             // sample to chunk atom
-    [stsz(config)],             // sample size atom
-    [stco(config)],             // chunk offset atom
+    stsd(config),             // sample description atom
+    stts(config),             // time to sample atom
+    stsc(config),             // sample to chunk atom
+    stsz(config),             // sample size atom
+    stco(config),             // chunk offset atom
   ]
 }
 
@@ -176,8 +185,8 @@ export const stsd = (config) => {
     new Uint8Array(1),         // version
     new Uint8Array([0, 0, 0]), // flags
     bytes.u32(1),              // number of entries
-    [avc1(config)],
-    [mp4a(config)],
+    avc1(config),
+    mp4a(config),
   ]
 }
 
@@ -210,9 +219,9 @@ export const avc1 = (config) => {
     new Uint8Array(31),        // padding
     bytes.s16(24),             // depth
     bytes.s16(-1),             // color table id
-    [avcC(config)],
-    [colr(config)],
-    [pasp(config)],
+    avcC(config),
+    colr(config),
+    pasp(config),
   ]
 }
 
@@ -224,7 +233,7 @@ export const avcC = (config) => {
     new Uint8Array([0]),                  // profile compatibility
     new Uint8Array([30]),                 // level indication
     new Uint8Array([0b11111111]),         // nalu size
-    new UInt8Array([0b11100001]),         // sps count
+    new Uint8Array([0b11100001]),         // sps count
     bytes.u16(27),                        // sps length
     new Uint8Array([0x27, 0x4d, 0x00, 0x1f, 0x89, 0x8b,
     0x60, 0x28, 0x02, 0xdd, 0x80, 0xb5,
@@ -242,7 +251,7 @@ export const colr = (config) => {
     bytes.strToUint8('colr'),
     bytes.strToUint8('nclx'),     // color parameter
     bytes.u16(1),                 // primaries index
-    btyes.u16(1),                 // transfer function index
+    bytes.u16(1),                 // transfer function index
     bytes.u16(1),                 // matrix index
     new Uint8Array(1),            // unknown
   ]
@@ -270,13 +279,13 @@ export const mp4a = (config) => {
     bytes.strToUint8('mp4a'),
     new Uint8Array(6),        // reserved
     bytes.u16(1),             // data ref index
-    bytes.u64(0),             // reserved
+    // bytes.u64(0),             // reserved
     bytes.u16(2),             // channels
     bytes.u16(16),            // sample size
     bytes.u16(0),             // predefined
     bytes.u16(0),             // reserved
     bytes.u32(44100),         // sample rate
-    [esds(config)]
+    esds(config)
   ]
 }
 
@@ -300,7 +309,7 @@ export const esds = (config) => {
     bytes.u32(0),                             // avg bit rate
     new Uint8Array([0x05]),                   // decoder specific info tag
     new Uint8Array([0x80, 0x80, 0x80]),       // 0x80 = start & 0xfe = end
-    new UInt8Array([0x02]),                   // desc length
+    new Uint8Array([0x02]),                   // desc length
     new Uint8Array([0x12, 0x10]),             // audio specific config
     new Uint8Array([0x06, 0x80, 0x80, 0x80]), // es ext desc tag
     new Uint8Array([0x01]),                   // sl config len
@@ -322,8 +331,8 @@ export const stsz = (config) => {
     bytes.strToUint8('stsz'),
     new Uint8Array(1),         // version
     new Uint8Array(3),         // flags
-    s.u32(0),                  // sample size
-    s.u32(0),                  // number of entries
+    bytes.u32(0),                  // sample size
+    bytes.u32(0),                  // number of entries
   ]
 }
 
@@ -332,14 +341,14 @@ export const stco = (config) => {
     bytes.strToUint8('stco'),
     new Uint8Array(1),         // version
     new Uint8Array(3),         // flags
-    s.u32(0),                  // number of entries
+    bytes.u32(0),                  // number of entries
   ]
 }
 
 export const mvex = (config) => {
   return [
     bytes.strToUint8('mvex'),
-    [trex(config)]              // track ex atom
+    trex(config)              // track ex atom
   ]
 }
 
@@ -370,26 +379,14 @@ export const prependSize = (atom, padding) => {
 }
 
 export const prepare = (atom) => {
-  let result = []
-  const reversed = atom.reverse()
-  for (var i = 0; i < reversed.length; i++) {
-    const child = reversed[i]
+  for (var i = 0; i < atom.length; i++) {
+    const child = atom[i]
     if (child.constructor.name === 'Array') {
-      result.unshift(prependSize(child))
-    }
-
-    if (child.constructor.name === 'Uint8Array') {
-      const prevChild = result[i-1]
-      if (prevChild) {
-        const sizeView = new DataView(prevChild[0].buffer)
-        result.unshift(prependSize([child], sizeView.getUint32(0)))
-      } else {
-        result.unshift(prependSize([child]))
-      }
+      atom[i] = prepare(child)
     }
   }
-  atom.reverse() // reverse mutates :(
-  return result
+
+  return prependSize(atom)
 }
 
 export const build = (atom) => {

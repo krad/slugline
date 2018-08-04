@@ -33,7 +33,7 @@ const unsignedBytes = (input, dstConstructor) => {
  * Take a 64bit number and return an unsigned 8 bit array
  */
 export const u64 = (input) => {
-  return unsignedBytes(input, UInt64Array)
+  return unsignedBytes(input, Uint64Array)
 }
 
 /**

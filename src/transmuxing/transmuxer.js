@@ -1,4 +1,5 @@
 import * as atoms from './atoms'
+import * as bytes from './byte-helpers'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
 
 class Transmuxer {
@@ -10,19 +11,19 @@ class Transmuxer {
       return ElementaryStream.parse(this.ts, t.streamType)
     })
 
-    console.log(trackPackets.length);
-    console.log(trackPackets[0].codec);
-    console.log(trackPackets[1].codec);
-
+    // console.log(trackPackets.length);
+    // console.log(trackPackets[0].codec);
+    // console.log(trackPackets[1].codec);
     // console.log(this.ts);
   }
 
   buildInitializationSegment() {
+    let config = {}
     let result = []
-    result.push(atoms.build(atoms.ftyp()))
-    // result.push(atoms.build(atoms.moov()))
-
-    return result.flatMap(a => a)
+    result.push(atoms.ftyp())
+    result.push(atoms.moov(config))
+    result = result.map(a => atoms.build(a))
+    return bytes.concatenate(Uint8Array, ...result)
   }
 }
 
