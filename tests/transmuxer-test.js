@@ -1,3 +1,5 @@
+import * as bytes from '../src/transmuxing/byte-helpers'
+import * as atoms from '../src/transmuxing/atoms'
 import { TransportStream } from '../src/slugline'
 import MPEGParser from '../src/parsers/container/mpeg-parser'
 import Transmuxer from '../src/transmuxing/transmuxer'
@@ -9,7 +11,57 @@ const asset = fs.readFileSync(tsURL)
 
 const out = '/tmp/ftyp.mp4'
 
-test.only('that we can create an init segment from a ts file', t=> {
+test('that are byte helpers do what they say they do', t=> {
+
+  const a = bytes.u32(1)
+  const b = bytes.u16(1)
+  const c = bytes.s16(1)
+  const d = bytes.s16(-1)
+
+  t.deepEqual({0: 0, 1: 0, 2: 0, 3: 1}, a, 'got the correct bytes for a unsigned 32 bit integer')
+  t.deepEqual({0: 0, 1: 1}, b, 'got the correct bytes for a unsigned 16 bit integer')
+  t.deepEqual({0: 0, 1: 1}, c, 'got correct bytes for a signed 16 bit integer')
+  t.deepEqual({0: 255, 1: 255}, d, 'got correct bytes for a signed 16 bit integer')
+
+  let view = new DataView(d.buffer)
+  t.equals(-1, view.getInt16(0), 'was able to get the correct value back')
+
+  t.end()
+})
+
+test.only('that we can "build" an atom', t=> {
+
+  // Get the default atom
+  const ftyp = atoms.ftyp()
+  t.equals(4, ftyp.length, 'got correct amount of byte sequenes')
+
+  // See if we can flatten the atom
+  const result = atoms.flatten(ftyp)
+  t.equals(7, result.length, 'correctly flattened the atom')
+
+  // Prepend the size of all the bytes in the atom to the head
+  const result2 = atoms.prependSize(ftyp)
+  t.equals(8, result2.length, 'got the correct amount of atoms')
+
+  // Make sure we got the correct size back
+  let view = new DataView(result2[0].buffer)
+  t.equals(32, view.getUint32(0), 'got the correct size of the atom')
+
+  /// Now make sure we can correctly size atoms that contain atoms
+  const mvex    = atoms.mvex()
+  t.equals(2, mvex.length,       'there are 2 entries by default.  mvex label and trex child atom')
+  t.equals(1, mvex[1].length,    'child atom is an array contained in another array')
+  t.equals(8, mvex[1][0].length, 'trex atom has 8 entries (does not include size yet)')
+
+  const result3 = atoms.prepare(mvex)
+  // t.equals(11, result3.length, 'prepended length to top atom and the child atom')
+
+  console.log(result3);
+
+  t.end()
+})
+
+test('that we can create an init segment from a ts file', t=> {
 
   const buffer = Uint8Array.from(asset)
   let ts = TransportStream.parse(buffer)

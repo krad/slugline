@@ -219,22 +219,21 @@ export const avc1 = (config) => {
 export const avcC = (config) => {
   return [
     bytes.strToUint8('avcC'),
-    1,                                    // version
-    0x42,                                 // profile
-    0,                                    // profile compatibility
-    30,                                   // level indication
-    0b11111111,                           // nalu size
-    0b11100001,                           // sps count
+    new Uint8Array([1]),                  // version
+    new Uint8Array([0x42]),               // profile
+    new Uint8Array([0]),                  // profile compatibility
+    new Uint8Array([30]),                 // level indication
+    new Uint8Array([0b11111111]),         // nalu size
+    new UInt8Array([0b11100001]),         // sps count
     bytes.u16(27),                        // sps length
-    [0x27, 0x4d, 0x00, 0x1f, 0x89, 0x8b,
+    new Uint8Array([0x27, 0x4d, 0x00, 0x1f, 0x89, 0x8b,
     0x60, 0x28, 0x02, 0xdd, 0x80, 0xb5,
     0x01, 0x01, 0x01, 0xec, 0x0c, 0x00,
     0x17, 0x70, 0x00, 0x05, 0xdc, 0x17,
-    0xbd, 0xf0, 0x50],                    // sps bytes
-    1,                                    // pps count
-    bytes.u16(4),                         // pps length
-    [0x28, 0xee, 0x1f, 0x20],             // pps bytes
-
+    0xbd, 0xf0, 0x50]),                       // sps bytes
+    new Uint8Array([1]),                      // pps count
+    bytes.u16(4),                             // pps length
+    new Uint8Array([0x28, 0xee, 0x1f, 0x20]), // pps bytes
   ]
 }
 
@@ -284,28 +283,28 @@ export const mp4a = (config) => {
 export const esds = (config) => {
   return [
     bytes.strToUint8('esds'),
-    new Uint8Array(1),                  // version
-    new Uint8Array(3),                  // flags
-    0x03,                               // es desc type tag
-    new Uint8Array([0x80, 0x80, 0x80]), // 0x80 = start & 0xfe = end
-    0x22,
-    bytes.u16(1),                       // es id
-    new Uint8Array(1),                  // stream priority
-    0x04,                               // decoder config desc tag
-    new Uint8Array([0x80, 0x80, 0x80]), // 0x80 = start & 0xfe = end
-    0x14,                               // es ext desc length
-    0x40,                               // object profile indication audio == 64
-    0x15,                               // stream type
-    new Uint8Array([0x00, 0x18, 0x00]), // buffer size DB
-    bytes.u32(0),                       // max bit rate
-    bytes.u32(0),                       // avg bit rate
-    0x05,                               // decoder specific info tag
-    new Uint8Array([0x80, 0x80, 0x80]), // 0x80 = start & 0xfe = end
-    0x02,                               // desc length
-    new Uint8Array([0x12, 0x10]),       // audio specific config
+    new Uint8Array(1),                        // version
+    new Uint8Array(3),                        // flags
+    new Uint8Array([0x03]),                   // es desc type tag
+    new Uint8Array([0x80, 0x80, 0x80]),       // 0x80 = start & 0xfe = end
+    new Uint8Array([0x22]),                   // es desc length
+    bytes.u16(0),                             // es id
+    new Uint8Array(1),                        // stream priority
+    new Uint8Array([0x04]),                   // decoder config desc tag
+    new Uint8Array([0x80, 0x80, 0x80]),       // 0x80 = start & 0xfe = end
+    new Uint8Array([0x14]),                   // es ext desc length
+    new Uint8Array([0x40]),                   // object profile indication audio == 64
+    new Uint8Array([0x15]),                   // stream type
+    new Uint8Array([0x00, 0x18, 0x00]),       // buffer size DB
+    bytes.u32(0),                             // max bit rate
+    bytes.u32(0),                             // avg bit rate
+    new Uint8Array([0x05]),                   // decoder specific info tag
+    new Uint8Array([0x80, 0x80, 0x80]),       // 0x80 = start & 0xfe = end
+    new UInt8Array([0x02]),                   // desc length
+    new Uint8Array([0x12, 0x10]),             // audio specific config
     new Uint8Array([0x06, 0x80, 0x80, 0x80]), // es ext desc tag
-    0x01,                               // sl config len
-    0x02,                               // slmp4const
+    new Uint8Array([0x01]),                   // sl config len
+    new Uint8Array([0x02]),                   // slmp4const
   ]
 }
 
@@ -351,10 +350,26 @@ export const trex = (config) => {
     new Uint8Array(3),         // flags
     bytes.u32(1),              // track id
     bytes.u32(1),              // sample description index
-    btyes.u32(0),              // sample duration
+    bytes.u32(0),              // sample duration
     bytes.u32(0),              // sample size
     bytes.u32(0x02000000)      // sample flags
   ]
+}
+
+export const flatten = (atom) => {
+  return atom.flatMap(a => a)
+}
+
+export const prependSize = (atom) => {
+  const arr   = flatten(atom)
+  const sum   = (acc, curr) => { return acc + curr.length  }
+  const size  = arr.reduce(sum, 0) + 4
+  arr.unshift(bytes.u32(size))
+  return arr
+}
+
+export const prepare = (atom) => {
+  return atom
 }
 
 export const build = (atom) => {

@@ -18,31 +18,40 @@ export const concatenate = (resultConstructor, ...arrays) => {
     return result;
 }
 
-
-
-/**
- * Convert a number to a 32bit number in a Uint8Array
- */
-export const u32 = (lng) => {
-  let arr = new Uint8Array(4)
+const unsignedBytes = (input, dstConstructor) => {
+  let arr = new Uint8Array(dstConstructor.BYTES_PER_ELEMENT)
   for (let i = 0; i < arr.length; i++) {
-    let byte = lng & 0xff
+    let byte = input & 0xff
     arr[i] = byte
-    lng = (lng - byte) / 256
+    input = (input - byte) / 256
   }
   return arr.reverse()
 }
 
-export const u16 = (int) => {
-  return new Uint8Array(2)
+
+/**
+ * Take a 64bit number and return an unsigned 8 bit array
+ */
+export const u64 = (input) => {
+  return unsignedBytes(input, UInt64Array)
 }
 
-export const s16 = (int) => {
-  return new Uint8Array(2)
+/**
+ * Take a 32bit number and return an unsigned 8 bit array
+ */
+export const u32 = (input) => {
+  return unsignedBytes(input, Uint32Array)
 }
 
-export const u64 = (int) => {
-  return new Uint8Array(8)
+/**
+ * Take a 16bit number and return an unsigned 8 bit array
+ */
+export const u16 = (input) => {
+  return unsignedBytes(input, Uint16Array)
+}
+
+export const s16 = (input) => {
+  return unsignedBytes((input >> 0), Int16Array)
 }
 
 /**
