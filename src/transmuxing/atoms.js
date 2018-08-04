@@ -360,23 +360,41 @@ export const flatten = (atom) => {
   return atom.flatMap(a => a)
 }
 
-export const prependSize = (atom) => {
+export const prependSize = (atom, padding) => {
   const arr   = flatten(atom)
   const sum   = (acc, curr) => { return acc + curr.length  }
-  const size  = arr.reduce(sum, 0) + 4
+  let size  = arr.reduce(sum, 0) + 4
+  if (padding) { size += padding }
   arr.unshift(bytes.u32(size))
   return arr
 }
 
 export const prepare = (atom) => {
-  return atom
+  let result = []
+  const reversed = atom.reverse()
+  for (var i = 0; i < reversed.length; i++) {
+    const child = reversed[i]
+    if (child.constructor.name === 'Array') {
+      result.unshift(prependSize(child))
+    }
+
+    if (child.constructor.name === 'Uint8Array') {
+      const prevChild = result[i-1]
+      if (prevChild) {
+        const sizeView = new DataView(prevChild[0].buffer)
+        result.unshift(prependSize([child], sizeView.getUint32(0)))
+      } else {
+        result.unshift(prependSize([child]))
+      }
+    }
+  }
+  atom.reverse() // reverse mutates :(
+  return result
 }
 
 export const build = (atom) => {
-  const arr = atom.flatMap(y => y)
-  const sum = (acc, curr) => { return acc + curr.length  }
-  const size = arr.reduce(sum, 0) + 4
-  arr.unshift(bytes.u32(size))
-  const fullAtom = bytes.concatenate(Uint8Array, ...arr)
+  const preparedAtom  = prepare(atom)
+  const flattened     = flatten(preparedAtom)
+  const fullAtom      = bytes.concatenate(Uint8Array, ...flattened)
   return fullAtom
 }

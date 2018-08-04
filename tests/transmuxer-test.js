@@ -29,7 +29,7 @@ test('that are byte helpers do what they say they do', t=> {
   t.end()
 })
 
-test.only('that we can "build" an atom', t=> {
+test('that we can "build" an atom', t=> {
 
   // Get the default atom
   const ftyp = atoms.ftyp()
@@ -53,10 +53,19 @@ test.only('that we can "build" an atom', t=> {
   t.equals(1, mvex[1].length,    'child atom is an array contained in another array')
   t.equals(8, mvex[1][0].length, 'trex atom has 8 entries (does not include size yet)')
 
-  const result3 = atoms.prepare(mvex)
-  // t.equals(11, result3.length, 'prepended length to top atom and the child atom')
+  const result3  = atoms.prepare(mvex)
+  t.equals(2, result3.length, 'structure has the mvex and trex entries as arrays now')
+  t.equals(2, result3[0].length, 'mvex size and tag entry')
+  t.equals(9, result3[1].length, 'trex atom with size prepended')
 
-  console.log(result3);
+  const result4   = atoms.build(mvex)
+  const lastView  = new DataView(result4.buffer)
+
+  t.ok(lastView, 'able to build a view out of the constructed atom')
+  t.equals(40, lastView.getUint32(0), 'got the correct size of the atom (40 bytes)')
+  t.equals('mvex', bytes.bufferToStr(result4.slice(4, 8)), 'got the mvex atom label')
+  t.equals(32, lastView.getUint32(8), 'got the trex size byte')
+  t.equals('trex', bytes.bufferToStr(result4.slice(12, 16)), 'got the trex atom label')
 
   t.end()
 })
@@ -90,8 +99,6 @@ test('that we can create an init segment from a ts file', t=> {
   initSegment.forEach(s => {
     fs.appendFileSync(out, new Buffer(s))
   })
-
-
 
   t.end()
 })

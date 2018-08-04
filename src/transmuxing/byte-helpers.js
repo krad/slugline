@@ -54,6 +54,10 @@ export const s16 = (input) => {
   return unsignedBytes((input >> 0), Int16Array)
 }
 
+export const bufferToStr = (input) => {
+  return String.fromCharCode.apply(null, input);
+}
+
 /**
  * Convert a string to a Uint8Array
  */

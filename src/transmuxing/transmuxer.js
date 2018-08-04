@@ -20,7 +20,7 @@ class Transmuxer {
   buildInitializationSegment() {
     let result = []
     result.push(atoms.build(atoms.ftyp()))
-    result.push(atoms.build(atoms.moov()))
+    // result.push(atoms.build(atoms.moov()))
 
     return result.flatMap(a => a)
   }
