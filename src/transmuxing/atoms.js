@@ -14,10 +14,13 @@ export const ftyp = () => {
 }
 
 export const moov = (config) => {
+  let result = [bytes.strToUint8('moov')]
+  let tracks = config.map(c => trak(c))
+
   return [
     bytes.strToUint8('moov'),
     mvhd(config),             // movie header atom
-    trak(config),             // tracks
+    ...tracks,             // tracks
     mvex(config),             // mvex atom
   ]
 }
@@ -54,23 +57,32 @@ export const trak = (config) => {
 }
 
 export const tkhd = (config) => {
+  const width   = config.width || 0
+  const height  = config.height || 0
+
+  const matrix = [0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                  0x64, 0x00, 0x00, 0x00]
+
   return [
     bytes.strToUint8('tkhd'),
     new Uint8Array(1),          // version
     new Uint8Array([0, 0, 1]),  // flags
     bytes.u32(3592932068),      // creation time // FIXME
     bytes.u32(3592932068),      // modification time // FIXME
-    bytes.u32(2),               // track id
+    bytes.u32(config.id),       // track id
     bytes.u32(0),               // reserved
     bytes.u32(0),               // duration
-    // bytes.u64(0),               // reserved
+    bytes.u64(0),               // reserved
     bytes.u16(0),               // layer
     bytes.u16(0),               // alternate group
-    bytes.u16(0),               // volume
+    bytes.u16(0x0100),          // volume
     bytes.u16(0),               // reserved
-    new Uint8Array(36),         // matrix struct // FIXME
-    bytes.u32(1980),            // track width
-    bytes.u32(720),             // track height
+    new Uint8Array(matrix),         // matrix struct // FIXME
+    bytes.u32(width),           // track width
+    bytes.u32(height),          // track height
   ]
 }
 
@@ -98,27 +110,46 @@ export const mdhd = (config) => {
 }
 
 export const hdlr = (config) => {
+  let componentName = 'krad - slugline\0'
+  let componentSubtype
+  if (config.type === 27) {
+    componentName     = 'krad - slugline - video\0'
+    componentSubtype  = 'vide'
+  }
+
+  if (config.type === 15) {
+    componentName = 'krad - slugline - audio\0'
+    componentSubtype = 'soun'
+  }
+
   return [
     bytes.strToUint8('hdlr'),
-    new Uint8Array(1),          // version
-    new Uint8Array([0, 0, 0]),  // flags
-    bytes.u32(0),               // componentType
-    bytes.strToUint8('vide'),   // componentSubtype
-    bytes.u32(0),               // component manufacturer
-    bytes.u32(0),               // component flags
-    bytes.u32(0),               // component flag mask
-    bytes.strToUint8('krad.tv - slugline\0') // component name
+    new Uint8Array(1),                  // version
+    new Uint8Array([0, 0, 0]),          // flags
+    bytes.u32(0),                       // componentType
+    bytes.strToUint8(componentSubtype), // componentSubtype
+    bytes.u32(0),                       // component manufacturer
+    bytes.u32(0),                       // component flags
+    bytes.u32(0),                       // component flag mask
+    bytes.strToUint8(componentName)     // component name
   ]
 }
 
 export const minf = (config) => {
-  return [
-    bytes.strToUint8('minf'),
-    vmhd(config), // video media information atom
-    smhd(config), // sound media information atom
-    dinf(config), // data information atom
-    stbl(config), // sample table atom
-  ]
+  let result = [bytes.strToUint8('minf')]
+
+  if (config.type === 27) {
+    result.push(vmhd(config)) // video media information atom
+  }
+
+  if (config.type === 15) {
+    result.push(smhd(config)) // sound media information atom
+  }
+
+  result.push(dinf(config)) // data information atom
+  result.push(stbl(config)) // sample table atom
+
+  return result
 }
 
 export const vmhd = (config) => {
@@ -180,14 +211,22 @@ export const stbl = (config) => {
 }
 
 export const stsd = (config) => {
-  return [
+  let result = [
     bytes.strToUint8('stsd'),
     new Uint8Array(1),         // version
     new Uint8Array([0, 0, 0]), // flags
     bytes.u32(1),              // number of entries
-    avc1(config),
-    mp4a(config),
   ]
+
+  if (config.type === 27) {
+    result.push(avc1(config))
+  }
+
+  if (config.type === 15) {
+    result.push(mp4a(config))
+  }
+
+  return result
 }
 
 export const stts = (config) => {
@@ -200,6 +239,9 @@ export const stts = (config) => {
 }
 
 export const avc1 = (config) => {
+  const width   = config.width || 0
+  const height  = config.height || 0
+
   return [
     bytes.strToUint8('avc1'),
     new Uint8Array(6),         // reserved
@@ -209,8 +251,8 @@ export const avc1 = (config) => {
     bytes.u32(0),              // vendor
     bytes.u32(0),              // temporal quality
     bytes.u32(0),              // spatial quality
-    bytes.u16(1281),           // width
-    bytes.u16(721),            // height
+    bytes.u16(width),          // width
+    bytes.u16(height),         // height
     bytes.u32(4718592),        // horizontal resolution
     bytes.u32(4718592),        // vertical resolution
     bytes.u32(0),              // data size
@@ -226,23 +268,22 @@ export const avc1 = (config) => {
 }
 
 export const avcC = (config) => {
+  const sps = config.codec[0]
+  const pps = config.codec[1]
+
   return [
     bytes.strToUint8('avcC'),
-    new Uint8Array([1]),                  // version
-    new Uint8Array([0x42]),               // profile
-    new Uint8Array([0]),                  // profile compatibility
-    new Uint8Array([30]),                 // level indication
-    new Uint8Array([0b11111111]),         // nalu size
-    new Uint8Array([0b11100001]),         // sps count
-    bytes.u16(27),                        // sps length
-    new Uint8Array([0x27, 0x4d, 0x00, 0x1f, 0x89, 0x8b,
-    0x60, 0x28, 0x02, 0xdd, 0x80, 0xb5,
-    0x01, 0x01, 0x01, 0xec, 0x0c, 0x00,
-    0x17, 0x70, 0x00, 0x05, 0xdc, 0x17,
-    0xbd, 0xf0, 0x50]),                       // sps bytes
-    new Uint8Array([1]),                      // pps count
-    bytes.u16(4),                             // pps length
-    new Uint8Array([0x28, 0xee, 0x1f, 0x20]), // pps bytes
+    new Uint8Array([1]),          // version
+    new Uint8Array([sps[1]]),     // profile
+    new Uint8Array([sps[2]]),     // profile compatibility
+    new Uint8Array([sps[3]]),     // level indication
+    new Uint8Array([0b11111111]), // nalu size
+    new Uint8Array([0b11100001]), // sps count
+    bytes.u16(sps.length),        // sps length
+    new Uint8Array(sps),          // sps bytes
+    new Uint8Array([1]),          // pps count
+    bytes.u16(pps.length),        // pps length
+    new Uint8Array(pps),          // pps bytes
   ]
 }
 
@@ -346,23 +387,31 @@ export const stco = (config) => {
 }
 
 export const mvex = (config) => {
+  const trexs = config.map(c => trex(c))
+
   return [
     bytes.strToUint8('mvex'),
-    trex(config)              // track ex atom
+    ...trexs                  // track ex atoms (1 per track)
   ]
 }
 
 export const trex = (config) => {
-  return [
+  let result =  [
     bytes.strToUint8('trex'),
     new Uint8Array(1),         // version
     new Uint8Array(3),         // flags
-    bytes.u32(1),              // track id
+    bytes.u32(config.id),      // track id
     bytes.u32(1),              // sample description index
     bytes.u32(0),              // sample duration
     bytes.u32(0),              // sample size
-    bytes.u32(0x02000000)      // sample flags
   ]
+
+  // If it's a video track, include sample flags
+  if (config.type === 27) {
+    result.push(bytes.u32(0x02000000))      // sample flags
+  }
+
+  return result
 }
 
 export const flatten = (atom) => {

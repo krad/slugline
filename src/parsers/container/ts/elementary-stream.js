@@ -42,14 +42,8 @@ class ElementaryStream {
   get codec() {
     // Video
     if (this.streamType === 27) {
-      const videoParams = this.chunks.filter(nalu => {
-        const naluType = nalu[0] & 0x1f
-        if (naluType === 7) { return nalu }
-      })
-
-      if (videoParams.length <= 0) { return undefined }
-
-      const arrayBuffer           = Uint8Array.from(videoParams[0])
+      const c                     = this.codecBytes
+      const arrayBuffer           = Uint8Array.from(c[0])
       const view                  = new DataView(arrayBuffer.buffer)
       const version               = view.getUint8(0)
       const profile               = view.getUint8(1)
@@ -80,7 +74,8 @@ class ElementaryStream {
     // P	2	Number of AAC frames (RDBs) in ADTS frame minus 1, for maximum compatibility always use 1 AAC frame per ADTS frame
     // Q	16
     if (this.streamType === 15) {
-      return ['mp4a', 40, this.chunks[1].profileMinusOne+1].join('.')
+      const c = this.codecBytes
+      return ['mp4a', 40, c.profileMinusOne+1].join('.')
     }
 
     return undefined
@@ -92,6 +87,10 @@ class ElementaryStream {
         const naluType = nalu[0] & 0x1f
         if (naluType === 7 || naluType === 8) { return nalu }
       }).slice(0, 2)
+    }
+
+    if (this.streamType === 15) {
+      return this.chunks[1]
     }
   }
 

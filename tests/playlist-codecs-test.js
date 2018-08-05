@@ -27,7 +27,8 @@ const identifyByFetchTestFMP4 = (t) => {
     playlist.getCodecsInformation().then(codecInfo => {
       t.equals('fmp4', playlist.segmentsType)
       t.ok(codecInfo, 'got codec info back')
-      console.log(codecInfo);
+      console.log(codecInfo)
+
       t.deepEquals(codecInfo, ['avc1.42001E', 'mp4a.40.2'], 'audio and video tracks correct')
       t.deepEquals(playlist.codecs, ['avc1.42001E', 'mp4a.40.2'], 'audio and video tracks correct (on playlist)')
       t.equals(playlist.codecsString, 'video/mp4; codecs="avc1.42001E,mp4a.40.2"', 'codecs string was correct (on playlist)')

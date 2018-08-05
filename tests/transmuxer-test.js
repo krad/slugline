@@ -67,7 +67,18 @@ test.only('that we can create an init segment from a ts file', t=> {
   let ts = TransportStream.parse(buffer)
   t.equals(1551, ts.packets.length, '😃')
 
-  let muxer       = new Transmuxer(ts)
+  let muxer = new Transmuxer(ts)
+  t.ok(muxer.config,                  'transmuxer had a config object')
+  t.equals(2, muxer.config.length,    'transmuxer had config for both tracks')
+  t.equals(27, muxer.config[0].type,  'correctly identified first track as a video track')
+  t.equals(15, muxer.config[1].type,  'correctly identified second track as an audio track')
+  t.equals(1, muxer.config[0].id,     'had a track id for video')
+  t.equals(2, muxer.config[1].id,     'had a track id for audio')
+  t.equals(2, muxer.config[0].codec.length, 'had an array with two entries.  one for sps the other pps')
+
+  /// TODO: Think about this.  May want to yank this out into a more convienent structure
+  t.equals('ADTSFrame', muxer.config[1].codec.constructor.name, 'had an ADTSFrame for the codec payload')
+
   let initSegment = muxer.buildInitializationSegment()
   t.ok(initSegment, 'we got an init segment')
   let atomtree = MPEGParser.parse(initSegment)
@@ -89,61 +100,103 @@ test.only('that we can create an init segment from a ts file', t=> {
   const moov = atomtree.root[1]
   t.ok(moov,                            'we got something at the second atom')
   t.equals(moov.name,           'moov', 'it was in fact a moov')
-  t.equals(moov.children.length,     3, 'we got children in the moov atom')
-  // console.log(moov);
+  t.equals(moov.children.length,     4, 'we got children in the moov atom')
 
   const mvhd = moov.children[0]
   t.equals(mvhd.name, 'mvhd', 'got a mvhd atom')
 
-  const trak = moov.children[1]
-  t.equals(trak.name, 'trak', 'got a trak atom')
+  ////
+  const mvex = moov.children[3]
+  t.equals(mvex.name, 'mvex', 'got a mvex atom')
 
-  const tkhd = trak.children[0]
+  const trex1 = mvex.children[0]
+  t.equals(trex1.name,    'trex', 'got a trex atom (video)')
+  t.equals(trex1.trackID,      1, 'got correct track id')
+
+  const trex2 = mvex.children[1]
+  t.equals(trex2.name,    'trex', 'got a trex atom (audio)')
+  t.equals(trex2.trackID,      2, 'got correct track id')
+
+  ///////////// First trak (video)
+  const trak1 = moov.children[1]
+  t.equals(trak1.name, 'trak', 'got a trak atom (video)')
+
+  const tkhd = trak1.children[0]
   t.equals(tkhd.name, 'tkhd', 'got a tkhd atom')
 
-  const mdia = trak.children[1]
-  t.equals(mdia.name, 'mdia', 'got a mdia atom')
+  const mdia1 = trak1.children[1]
+  t.equals(mdia1.name, 'mdia', 'got a mdia atom')
 
-  const mdhd = mdia.children[0]
-  t.equals(mdhd.name, 'mdhd', 'got a mdhd atom')
+  const minf1 = mdia1.children[2]
+  t.equals(minf1.name, 'minf', 'got a minf atom')
 
-  const hdlr = mdia.children[1]
-  t.equals(hdlr.name, 'hdlr', 'got a hdlr atom')
-
-  const minf = mdia.children[2]
-  t.equals(minf.name, 'minf', 'got a minf atom')
-
-  const vmhd = minf.children[0]
+  const vmhd = minf1.children[0]
   t.equals(vmhd.name, 'vmhd', 'got a vmhd atom')
 
-  const smhd = minf.children[1]
-  t.equals(smhd.name, 'smhd', 'got a smhd atom')
+  const stbl1 = minf1.children[2]
+  t.equals(stbl1.name, 'stbl', 'got a stbl for the video track')
 
-  const dinf = minf.children[2]
-  t.equals(dinf.name, 'dinf', 'got a dinf atom')
+  const stsd1 = stbl1.children[0]
+  t.equals(stsd1.name, 'stsd', 'got a stsd for the video track')
 
-  const dref = dinf.children[0]
-  t.equals(dref.name, 'dref', 'got a dref atom')
+  const avc1 = stsd1.children[0]
+  t.equals(avc1.name, 'avc1', 'got a avc1 atom')
 
-  const stbl = minf.children[3]
-  t.equals(stbl.name, 'stbl', 'got a stbl atom')
+  const avcC = avc1.children[0]
+  t.equals(avcC.name, 'avcC', '-- got a avcC atom')
 
-  const stsd = stbl.children[0]
-  t.equals(stsd.name, 'stsd', 'got a stsd atom')
+  const sps = muxer.config[0].codec[0]
+  t.equals(avcC.profile,              sps[1], '--- profile matched muxer config')
+  t.equals(avcC.profileCompatibility, sps[2], '--- profile compatibility matched muxer config')
+  t.equals(avcC.levelIndication,      sps[3], '--- level indication matched config')
 
-  const stts = stbl.children[1]
-  t.equals(stts.name, 'stts', 'got a stts atom')
+  ///////////// Second trak (audio)
+  const trak2 = moov.children[2]
+  t.equals(trak2.name, 'trak', 'got a trak atom (audio)')
 
-  const stsc = stbl.children[2]
-  t.equals(stsc.name, 'stsc', 'got a stsc atom')
+  // console.log(trak2);
 
-  const stsz = stbl.children[3]
-  t.equals(stsz.name, 'stsz', 'got a stsz atom')
-
-  const stco = stbl.children[4]
-  t.equals(stco.name, 'stco', 'got a stco atom')
-
-  fs.appendFileSync(out, new Buffer(initSegment))
+  //
+  // const mdhd = mdia.children[0]
+  // t.equals(mdhd.name, 'mdhd', 'got a mdhd atom')
+  // //
+  // const hdlr = mdia.children[1]
+  // t.equals(hdlr.name, 'hdlr', 'got a hdlr atom')
+  // //
+  // const minf = mdia.children[2]
+  // t.equals(minf.name, 'minf', 'got a minf atom')
+  // //
+  // const vmhd = minf.children[0]
+  // t.equals(vmhd.name, 'vmhd', 'got a vmhd atom')
+  //
+  // const smhd = minf.children[1]
+  // t.equals(smhd.name, 'smhd', 'got a smhd atom')
+  //
+  // const dinf = minf.children[2]
+  // t.equals(dinf.name, 'dinf', 'got a dinf atom')
+  //
+  // const dref = dinf.children[0]
+  // t.equals(dref.name, 'dref', 'got a dref atom')
+  //
+  // const stbl = minf.children[3]
+  // t.equals(stbl.name, 'stbl', 'got a stbl atom')
+  //
+  // const stsd = stbl.children[0]
+  // t.equals(stsd.name, 'stsd', 'got a stsd atom')
+  //
+  // const stts = stbl.children[1]
+  // t.equals(stts.name, 'stts', 'got a stts atom')
+  //
+  // const stsc = stbl.children[2]
+  // t.equals(stsc.name, 'stsc', 'got a stsc atom')
+  //
+  // const stsz = stbl.children[3]
+  // t.equals(stsz.name, 'stsz', 'got a stsz atom')
+  //
+  // const stco = stbl.children[4]
+  // t.equals(stco.name, 'stco', 'got a stco atom')
+  //
+  // fs.appendFileSync(out, new Buffer(initSegment))
 
   t.end()
 })
