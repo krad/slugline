@@ -12,50 +12,44 @@ import { Packet } from './packet'
 //
 // Each elementary stream is labeled with a stream_type value.
 class PMT extends Packet {
-  constructor(header, dataView) {
-    super(header, dataView)
+  constructor(header, bitReader) {
+    super(header, bitReader)
+    this.tracks = []
 
-    this.ptrField               = dataView.getUint8(0)
-    this.tableId                = dataView.getUint8(1)
-    let next                    = dataView.getUint16(2)
+    this.ptrField = bitReader.readBits(8)
+    if (this.ptrField) { bitReader.readBits(this.ptrField * 8) }
 
-    this.sectionSyntaxIndicator = (next & 1)
-    this.sectionLength          = (next & 0xfff)
+    this.tableID                = bitReader.readBits(8)
+    this.sectionSyntaxIndicator = bitReader.readBit()
+    this.privateBit             = bitReader.readBit()
+    bitReader.readBits(2)                                 // reserved bits
+    bitReader.readBits(2)                                 // section length unused bits
+    this.sectionLength          = bitReader.readBits(10)
 
-    this.programNumber          = dataView.getUint16(4)
+    bitReader.readBits(3) // reserved
+    this.pcrPID                 = bitReader.readBits(13)
+    bitReader.readBits(4) // reserved bits
+    bitReader.readBits(2) // program info length unused bits
 
-    next                        = dataView.getUint8(6)
-    this.version                = (next & 0x3e)
-    this.currentNextIndicator   = (next & 0x1)
-    this.sectionNumber          = dataView.getUint8(7)
-    this.lastSectionNumber      = dataView.getUint8(8)
+    this.programInfoLength = bitReader.readBits(10)
 
-    this.pcrPID                 = dataView.getUint16(9) & 0x1fff
-    this.programInfoLength      = dataView.getUint16(11) & 0xfff
-    this.tracks                 = []
+    if (this.programInfoLength) {
 
-    let nextIdx = 13 + this.programInfoLength
-    while (nextIdx < this.sectionLength) {
-      let track = {}
-      track.streamType = dataView.getUint8(nextIdx)
+      let i = 0
+      while (i < this.sectionLength) {
+        let streamType = bitReader.readBits(8)
+        bitReader.readBits(3) // reserved
+        let elementaryPID = bitReader.readBits(13)
+        bitReader.readBits(4) // reserved
+        bitReader.readBits(2) // es info length unused bits
+        bitReader.readBits(10) // es info length length
 
-      nextIdx += 1
-      track.elementaryPID = dataView.getUint16(nextIdx) & 0x1ff
+        if (streamType === 15 || streamType === 27) {
+          this.tracks.push({streamType: streamType, elementaryPID: elementaryPID})
+        }
 
-      nextIdx += 2
-      track.esInfoLength = dataView.getUint16(nextIdx) & 0xfff
-
-      nextIdx += 2
-      track.descLength = dataView.getUint8(nextIdx)
-
-      let esInfo = []
-      for (var i = 0; i < (nextIdx+track.esInfoLength)-nextIdx; i++) {
-        esInfo.push(dataView.getUint8(nextIdx+i))
+        i += 5
       }
-      track.esInfo = new Uint8Array(esInfo)
-
-      nextIdx += track.esInfoLength
-      this.tracks.push(track)
     }
 
   }

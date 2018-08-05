@@ -1,4 +1,4 @@
-import * as bytes from '../src/transmuxing/byte-helpers'
+import * as bytes from '../src/helpers/byte-helpers'
 import * as atoms from '../src/transmuxing/atoms'
 import { TransportStream } from '../src/slugline'
 import MPEGParser from '../src/parsers/container/mpeg-parser'
@@ -79,7 +79,7 @@ test('that we can do exponential golomb encoding/decoding', t=> {
   t.end()
 })
 
-test('that we can parse a sps', t=> {
+test.skip('that we can parse a sps', t=> {
 
   const buffer = Uint8Array.from(asset)
   let ts       = TransportStream.parse(buffer)

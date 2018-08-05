@@ -1,5 +1,5 @@
 import * as atoms from './atoms'
-import * as bytes from './byte-helpers'
+import * as bytes from '../helpers/byte-helpers'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
 
 class Transmuxer {

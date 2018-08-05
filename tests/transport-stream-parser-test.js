@@ -23,6 +23,7 @@ test('we can parse ts files', t=> {
   t.equals(0x47, syncBytes[0], 'they were all genuine sync bytes')
 
   const pat = stream.packets[0]
+
   t.equals('PAT', pat.constructor.name,       'Got a program access table packet')
   t.equals(1, pat.programs.length,            'got correct amount of programs')
   t.equals(1, pat.programs[0].programNumber,  'got correct program number')
@@ -32,15 +33,20 @@ test('we can parse ts files', t=> {
 
   const pmt = stream.packets[1]
   t.equals('PMT', pmt.constructor.name, 'Got a program map table')
-  t.equals(257,   pmt.pcrPID,           'clock pid was present')
+  t.equals(1,   pmt.pcrPID,           'clock pid was present')
   t.ok(pmt.tracks,                      'tracks were present')
-  t.equals(2, pmt.tableId,              'table id was correct')
+  t.equals(2, pmt.tableID,              'table id was correct')
   t.equals(1, pmt.sectionSyntaxIndicator, 'section syntax indicator was correct')
 
   const trackA = pmt.tracks[0]
   t.ok(trackA, 'track present')
   t.equals(27, trackA.streamType,     'marked as a video track')
   t.equals(257, trackA.elementaryPID, 'es pid present')
+
+  const trackB = pmt.tracks[1]
+  t.ok(trackB, 'track present')
+  t.equals(15, trackB.streamType,       'marked as an audio track')
+  t.equals(258, trackB.elementaryPID,   'es pid present')
 
   const mediaPacket = stream.packets[2]
   t.equals('MediaPacket', mediaPacket.constructor.name, 'got a media packet')

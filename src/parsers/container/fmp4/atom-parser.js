@@ -1,5 +1,3 @@
-import * as bytes from '../../../transmuxing/byte-helpers'
-
 /**
  * const ftyp - Parses a 'ftyp atom'
  *

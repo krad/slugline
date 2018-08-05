@@ -1,14 +1,14 @@
 class Packet {
-  constructor(header, dataView) {
+  constructor(header, bitReader) {
     this.header = header
-    this.data   = dataView
-    this.length = header.length + dataView.byteLength
+    this.data   = bitReader.data
+    this.length = this.data.length
   }
 }
 
 class MediaPacket extends Packet {
-  constructor(header, dataView, streamType) {
-    super(header, dataView)
+  constructor(header, bitReader, streamType) {
+    super(header, bitReader)
     this.streamType   = streamType
   }
 

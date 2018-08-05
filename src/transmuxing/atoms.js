@@ -1,4 +1,4 @@
-import * as bytes from './byte-helpers'
+import * as bytes from '../helpers/byte-helpers'
 
 //////////////////////////////////////////////////////////////////
 //#pragma - Initialization Section Atoms
