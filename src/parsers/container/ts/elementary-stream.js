@@ -7,8 +7,9 @@ class ElementaryStream {
    * @param  {Integer} streamType      Code for the stream you want to parse out (27 = vid / 15 = audio)
    * @return {ElementaryStream}        An ElementaryStream object with all parsed chunks in a chunks array
    */
-  static parse(transportStream, streamType) {
-    let es    = new ElementaryStream(streamType)
+  static parse(transportStream, streamType, trackID) {
+    let es      = new ElementaryStream(streamType)
+    es.trackID  = trackID
 
     const pmt   = transportStream.packets.filter(p => p.constructor.name === 'PMT')[0]
     const track = pmt.tracks.filter(t => t.streamType === streamType)[0]

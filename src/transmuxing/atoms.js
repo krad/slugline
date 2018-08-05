@@ -1,5 +1,9 @@
 import * as bytes from './byte-helpers'
 
+//////////////////////////////////////////////////////////////////
+//#pragma - Initialization Section Atoms
+//////////////////////////////////////////////////////////////////
+
 export const ftyp = () => {
   return [
     bytes.strToUint8('ftyp'),
@@ -432,6 +436,64 @@ export const trex = (config) => {
 
   return result
 }
+
+//////////////////////////////////////////////////////////////////
+//#pragma - Media Segment Atoms
+//////////////////////////////////////////////////////////////////
+
+export const moof = (config) => {
+  return [
+    bytes.strToUint8('moof'),
+    mfhd(config),
+    traf(config),
+  ]
+}
+
+export const traf = (config) => {
+  return [
+    bytes.strToUint8('traf'),
+    tfhd(config),
+    tfdt(config),
+    // trun(config),
+  ]
+}
+
+export const tfhd = (config) => {
+  return [
+    bytes.strToUint8('tfhd')
+  ]
+}
+
+export const tfdt = (config) => {
+  return [
+    bytes.strToUint8('tfdt')
+  ]
+}
+
+export const trun = (config) => {
+  return [
+    bytes.strToUint8('trun')
+  ]
+}
+
+export const mfhd = (config) => {
+  return [
+    bytes.strToUint8('mfhd'),
+    new Uint8Array([0]),        // version
+    new Uint8Array([0, 0, 0]),  // flags
+    bytes.u32(config.currentMediaSequence)
+  ]
+}
+
+export const mdat = (config) => {
+  return [
+    bytes.strToUint8('mdat')
+  ]
+}
+
+//////////////////////////////////////////////////////////////////
+//#pragma - Builder functions
+//////////////////////////////////////////////////////////////////
 
 export const flatten = (atom) => {
   return atom.flatMap(a => a)

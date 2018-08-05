@@ -9,7 +9,10 @@ const fs = require('fs')
 const tsURL = './tests/fixtures/apple-basic-ts/gear1/fileSequence0.ts'
 const asset = fs.readFileSync(tsURL)
 
-const out = '/tmp/ftyp.mp4'
+const asset2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+
+const initSegmentOut  = '/tmp/ftyp.mp4'
+const mediaSegmentOut = '/tmp/moof.mp4'
 
 test('that are byte helpers do what they say they do', t=> {
   const a = bytes.u32(1)
@@ -239,7 +242,23 @@ test('that we can create an init segment from a ts file', t=> {
   // const stco = stbl.children[4]
   // t.equals(stco.name, 'stco', 'got a stco atom')
   //
-  fs.appendFileSync(out, new Buffer(initSegment))
+  fs.appendFileSync(initSegmentOut, new Buffer(initSegment))
+
+  t.end()
+})
+
+test('that we can build an media fragment', t=> {
+
+  const buffer  = Uint8Array.from(asset)
+  let ts        = TransportStream.parse(buffer)
+  let muxer     = new Transmuxer(ts)
+
+  console.log(muxer.tracks[0].chunks.length);
+  console.log(muxer.tracks[1].chunks.length);
+
+  let mediaSegment = muxer.buildMediaSegments()
+  fs.appendFileSync(mediaSegmentOut, new Buffer(mediaSegment))
+
 
   t.end()
 })
