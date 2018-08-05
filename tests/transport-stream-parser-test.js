@@ -8,7 +8,7 @@ import base64ArrayBuffer from '../src/parsers/container/ts/base64'
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
 
 
-test('we can parse ts files', t=> {
+test.skip('we can parse ts files', t=> {
 
   let byteArray = new Uint8Array(ts)
   const stream = TransportStream.parse(byteArray)
@@ -55,7 +55,7 @@ test('we can parse ts files', t=> {
   t.end()
 })
 
-test('building an elementary stream out of a bunch of packets', t=> {
+test.skip('building an elementary stream out of a bunch of packets', t=> {
 
   let byteArray = new Uint8Array(ts)
   const stream = TransportStream.parse(byteArray)

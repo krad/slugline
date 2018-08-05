@@ -9,7 +9,7 @@ const vodTSURL = '/apple-basic-ts/gear1/prog_index.m3u8'
 test('playlist codec identification', t=> {
   t.test(setupServer, 'playlist codec identification - setup fixture server')
   t.test(identifyByFetchTestFMP4, 'identify codecs for a playlist by fetching (fragmented mp4)')
-  t.test(identifyByFetchTestTS, 'identify codecs for a playlist by fetching (transport stream)')
+  t.skip(identifyByFetchTestTS, 'identify codecs for a playlist by fetching (transport stream)')
   t.test(tearDownServer, 'playlist codec identification - teardown fixture server')
   t.end()
 })

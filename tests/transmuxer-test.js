@@ -104,7 +104,7 @@ test.skip('that we can parse a sps', t=> {
 })
 
 
-test('that we can create an init segment from a ts file', t=> {
+test.skip('that we can create an init segment from a ts file', t=> {
 
   const buffer = Uint8Array.from(asset)
   let ts = TransportStream.parse(buffer)
@@ -247,7 +247,7 @@ test('that we can create an init segment from a ts file', t=> {
   t.end()
 })
 
-test('that we can build an media fragment', t=> {
+test.skip('that we can build an media fragment', t=> {
 
   const buffer  = Uint8Array.from(asset)
   let ts        = TransportStream.parse(buffer)
