@@ -72,24 +72,26 @@ export const tkhd = (config) => {
                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                   0x64, 0x00, 0x00, 0x00]
 
-  return [
+  let result = [
     bytes.strToUint8('tkhd'),
-    new Uint8Array(1),          // version
-    new Uint8Array([0, 0, 1]),  // flags
-    bytes.u32(3592932068),      // creation time // FIXME
-    bytes.u32(3592932068),      // modification time // FIXME
+    new Uint8Array([0]),          // version
+    new Uint8Array([0x00, 0x00, 0x01]),  // flags
+    bytes.u32(0),      // creation time // FIXME
+    bytes.u32(0),               // modification time // FIXME
     bytes.u32(config.id),       // track id
     bytes.u32(0),               // reserved
     bytes.u32(0),               // duration
     bytes.u64(0),               // reserved
     bytes.u16(0),               // layer
     bytes.u16(0),               // alternate group
-    bytes.u16(0x0100),          // volume
+    bytes.u16(1),               // volume
     bytes.u16(0),               // reserved
     new Uint8Array(matrix),     // matrix struct
     bytes.u32(width),           // track width
     bytes.u32(height),          // track height
   ]
+
+  return result
 }
 
 export const mdia = (config) => {
