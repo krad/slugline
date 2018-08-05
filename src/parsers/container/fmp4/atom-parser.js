@@ -62,18 +62,9 @@ const trak = (atom, payload) => { }
 const moov = (atom, payload) => { }
 
 const trex = (atom, payload) => {
-  let view = new DataView(payload.buffer)
-
+  let view     = new DataView(payload.buffer)
   atom.version = view.getUint8(0)
   atom.trackID = view.getUint32(4)
-  // new Uint8Array(1),         // version
-  // new Uint8Array(3),         // flags
-  // bytes.u32(config.id),      // track id
-  // bytes.u32(1),              // sample description index
-  // bytes.u32(0),              // sample duration
-  // bytes.u32(0),              // sample size
-  // bytes.u32(0x02000000)      // sample flags
-
 }
 
 const mvex = (atom, payload) => { }

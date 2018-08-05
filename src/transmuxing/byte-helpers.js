@@ -68,3 +68,23 @@ export const strToUint8 = (str) => {
   }
   return buf
 }
+
+export const expGolombEnc = (input, signed) => {
+  let value = input
+  if (input < 0) { value = -(input * 2) }
+
+  if (signed) {
+    if (input < 0) { value = -(input * 2) }
+    else { value = (input * 2) - 1 }
+  }
+
+  const bin = (value + 1).toString(2)
+  return '0'.repeat(bin.length - 1) + bin
+}
+
+export const expGolobDec = (input) => {
+  if (input === '1') { return 0 }
+  let value = parseInt(input, 2) - 1
+
+  return value
+}
