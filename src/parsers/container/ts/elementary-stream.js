@@ -86,6 +86,15 @@ class ElementaryStream {
     return undefined
   }
 
+  get codecBytes() {
+    if (this.streamType === 27) {
+      return this.chunks.filter(nalu => {
+        const naluType = nalu[0] & 0x1f
+        if (naluType === 7 || naluType === 8) { return nalu }
+      }).slice(0, 2)
+    }
+  }
+
 }
 
 

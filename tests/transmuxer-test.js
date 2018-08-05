@@ -61,7 +61,7 @@ test('that we can "build" an atom', t=> {
   t.end()
 })
 
-test('that we can create an init segment from a ts file', t=> {
+test.only('that we can create an init segment from a ts file', t=> {
 
   const buffer = Uint8Array.from(asset)
   let ts = TransportStream.parse(buffer)

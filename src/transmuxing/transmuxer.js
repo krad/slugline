@@ -6,18 +6,27 @@ class Transmuxer {
   constructor(transportStream) {
     this.ts = transportStream
 
-    const pmt          = this.ts.packets.filter(p => p.constructor.name == 'PMT')[0]
-    const trackPackets = pmt.tracks.map(t => {
-      return ElementaryStream.parse(this.ts, t.streamType)
-    })
+    const pmt    = this.ts.packets.filter(p => p.constructor.name == 'PMT')[0]
+    this.tracks  = pmt.tracks.map(t => { return ElementaryStream.parse(this.ts, t.streamType) })
+    this.config  = pmt.tracks
 
-    // console.log(trackPackets.length);
+    // console.log(trackPackets);
+    // console.log(pmt.tracks);
+    // console.log(trackPackets[0].codecBytes);
     // console.log(trackPackets[0].codec);
     // console.log(trackPackets[1].codec);
-    // console.log(this.ts);
   }
 
   buildInitializationSegment() {
+
+    console.log(this.tracks.map(t => return {{type: t.streamType, codec: t.codecBytes}} ))
+    // console.log(this.tracks[0].codecBytes);
+
+    // console.log(this.config);
+    // console.log(this.tracks[0].streamType);
+    // console.log(this.tracks[1].streamType);
+
+
     let config = {}
     let result = []
     result.push(atoms.ftyp())
