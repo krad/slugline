@@ -8,6 +8,14 @@ class Transmuxer {
     const pmt    = this.ts.packets.filter(p => p.constructor.name == 'PMT')[0]
     this.tracks  = pmt.tracks.map(t => { return ElementaryStream.parse(this.ts, t.streamType) })
     this.config  = this.tracks.map((t,idx) => {return {type: t.streamType, codec: t.codecBytes, id: idx+1}} )
+
+    this.config.forEach(config => {
+      if (config.type === 27) {
+        const buffer = new Uint8Array(config.codec[0])
+        config.sps = bytes.parseSPS(buffer)
+      }
+    })
+
   }
 
   buildInitializationSegment() {

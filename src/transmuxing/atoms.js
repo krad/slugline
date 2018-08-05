@@ -57,8 +57,14 @@ export const trak = (config) => {
 }
 
 export const tkhd = (config) => {
-  const width   = config.width || 0
-  const height  = config.height || 0
+  let width  = 0
+  let height = 0
+  if (config.type === 27) {
+    if (config.sps) {
+      width   = config.sps.width
+      height  = config.sps.height
+    }
+  }
 
   const matrix = [0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -80,7 +86,7 @@ export const tkhd = (config) => {
     bytes.u16(0),               // alternate group
     bytes.u16(0x0100),          // volume
     bytes.u16(0),               // reserved
-    new Uint8Array(matrix),         // matrix struct // FIXME
+    new Uint8Array(matrix),     // matrix struct
     bytes.u32(width),           // track width
     bytes.u32(height),          // track height
   ]
@@ -234,13 +240,20 @@ export const stts = (config) => {
     bytes.strToUint8('stts'),
     new Uint8Array(1),         // version
     new Uint8Array([0, 0, 0]), // flags
-    bytes.u32(1),              // number of entries
+    bytes.u32(0),              // number of entries
   ]
 }
 
 export const avc1 = (config) => {
-  const width   = config.width || 0
-  const height  = config.height || 0
+
+  let width  = 0
+  let height = 0
+  if (config.type === 27) {
+    if (config.sps) {
+      width   = config.sps.width
+      height  = config.sps.height
+    }
+  }
 
   return [
     bytes.strToUint8('avc1'),
@@ -320,7 +333,7 @@ export const mp4a = (config) => {
     bytes.strToUint8('mp4a'),
     new Uint8Array(6),        // reserved
     bytes.u16(1),             // data ref index
-    // bytes.u64(0),             // reserved
+    bytes.u64(0),             // reserved
     bytes.u16(2),             // channels
     bytes.u16(16),            // sample size
     bytes.u16(0),             // predefined
@@ -333,13 +346,13 @@ export const mp4a = (config) => {
 export const esds = (config) => {
   return [
     bytes.strToUint8('esds'),
-    new Uint8Array(1),                        // version
-    new Uint8Array(3),                        // flags
+    new Uint8Array([0]),                      // version
+    new Uint8Array([0, 0, 0]),                // flags
     new Uint8Array([0x03]),                   // es desc type tag
     new Uint8Array([0x80, 0x80, 0x80]),       // 0x80 = start & 0xfe = end
     new Uint8Array([0x22]),                   // es desc length
     bytes.u16(0),                             // es id
-    new Uint8Array(1),                        // stream priority
+    new Uint8Array([0]),                        // stream priority
     new Uint8Array([0x04]),                   // decoder config desc tag
     new Uint8Array([0x80, 0x80, 0x80]),       // 0x80 = start & 0xfe = end
     new Uint8Array([0x14]),                   // es ext desc length
@@ -409,6 +422,10 @@ export const trex = (config) => {
   // If it's a video track, include sample flags
   if (config.type === 27) {
     result.push(bytes.u32(0x02000000))      // sample flags
+  }
+
+  if (config.type === 15) {
+    result.push(bytes.u32(0))
   }
 
   return result

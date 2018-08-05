@@ -43,7 +43,7 @@ test('that are byte helpers do what they say they do', t=> {
   t.end()
 })
 
-test.only('that we can do exponential golomb encoding/decoding', t=> {
+test('that we can do exponential golomb encoding/decoding', t=> {
   // Test encoding unsigned numbers
   t.equals('1',       bytes.expGolombEnc(0), '0 ⇒ 1 ⇒ 1')
   t.equals('010',     bytes.expGolombEnc(1), '1 ⇒ 10 ⇒ 010')
@@ -73,41 +73,33 @@ test.only('that we can do exponential golomb encoding/decoding', t=> {
   t.equals(7, bytes.expGolobDec('0001000'), '0001000 ⇒ 7')
   t.equals(8, bytes.expGolobDec('0001001'), '0001001 ⇒ 8')
 
+  t.end()
+})
+
+test('that we can parse a sps', t=> {
+
+  const buffer = Uint8Array.from(asset)
+  let ts       = TransportStream.parse(buffer)
+  let muxer    = new Transmuxer(ts)
+
+  t.ok(muxer.config[0].sps, 'elementary stream had a parsed sps')
+
+  const sps = muxer.config[0].sps
+  t.equals(77, sps.profileIDC,          'got profileIDC')
+  t.equals(0, sps.constraint_set0_flag, 'got constraint_set0_flag')
+  t.equals(1, sps.constraint_set1_flag, 'got constraint_set1_flag')
+  t.equals(0, sps.constraint_set2_flag, 'got constraint_set2_flag')
+  t.equals(0, sps.constraint_set3_flag, 'got constraint_set3_flag')
+  t.equals(0, sps.constraint_set4_flag, 'got constraint_set4_flag')
+  t.equals(21, sps.levelIDC,            'got levelIDC')
+  t.equals(400, sps.width,              'got width')
+  t.equals(300, sps.height,             'got height')
+
+  console.log(sps);
 
   t.end()
 })
 
-test('that we can "build" an atom', t=> {
-
-  ////// Let's start simple.  Ensure that the ftyp atom can be built
-  const ftyp = atoms.ftyp()
-  t.equals(7, ftyp.length, 'got correct amount of byte sequenes')
-
-  let result = atoms.prepare(ftyp)
-  t.equals(8, result.length, 'got the byte sequences with prepended header')
-
-  result = atoms.build(ftyp)
-  let view = new DataView(result.buffer)
-  t.equals('Uint8Array', result.constructor.name, 'got a single uint8 array back')
-  t.equals(32, view.getUint32(0), 'got correct size of the ftyp atom')
-
-  /// Now make sure we can correctly size atoms that contain atoms
-  const mvex    = atoms.mvex()
-  t.equals(2, mvex.length,       'there are 2 entries by default.  mvex label and trex child atom')
-  t.equals(1, mvex[1].length,    'child atom is an array contained in another array')
-  t.equals(8, mvex[1][0].length, 'trex atom has 8 entries (does not include size yet)')
-
-  result  = atoms.prepare(mvex)
-  t.equals(11, result.length, 'structure has the mvex and trex entries as arrays now')
-
-  result  = atoms.build(mvex)
-  view    = new DataView(result.buffer)
-  t.equals(44, view.getUint32(0), 'got the correct size of the mvex atom')
-  t.equals('mvex', bytes.bufferToStr(result.slice(4, 8)), 'got correct atom identifier (mvex)')
-  t.equals(36, view.getUint32(8), 'got the correct size of the trex atom')
-
-  t.end()
-})
 
 test('that we can create an init segment from a ts file', t=> {
 
@@ -185,6 +177,9 @@ test('that we can create an init segment from a ts file', t=> {
 
   const avc1 = stsd1.children[0]
   t.equals(avc1.name, 'avc1', '-------- got a avc1 atom')
+  t.equals(avc1.width,   400, '-------- - got correct width')
+  t.equals(avc1.height,  300, '-------- - got correct height')
+
 
   const avcC = avc1.children[0]
   t.equals(avcC.name, 'avcC', '--------- got a avcC atom')
@@ -244,7 +239,7 @@ test('that we can create an init segment from a ts file', t=> {
   // const stco = stbl.children[4]
   // t.equals(stco.name, 'stco', 'got a stco atom')
   //
-  // fs.appendFileSync(out, new Buffer(initSegment))
+  fs.appendFileSync(out, new Buffer(initSegment))
 
   t.end()
 })
