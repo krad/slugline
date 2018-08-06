@@ -20,10 +20,19 @@ class PAT extends Packet {
     this.sectionLength          = bitReader.readBits(10)
 
     this.programs = []
-    const programNumber = bitReader.readBits(16)
+
+    let tableID               = bitReader.readBits(16)
+    bitReader.readBits(2) // reserved
+    let versionNumber         = bitReader.readBits(5)
+    let currentNextIndicator  = bitReader.readBit()
+    let sectionNumber         = bitReader.readBits(8)
+    let lastSectionNumber     = bitReader.readBits(8)
+
+    let programNumber = bitReader.readBits(16)
     bitReader.readBits(3)
-    const programMapID  = bitReader.readBits(13)
-    this.programs.push({programNumber: programNumber, mapID: programMapID})
+    let programMapPID = bitReader.readBits(13)
+
+    this.programs.push({programNumber: programNumber, mapID: programMapPID})
 
     this.crc = bitReader.readBits(32)
   }

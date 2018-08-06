@@ -173,7 +173,7 @@ export const parseSPS = (input) => {
 export class BitReader {
 
   constructor(input) {
-    this.data      = input
+    this.data       = input
     this.length     = input.byteLength
     this.currentBit = 0
   }

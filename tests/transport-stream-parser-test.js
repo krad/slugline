@@ -7,8 +7,7 @@ import base64ArrayBuffer from '../src/parsers/container/ts/base64'
 // const ts = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
 
-
-test.skip('we can parse ts files', t=> {
+test('we can parse ts files', t=> {
 
   let byteArray = new Uint8Array(ts)
   const stream = TransportStream.parse(byteArray)
@@ -33,10 +32,12 @@ test.skip('we can parse ts files', t=> {
 
   const pmt = stream.packets[1]
   t.equals('PMT', pmt.constructor.name, 'Got a program map table')
-  t.equals(1,   pmt.pcrPID,           'clock pid was present')
+  t.equals(257,   pmt.pcrPID,           'clock pid was present')
   t.ok(pmt.tracks,                      'tracks were present')
   t.equals(2, pmt.tableID,              'table id was correct')
   t.equals(1, pmt.sectionSyntaxIndicator, 'section syntax indicator was correct')
+
+  // console.log(pmt);
 
   const trackA = pmt.tracks[0]
   t.ok(trackA, 'track present')
@@ -55,10 +56,10 @@ test.skip('we can parse ts files', t=> {
   t.end()
 })
 
-test.skip('building an elementary stream out of a bunch of packets', t=> {
+test('building an elementary stream out of a bunch of packets', t=> {
 
   let byteArray = new Uint8Array(ts)
-  const stream = TransportStream.parse(byteArray)
+  const stream  = TransportStream.parse(byteArray)
   t.equals(stream.packets.length, 1551, 'got correct amount of packets')
 
   let elementaryStream = ElementaryStream.parse(stream, 27)
@@ -69,6 +70,20 @@ test.skip('building an elementary stream out of a bunch of packets', t=> {
   t.equals(elementaryStream.chunks[3][0] & 0x1f, 8, 'got a PPS nalu')
   t.equals(elementaryStream.chunks[4][0] & 0x1f, 6, 'got a SEI nalu')
   t.equals(elementaryStream.chunks[7][0] & 0x1f, 5, 'got a IDR nalu')
+
+  t.end()
+})
+
+test('parsing audio packets from a transport stream', t=> {
+  let byteArray = new Uint8Array(ts)
+  const stream  = TransportStream.parse(byteArray)
+
+  let es = ElementaryStream.parse(stream, 15)
+  t.ok(es, 'got an elementary stream')
+  t.equals(es.chunks.length, 161, 'got correct amount of audio chunks')
+
+  let sampleFreq = unique(es.chunks.map(c => c.samplingFreq))
+  t.equals(sampleFreq.length, 1, 'all chunks had the same sampling frequency')
 
   t.end()
 })

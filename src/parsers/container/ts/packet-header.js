@@ -55,10 +55,6 @@ class AdaptationField {
     if (this.adaptationFieldExtFlag) {
       this.adaptionFieldExt = new AdaptationFieldExtension(bitReader)
     }
-
-    if (this.pcrBase) {
-      // console.log(this.pcrBase/90000);
-    }
   }
 }
 

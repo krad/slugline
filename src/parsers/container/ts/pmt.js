@@ -22,36 +22,52 @@ class PMT extends Packet {
     this.tableID                = bitReader.readBits(8)
     this.sectionSyntaxIndicator = bitReader.readBit()
     this.privateBit             = bitReader.readBit()
-    bitReader.readBits(2)                                 // reserved bits
-    bitReader.readBits(2)                                 // section length unused bits
-    this.sectionLength          = bitReader.readBits(10)
+
+    bitReader.readBits(2)   // reserved bits
+    bitReader.readBits(2)   // section length unused bits
+    let sectionLength = bitReader.readBits(10)
+
+    let tableIDext = bitReader.readBits(16)
+    bitReader.readBits(2) // resered
+    let versionNumber = bitReader.readBits(5)
+    let currentNextIndicator = bitReader.readBit()
+    let sectionNumber = bitReader.readBits(8)
+    let lastSectionNumber = bitReader.readBits(8)
 
     bitReader.readBits(3) // reserved
-    this.pcrPID                 = bitReader.readBits(13)
-    bitReader.readBits(4) // reserved bits
+    this.pcrPID = bitReader.readBits(13)
+    bitReader.readBits(4) // reserved
     bitReader.readBits(2) // program info length unused bits
 
-    this.programInfoLength = bitReader.readBits(10)
-
-    if (this.programInfoLength) {
-
-      let i = 0
-      while (i < this.sectionLength) {
-        let streamType = bitReader.readBits(8)
-        bitReader.readBits(3) // reserved
-        let elementaryPID = bitReader.readBits(13)
-        bitReader.readBits(4) // reserved
-        bitReader.readBits(2) // es info length unused bits
-        bitReader.readBits(10) // es info length length
-
-        if (streamType === 15 || streamType === 27) {
-          this.tracks.push({streamType: streamType, elementaryPID: elementaryPID})
-        }
-
-        i += 5
-      }
+    let programInfoLength = bitReader.readBits(10)
+    if (programInfoLength !== 0) {
+      let descs = bitReader.readBits(programInfoLength*8)
     }
 
+    while (bitReader.currentBit < sectionLength*8) {
+      let track = {}
+      track.streamType    = bitReader.readBits(8)
+
+      if (track.streamType != 15 && track.streamType != 27) {
+        continue
+      }
+
+      bitReader.readBits(3)
+
+      track.elementaryPID = bitReader.readBits(13)
+      bitReader.readBits(4) // reserved
+      bitReader.readBit(2)  // es info length unused bits
+
+      let esInfoLength = bitReader.readBits(10)
+      if (esInfoLength !== 0) {
+        bitReader.readBits(esInfoLength*8)
+      }
+
+      bitReader.readBit()
+      this.tracks.push(track)
+    }
+
+    let crc = bitReader.readBits(32)
   }
 }
 

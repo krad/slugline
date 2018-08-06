@@ -79,7 +79,7 @@ test('that we can do exponential golomb encoding/decoding', t=> {
   t.end()
 })
 
-test.skip('that we can parse a sps', t=> {
+test('that we can parse a sps', t=> {
 
   const buffer = Uint8Array.from(asset)
   let ts       = TransportStream.parse(buffer)
@@ -104,7 +104,7 @@ test.skip('that we can parse a sps', t=> {
 })
 
 
-test.skip('that we can create an init segment from a ts file', t=> {
+test('that we can create an init segment from a ts file', t=> {
 
   const buffer = Uint8Array.from(asset)
   let ts = TransportStream.parse(buffer)
@@ -119,8 +119,7 @@ test.skip('that we can create an init segment from a ts file', t=> {
   t.equals(2, muxer.config[1].id,     'had a track id for audio')
   t.equals(2, muxer.config[0].codec.length, 'had an array with two entries.  one for sps the other pps')
 
-  /// TODO: Think about this.  May want to yank this out into a more convienent structure
-  t.equals('ADTSFrame', muxer.config[1].codec.constructor.name, 'had an ADTSFrame for the codec payload')
+  t.equals('ADTS', muxer.config[1].codec.constructor.name, 'had an ADTSFrame for the codec payload')
 
   let initSegment = muxer.buildInitializationSegment()
   t.ok(initSegment, 'we got an init segment')
@@ -247,7 +246,7 @@ test.skip('that we can create an init segment from a ts file', t=> {
   t.end()
 })
 
-test.skip('that we can build an media fragment', t=> {
+test('that we can build an media fragment', t=> {
 
   const buffer  = Uint8Array.from(asset)
   let ts        = TransportStream.parse(buffer)

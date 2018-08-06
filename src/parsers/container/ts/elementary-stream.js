@@ -1,3 +1,5 @@
+import * as bytes from '../../../helpers/byte-helpers'
+
 class ElementaryStream {
 
   /**
@@ -50,11 +52,10 @@ class ElementaryStream {
       const profile               = view.getUint8(1)
       const profileCompatibility  = view.getUint8(2)
       const levelIndication       = view.getUint8(3)
-
+      
       const params = [profile, profileCompatibility, levelIndication].map(function(i) {
         return ('0' + i.toString(16).toUpperCase()).slice(-2)
       }).join('');
-
       return ['avc1', params].join('.')
     }
 
@@ -121,7 +122,7 @@ const parseVideoPackets = (es, streamPackets) => {
         }
         cursor += found[1]
       } else {
-        if (gotFirst) { nalu.push(data.getUint8(cursor)) }
+        if (gotFirst) { nalu.push(data[cursor]) }
         cursor += 1
       }
     }
@@ -132,11 +133,11 @@ const parseVideoPackets = (es, streamPackets) => {
 
 const foundDelimiter = (data, cursor) => {
   if (cursor < data.byteLength - 4) {
-    if (data.getUint8(cursor) === 0x00) {
-      if (data.getUint8(cursor+1) === 0x00) {
-        if (data.getUint8(cursor+2) === 0x01) { return [true, 3] }
-        if (data.getUint8(cursor+2) === 0x00) {
-          if (data.getUint8(cursor+3) === 0x01) { return [true, 4] }
+    if (data[cursor] === 0x00) {
+      if (data[cursor+1] === 0x00) {
+        if (data[cursor+2] === 0x01) { return [true, 3] }
+        if (data[cursor+2] === 0x00) {
+          if (data[cursor+3] === 0x01) { return [true, 4] }
         }
       }
     }
@@ -149,52 +150,70 @@ const foundDelimiter = (data, cursor) => {
  * Parse ADTS packets out of all audio packets
  */
 const parseAudioPackets = (es, streamPackets) => {
-  let packetIdx = 0
-  let frame     = []
-  let gotFirst  = false
+  let packetIdx     = 0
+  let currentFrame
+  let firstFrame
   while (packetIdx < streamPackets.length) {
-    let packet  = streamPackets[packetIdx]
-    let data    = packet.data
-    let cursor  = 0
-    while (cursor < data.byteLength) {
-      if (foundSyncWord(data, cursor+1)) {
-        if (frame.length > 0) {
-          frame.push(data.getUint8(cursor))
-          if (frame.length >= 7) {
-            es.chunks.push(new ADTSFrame(frame))
-          }
-          frame = []
+    let packet    = streamPackets[packetIdx]
+    let bitReader = new bytes.BitReader(packet.data)
+    while ((bitReader.currentBit) <= bitReader.length * 8) {
+
+      if (currentFrame) {
+        if (currentFrame.bytesToRead > 0) {
+          currentFrame.payload += (bitReader.readBits(8))
+          currentFrame.bytesToRead -= 1
+          continue
         }
-      } else {
-        frame.push(data.getUint8(cursor))
       }
-      cursor+=1
+
+      if (bitReader.readBits(12) === 0xfff) {
+        let possibleMatch = new ADTS(bitReader)
+        if (!firstFrame) {
+          firstFrame   = possibleMatch
+          currentFrame = possibleMatch
+        } else {
+          if (possibleMatch.samplingFreq !== firstFrame.samplingFreq) {
+            bitReader.currentBit -= (possibleMatch.bitsRead + 11)
+          } else {
+            es.chunks.push(possibleMatch)
+            currentFrame = possibleMatch
+          }
+        }
+      }
     }
     packetIdx += 1
   }
+
 }
 
-class ADTSFrame {
-  constructor(frame) {
-    let array              = Uint8Array.from(frame)
-    let view               = new DataView(array.buffer)
-    this.version           = (view.getUint16(0) << 12) & 0xf
-    this.layer             = (view.getUint16(0) << 13) & 0xff
-    this.protectionAbsent  = (view.getUint16(0) << 15) & 0xf
+class ADTS {
+  constructor(bitReader) {
+    this.version                 = bitReader.readBit()
+    this.layer                   = bitReader.readBits(2)
+    this.protectionAbsent        = bitReader.readBit()
+    this.profileMinusOne         = bitReader.readBits(2)
+    this.samplingFreq            = bitReader.readBits(4)
+    this.privateBit              = bitReader.readBit()
+    this.channelConfig           = bitReader.readBits(3)
+    this.originality             = bitReader.readBit()
+    this.home                    = bitReader.readBit()
+    this.copyrightID             = bitReader.readBit()
+    this.copyrightIDStart        = bitReader.readBit()
+    this.frameLength             = bitReader.readBits(13)
+    this.bufferFullness          = bitReader.readBits(11)
+    this.numberOfFramesMinusOne  = bitReader.readBits(2)
 
-    this.profileMinusOne   = (view.getUint8(2) & 0xf)
-    this.samplingFreq      = ((view.getUint8(2) << 2) & 0x3C)
-    this.channelConfig     = ((view.getUint16(2)) >> 7) & 0x7
-  }
-}
+    this.bitsRead = 44
 
-const foundSyncWord = (data, cursor) => {
-  if (cursor < data.byteLength - 1) {
-    if (((data.getUint16(cursor) >> 4) & 0xff) === 0xff) {
-      return true
+    if (!this.protectionAbsent) {
+      this.crc = bitReader.readBits(16)
+      this.bitsRead += 16
     }
+
+    const headerSize             = this.protectionAbsent === 1 ? 7 : 9
+    this.bytesToRead             = ((this.frameLength) * (this.numberOfFramesMinusOne+1)) - headerSize
+    this.payload                 = new Uint8Array()
   }
-  return false
 }
 
 export default ElementaryStream
