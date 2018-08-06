@@ -66,10 +66,10 @@ test('building an elementary stream out of a bunch of packets', t=> {
   t.ok(elementaryStream, 'got an elementary stream back')
   t.equals(elementaryStream.chunks.length, 1499, 'got correct amount of video chunks')
 
-  t.equals(elementaryStream.chunks[2][0] & 0x1f, 7, 'got a SPS nalu')
-  t.equals(elementaryStream.chunks[3][0] & 0x1f, 8, 'got a PPS nalu')
-  t.equals(elementaryStream.chunks[4][0] & 0x1f, 6, 'got a SEI nalu')
-  t.equals(elementaryStream.chunks[7][0] & 0x1f, 5, 'got a IDR nalu')
+  t.equals(elementaryStream.chunks[2].nalu[0] & 0x1f, 7, 'got a SPS nalu')
+  t.equals(elementaryStream.chunks[3].nalu[0] & 0x1f, 8, 'got a PPS nalu')
+  t.equals(elementaryStream.chunks[4].nalu[0] & 0x1f, 6, 'got a SEI nalu')
+  t.equals(elementaryStream.chunks[7].nalu[0] & 0x1f, 5, 'got a IDR nalu')
 
   t.end()
 })

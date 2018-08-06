@@ -287,8 +287,8 @@ export const avc1 = (config) => {
 }
 
 export const avcC = (config) => {
-  const sps = config.codec[0]
-  const pps = config.codec[1]
+  const sps = config.codec[0].nalu
+  const pps = config.codec[1].nalu
 
   return [
     bytes.strToUint8('avcC'),

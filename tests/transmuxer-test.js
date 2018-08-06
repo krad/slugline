@@ -185,7 +185,7 @@ test('that we can create an init segment from a ts file', t=> {
   const avcC = avc1.children[0]
   t.equals(avcC.name, 'avcC', '--------- got a avcC atom')
 
-  const sps = muxer.config[0].codec[0]
+  const sps = muxer.config[0].codec[0].nalu
   t.equals(avcC.profile,              sps[1], '--------- - profile matched muxer config')
   t.equals(avcC.profileCompatibility, sps[2], '--------- - profile compatibility matched muxer config')
   t.equals(avcC.levelIndication,      sps[3], '--------- - level indication matched config')

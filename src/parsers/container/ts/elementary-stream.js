@@ -46,7 +46,7 @@ class ElementaryStream {
     // Video
     if (this.streamType === 27) {
       const c                     = this.codecBytes
-      const arrayBuffer           = Uint8Array.from(c[0])
+      const arrayBuffer           = Uint8Array.from(c[0].nalu)
       const view                  = new DataView(arrayBuffer.buffer)
       const version               = view.getUint8(0)
       const profile               = view.getUint8(1)
@@ -85,9 +85,9 @@ class ElementaryStream {
 
   get codecBytes() {
     if (this.streamType === 27) {
-      return this.chunks.filter(nalu => {
-        const naluType = nalu[0] & 0x1f
-        if (naluType === 7 || naluType === 8) { return nalu }
+      return this.chunks.filter(chunk => {
+        const naluType = chunk.nalu[0] & 0x1f
+        if (naluType === 7 || naluType === 8) { return chunk.nalu }
       }).slice(0, 2)
     }
 

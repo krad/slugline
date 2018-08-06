@@ -218,8 +218,7 @@ class MediaPlaylist extends Playlist {
         const firstSegment = this.segments[0]
 
         firstSegment.fetch().then(s => {
-          this.segmentsType = 'ts'
-
+          this.segmentsType   = 'ts'
           const ts            = TransportStream.parse(s)
           const pmt           = ts.packets.filter(p => p.constructor.name == 'PMT')[0]
           const trackPackets = pmt.tracks.map(t => {

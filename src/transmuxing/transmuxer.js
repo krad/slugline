@@ -15,8 +15,8 @@ class Transmuxer {
 
     this.config.forEach(config => {
       if (config.type === 27) {
-        const buffer = new Uint8Array(config.codec[0])
-        config.sps = bytes.parseSPS(buffer)
+        const buffer  = new Uint8Array(config.codec[0].nalu)
+        config.sps    = bytes.parseSPS(buffer)
       }
     })
 
