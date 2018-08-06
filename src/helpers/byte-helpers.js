@@ -43,6 +43,10 @@ export const u32 = (input) => {
   return unsignedBytes(input, Uint32Array)
 }
 
+export const s32 = (input) => {
+  return unsignedBytes((input >> 0), Int32Array)
+}
+
 /**
  * Take a 16bit number and return an unsigned 8 bit array
  */

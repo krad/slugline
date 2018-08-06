@@ -88,6 +88,37 @@ test('parsing audio packets from a transport stream', t=> {
   t.end()
 })
 
+test('that we can parse timestamps from pcr info', t=> {
+
+  let byteArray = new Uint8Array(ts)
+  const stream  = TransportStream.parse(byteArray)
+
+  let videoPackets = stream.packets.filter(p => p.header.PID === 257).filter(p => p.header.adaptationField !== undefined)
+  videoPackets = videoPackets.filter(p => p.header.adaptationField.pcrBase !== undefined )
+
+  ///// Check video packets first
+  const packet = videoPackets[0]
+  t.equals(27, packet.streamType, 'got a video packet')
+
+  const header = packet.header
+  t.ok(packet.header, 'packet had a header')
+  t.ok(packet.header.adaptationField, 'adaptation field was present')
+
+  const adaptationField = header.adaptationField
+  t.ok(adaptationField.pcrBase,   'pcrBase was present (video)')
+  t.ok(adaptationField.pcrConst,  'pcrConst was present')
+  t.ok(adaptationField.pcrExt,    'pcrExt was present')
+
+  let x = videoPackets.reduce((acc, curr) => {
+    return acc + ((curr.header.adaptationField.pcrBase >> 9) / 90000)
+  }, 0)
+
+  console.log(x);
+
+  t.end()
+})
+
+
 const unique = (arr) => {
   return arr.filter((val, idx, self) => {
     return self.indexOf(val) === idx

@@ -35,30 +35,32 @@ class Transmuxer {
     let currentGOP
     const videoTrack = this.tracks.filter(t => t.streamType === 27)[0]
     const trackID    = videoTrack.trackID
-
-    videoTrack.chunks.forEach(nalu => {
+    videoTrack.chunks.forEach(chunk => {
+      const nalu = chunk.nalu
       const naluType = nalu[0] & 0x1f
       if (naluType === 1) {
-        currentGOP.push(nalu)
+        currentGOP.push(chunk)
       }
 
       if (naluType === 5) {
         if (currentGOP && currentGOP.length > 1) {
           GOPS.push({currentMediaSequence: this.currentMediaSequence++,
-                                      gop: currentGOP})
+                                      gop: currentGOP,
+                                  trackID: trackID,
+                               streamType: 27})
         }
-        currentGOP = [nalu]
+        currentGOP = [chunk]
       }
     })
 
-    return {trackID: trackID, gops: GOPS}
+    return GOPS
   }
 
   buildMediaSegments() {
     const gops  = this.buildTrack()
 
     let result = []
-    gops.gops.forEach(gop => {
+    gops.forEach(gop => {
       result.push(atoms.moof(gop))
       result.push(atoms.mdat(gop))
     })

@@ -114,7 +114,7 @@ export const mdhd = (config) => {
     new Uint8Array([0, 0, 0]),  // flags
     bytes.u32(3592932068),      // creationTime // FIXME
     bytes.u32(3592932068),      // modification time // FIXME
-    bytes.u32(30000),           // timescale
+    bytes.u32(90000),           // timescale
     bytes.u32(0),               // duration
     bytes.u16(0),               // language // FIXME
     bytes.u16(0),               // quality
@@ -454,26 +454,70 @@ export const traf = (config) => {
     bytes.strToUint8('traf'),
     tfhd(config),
     tfdt(config),
-    // trun(config),
+    trun(config),
   ]
 }
 
 export const tfhd = (config) => {
-  return [
-    bytes.strToUint8('tfhd')
-  ]
+  let result = [bytes.strToUint8('tfhd')]
+
+  if (config.streamType == 27) {
+      result.push(bytes.u32(0x2003a))        // track fragment flags
+      result.push(bytes.u32(config.trackID)) // track id
+
+
+      const firstSample = config.gop.filter(p => p.pcrBase !== undefined)[0]
+      if (firstSample) {
+        result.push(bytes.u32(0))                             // sample description index present
+        result.push(bytes.u32((firstSample.pcrBase >> 9)))    // default sample duration
+        result.push(bytes.u32((firstSample.nalu.length)))     // default sample size
+        result.push(bytes.u32(0x2000000))                     // default sample flags
+      }
+  }
+
+  return result
 }
 
 export const tfdt = (config) => {
+
+  // const firstSample = config.gop.filter(p => p.pcrBase !== undefined)[0]
+  // console.log(firstSample.pcrBase);
+
   return [
-    bytes.strToUint8('tfdt')
+    bytes.strToUint8('tfdt'),
+    new Uint8Array([1]),
+    new Uint8Array([0, 0, 0]),
+    bytes.u64(1/90000)
   ]
 }
 
 export const trun = (config) => {
-  return [
-    bytes.strToUint8('trun')
+  let result = [
+    bytes.strToUint8('trun'),
+    bytes.u32(0x701),               // trun flags
+    bytes.u32(config.gop.length),   // sample count
+    bytes.u32(0),                   // data offset
   ]
+
+  let lastDuration
+  config.gop.forEach(g => {
+    if (g.pcrBase) {
+      lastDuration = (g.pcrBase >> 9)
+      result.push(bytes.u32(lastDuration))  // duration
+    } else {
+      result.push(bytes.u32(lastDuration))
+    }
+
+    result.push(bytes.u32(g.nalu.length))
+
+    if ((g.nalu[0] & 0x1f) === 5) {
+      result.push(bytes.u32(0x02000000)) // sample is depended on
+    } else {
+      result.push(bytes.u32(0x01000000)) // samples depends on a keyframe
+    }
+  })
+
+  return result
 }
 
 export const mfhd = (config) => {

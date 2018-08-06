@@ -103,7 +103,6 @@ test('that we can parse a sps', t=> {
   t.end()
 })
 
-
 test('that we can create an init segment from a ts file', t=> {
 
   const buffer = Uint8Array.from(asset)

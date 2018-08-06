@@ -52,7 +52,7 @@ class ElementaryStream {
       const profile               = view.getUint8(1)
       const profileCompatibility  = view.getUint8(2)
       const levelIndication       = view.getUint8(3)
-      
+
       const params = [profile, profileCompatibility, levelIndication].map(function(i) {
         return ('0' + i.toString(16).toUpperCase()).slice(-2)
       }).join('');
@@ -115,7 +115,16 @@ const parseVideoPackets = (es, streamPackets) => {
       const found = foundDelimiter(data, cursor)
       if (found[0]) {
         if (gotFirst) {
-          es.chunks.push(nalu)
+          let payload = {nalu: nalu}
+
+          const header          = packet.header
+          const adaptationField = header.adaptationField
+          if (adaptationField && adaptationField.pcrBase) {
+            payload.pcrBase = adaptationField.pcrBase
+          }
+
+          es.chunks.push(payload)
+
           nalu = []
         } else {
           gotFirst = true
