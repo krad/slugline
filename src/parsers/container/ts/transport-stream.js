@@ -1,4 +1,7 @@
 import TransportStreamParser from './parser'
+import ElementaryStream from './elementary-stream'
+import { createCodecsString } from '../mpeg-parser'
+import * as bytes from '../../../helpers/byte-helpers'
 
 class TransportStream {
   static parse(arrayBuffer) {
@@ -15,6 +18,43 @@ class TransportStream {
   constructor() {
     this.packets = []
   }
+
+  get trackPackets() {
+    const pmt = this.packets.filter(p => p.constructor.name == 'PMT')[0]
+    return pmt.tracks.map((t, idx) => {
+      return ElementaryStream.parse(this, t.streamType, idx+1)
+    })
+  }
+
+  get codecs() {
+    return this.trackPackets.map(p => p.codec)
+  }
+
+  get codecsString() {
+    return createCodecsString(this.codecs)
+  }
+
+  get PMT() {
+    return this.packets.filter(p => p.constructor.name == 'PMT')[0]
+  }
+
+  get tracks() {
+    return this.PMT.tracks.map((t, idx) => {
+      return ElementaryStream.parse(this, t.streamType, idx+1)
+    })
+  }
+
+  get tracksConfig() {
+    return this.tracks.map((t,idx) => {
+      let result = {type: t.streamType, codec: t.codecBytes, id: idx+1}
+      if (t.streamType === 27) {
+        result.sps = bytes.parseSPS(t.codecBytes[0].nalu)
+      }
+
+      return result
+    })
+  }
+
 }
 
 

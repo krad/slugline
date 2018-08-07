@@ -3,66 +3,65 @@ import * as bytes from '../helpers/byte-helpers'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
 
 class Transmuxer {
-  constructor(transportStream) {
-    this.ts      = transportStream
-    const pmt    = this.ts.packets.filter(p => p.constructor.name == 'PMT')[0]
-    this.tracks  = pmt.tracks.map((t, idx) => { return ElementaryStream.parse(this.ts, t.streamType, idx+1) })
-    this.config  = this.tracks.map((t,idx) => {return {type: t.streamType, codec: t.codecBytes, id: idx+1}} )
 
-    this.initSegments         = []
-    this.mediaSegments        = []
+  constructor() {
+    this.decodeCount          = 0
+    this.currentOffset        = 0
     this.currentMediaSequence = 1
-
-    this.config.forEach(config => {
-      if (config.type === 27) {
-        const buffer  = new Uint8Array(config.codec[0].nalu)
-        config.sps    = bytes.parseSPS(buffer)
-      }
-    })
-
   }
 
-  buildInitializationSegment() {
+  buildInitializationSegment(ts) {
     let result = []
     result.push(atoms.ftyp())
-    result.push(atoms.moov(this.config))
+    result.push(atoms.moov(ts.tracksConfig))
     result = result.map(a => atoms.build(a))
     return bytes.concatenate(Uint8Array, ...result)
   }
 
-  buildTrack() {
-    let GOPS = []
-    let currentGOP
-    const videoTrack = this.tracks.filter(t => t.streamType === 27)[0]
-    const trackID    = videoTrack.trackID
-    videoTrack.chunks.forEach(chunk => {
-      const nalu = chunk.nalu
-      const naluType = nalu[0] & 0x1f
+  buildSequences(ts, streamType) {
+    let result    = []
+    let track     = ts.tracks.filter(t => t.streamType == streamType)[0]
+    let currentSequence
+    track.chunks.forEach(chunk => {
+      const nalu      = chunk.nalu
+      const naluType  = nalu[0] & 0x1f
       if (naluType === 1) {
-        currentGOP.push(chunk)
+        if (currentSequence) {
+          if (chunk.pcrBase) { this.decodeCount +=  ((chunk.pcrBase >> 9) / 90000) }
+          currentSequence.push(chunk)
+        }
       }
 
       if (naluType === 5) {
-        if (currentGOP && currentGOP.length > 1) {
-          GOPS.push({currentMediaSequence: this.currentMediaSequence++,
-                                      gop: currentGOP,
-                                  trackID: trackID,
-                               streamType: 27})
+        if (currentSequence && currentSequence.length > 1) {
+          let offset          = currentSequence.reduce((acc, curr) => acc + curr.nalu.length, 0)
+          const padding       = 0 // 4 + 4 + 4 + 8 + 8 + 8 + 8 + 4 + 4 + 4 + 4 + 4 + 4
+          this.currentOffset += (offset) + padding
+          result.push({currentMediaSequence: this.currentMediaSequence++,
+                                    payload: currentSequence,
+                                    trackID: track.trackID,
+                                 streamType: streamType,
+                                     offset: this.currentOffset})
         }
-        currentGOP = [chunk]
+        chunk.decode      = this.decodeCount
+        currentSequence   = [chunk]
+        if (chunk.pcrBase) {
+          this.decodeCount += ((chunk.pcrBase >> 9) / 90000)
+        }
       }
+
     })
 
-    return GOPS
+    return result
   }
 
-  buildMediaSegments() {
-    const gops  = this.buildTrack()
+  buildMediaSegment(ts) {
+    const sequences = this.buildSequences(ts, 27)
 
     let result = []
-    gops.forEach(gop => {
-      result.push(atoms.moof(gop))
-      result.push(atoms.mdat(gop))
+    sequences.forEach(seq => {
+      result.push(atoms.moof(seq))
+      result.push(atoms.mdat(seq))
     })
     result = result.map(a => atoms.build(a))
     return bytes.concatenate(Uint8Array, ...result)

@@ -8,5 +8,6 @@ test('that we expose things from the project properly', t=> {
   t.ok(Project.TransportStream,  'TransportStream was present')
   t.ok(Project.ElementaryStream, 'ElementaryStream was present')
   t.ok(Project.MPEGParser,       'MPEGParser was present')
+  t.ok(Project.Transmuxer,       'Transmuxer was present')
   t.end()
 })

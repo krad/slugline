@@ -19,7 +19,9 @@ export const ftyp = () => {
 
 export const moov = (config) => {
   let result = [bytes.strToUint8('moov')]
-  let tracks = config.map(c => trak(c))
+  // let tracks = config.map(c => trak(c))
+
+  let tracks = [trak(config[0])]
 
   return [
     bytes.strToUint8('moov'),
@@ -34,9 +36,9 @@ export const mvhd = (config) => {
     bytes.strToUint8('mvhd'),
     new Uint8Array(1),      // version
     new Uint8Array(3),      // flags
-    bytes.u32(3592932068),  // creation time     // FIXME
-    bytes.u32(3592932068),  // modification time // FIXME
-    bytes.u32(30),          // timescale         // FIXME
+    bytes.u32(0),           // creation time     // FIXME
+    bytes.u32(0),           // modification time // FIXME
+    bytes.u32(90000),       // timescale         // FIXME
     bytes.u32(0),           // duration          // FIXME
     bytes.u32(65536),       // prefered rate     // FIXME
     bytes.s16(0),           // prefered volume
@@ -67,6 +69,9 @@ export const tkhd = (config) => {
     if (config.sps) {
       width   = config.sps.width
       height  = config.sps.height
+
+      width   = (width >>> 0)
+      height  = (height >>> 0)
     }
   }
 
@@ -78,22 +83,24 @@ export const tkhd = (config) => {
 
   let result = [
     bytes.strToUint8('tkhd'),
-    new Uint8Array([0]),          // version
+    new Uint8Array([0]),                 // version
     new Uint8Array([0x00, 0x00, 0x01]),  // flags
-    bytes.u32(0),      // creation time // FIXME
+    bytes.u32(0),               // creation time // FIXME
     bytes.u32(0),               // modification time // FIXME
-    bytes.u32(config.id),       // track id
-    bytes.u32(0),               // reserved
-    bytes.u32(0),               // duration
-    bytes.u64(0),               // reserved
-    bytes.u16(0),               // layer
-    bytes.u16(0),               // alternate group
-    bytes.u16(1),               // volume
-    bytes.u16(0),               // reserved
-    new Uint8Array(matrix),     // matrix struct
-    bytes.u32(width),           // track width
-    bytes.u32(height),          // track height
+    bytes.u32(config.id),                // track id
+    bytes.u32(0),                        // reserved
+    bytes.u32(0),                        // duration
+    bytes.u64(0),                        // reserved
+    bytes.u16(0),                        // layer
+    bytes.u16(0),                        // alternate group
+    bytes.u16(0x0100),                   // volume
+    bytes.u16(0),                        // reserved
+    new Uint8Array(matrix),              // matrix struct
+    bytes.u32(width),                    // track width
+    bytes.u32(height),                   // track height
   ]
+
+  console.log(width, height);
 
   return result
 }
@@ -180,7 +187,7 @@ export const smhd = (config) => {
   return [
     bytes.strToUint8('smhd'),
     new Uint8Array(1),         // version
-    new Uint8Array([0, 0, 0]), // flags
+    new Uint8Array([0, 0, 1]), // flags
     bytes.u16(0),              // balance
     bytes.u16(0),              // reserved
   ]
@@ -406,7 +413,8 @@ export const stco = (config) => {
 }
 
 export const mvex = (config) => {
-  const trexs = config.map(c => trex(c))
+  // const trexs = config.map(c => trex(c))
+  const trexs = [trex(config[0])]
 
   return [
     bytes.strToUint8('mvex'),
@@ -461,15 +469,23 @@ export const traf = (config) => {
 export const tfhd = (config) => {
   let result = [bytes.strToUint8('tfhd')]
 
+  const defaultBaseIsMOOF                = 0x20000
+  const baseDataOffsetPresent            = 0x000001
+  const sampleDescriptionIndexPresent    = 0x000002  // sample-description-index-present
+  const defaultSampleDurationPresent     = 0x000008  // default-sample-duration-present
+  const defaultSampleSizePresent         = 0x000010  // default-sample-size-present
+  const defaultSampleFlagsPresent        = 0x000020  // default-sample-flags-present
+  const durationIsEmpty                  = 0x010000  // duration-is-empty
+
+  let flags = sampleDescriptionIndexPresent|defaultSampleSizePresent|defaultSampleFlagsPresent|defaultSampleDurationPresent
+
   if (config.streamType == 27) {
-      result.push(bytes.u32(0x2003a))        // track fragment flags
+      result.push(bytes.u32(flags))        // track fragment flags
       result.push(bytes.u32(config.trackID)) // track id
-
-
-      const firstSample = config.gop.filter(p => p.pcrBase !== undefined)[0]
+      const firstSample = config.payload.filter(p => p.pcrBase !== undefined)[0]
       if (firstSample) {
         result.push(bytes.u32(0))                             // sample description index present
-        result.push(bytes.u32((firstSample.pcrBase >> 9)))    // default sample duration
+        result.push(bytes.u32(((firstSample.pcrBase >> 9) / 90000))) // default sample duration
         result.push(bytes.u32((firstSample.nalu.length)))     // default sample size
         result.push(bytes.u32(0x2000000))                     // default sample flags
       }
@@ -479,30 +495,40 @@ export const tfhd = (config) => {
 }
 
 export const tfdt = (config) => {
-
-  // const firstSample = config.gop.filter(p => p.pcrBase !== undefined)[0]
-  // console.log(firstSample.pcrBase);
-
   return [
     bytes.strToUint8('tfdt'),
     new Uint8Array([1]),
     new Uint8Array([0, 0, 0]),
-    bytes.u64(1/90000)
+    bytes.u64(config.payload[0].decode)
   ]
 }
 
 export const trun = (config) => {
+  const dataOffsetPresent                   = 0x000001
+  const firstSampleFlagsPresent             = 0x000004
+  const sampleDurationPresent               = 0x000100
+  const sampleSizePresent                   = 0x000200
+  const sampleFlagsPresent                  = 0x000400
+  const sampleCompositionTimeOffsetsPresent = 0x000800
+
+  const flags = dataOffsetPresent|sampleDurationPresent|sampleSizePresent|sampleFlagsPresent
+
   let result = [
     bytes.strToUint8('trun'),
-    bytes.u32(0x701),               // trun flags
-    bytes.u32(config.gop.length),   // sample count
-    bytes.u32(0),                   // data offset
+    bytes.u32(flags),               // trun flags
+    bytes.u32(config.payload.length),   // sample count
   ]
 
+
+  let lastOffset = config.offset
   let lastDuration
-  config.gop.forEach(g => {
+  config.payload.forEach(g => {
+
+    result.push(bytes.u32(lastOffset)) // dataOffset
+    lastOffset += g.nalu.length
+
     if (g.pcrBase) {
-      lastDuration = (g.pcrBase >> 9)
+      lastDuration = (((g.pcrBase >> 9) / 90000))
       result.push(bytes.u32(lastDuration))  // duration
     } else {
       result.push(bytes.u32(lastDuration))
@@ -530,9 +556,11 @@ export const mfhd = (config) => {
 }
 
 export const mdat = (config) => {
-  return [
-    bytes.strToUint8('mdat')
-  ]
+  let result = [bytes.strToUint8('mdat')]
+  config.payload.forEach(entry => {
+    result.push(new Uint8Array(entry.nalu))
+  })
+  return result
 }
 
 //////////////////////////////////////////////////////////////////

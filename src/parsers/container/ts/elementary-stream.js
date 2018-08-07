@@ -1,5 +1,4 @@
 import * as bytes from '../../../helpers/byte-helpers'
-
 class ElementaryStream {
 
   /**
