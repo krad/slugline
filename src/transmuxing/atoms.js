@@ -40,8 +40,8 @@ export const mvhd = (config) => {
     bytes.u32(0),           // modification time // FIXME
     bytes.u32(90000),       // timescale         // FIXME
     bytes.u32(0),           // duration          // FIXME
-    bytes.u32(65536),       // prefered rate     // FIXME
-    bytes.s16(0),           // prefered volume
+    bytes.u32(0x00010000),  // prefered rate     // FIXME
+    bytes.s16(0x0100),      // prefered volume
     new Uint8Array(10),     // reserved
     new Uint8Array(36),     // matrix struct // FIXME
     bytes.u32(0),           // preview time
@@ -119,9 +119,9 @@ export const mdhd = (config) => {
     bytes.strToUint8('mdhd'),
     new Uint8Array(1),          // version
     new Uint8Array([0, 0, 0]),  // flags
-    bytes.u32(3592932068),      // creationTime // FIXME
-    bytes.u32(3592932068),      // modification time // FIXME
-    bytes.u32(90000),           // timescale
+    bytes.u32(0),      // creationTime // FIXME
+    bytes.u32(0),      // modification time // FIXME
+    bytes.u32(30000),           // timescale
     bytes.u32(0),               // duration
     bytes.u16(0),               // language // FIXME
     bytes.u16(0),               // quality
@@ -303,7 +303,7 @@ export const avcC = (config) => {
     new Uint8Array([sps[1]]),     // profile
     new Uint8Array([sps[2]]),     // profile compatibility
     new Uint8Array([sps[3]]),     // level indication
-    new Uint8Array([0b11111111]), // nalu size
+    new Uint8Array([0b11111011]), // nalu size minus 1 (5 bits reserved all one - 3 bits)
     new Uint8Array([0b11100001]), // sps count
     bytes.u16(sps.length),        // sps length
     new Uint8Array(sps),          // sps bytes
@@ -477,15 +477,19 @@ export const tfhd = (config) => {
   const defaultSampleFlagsPresent        = 0x000020  // default-sample-flags-present
   const durationIsEmpty                  = 0x010000  // duration-is-empty
 
-  let flags = sampleDescriptionIndexPresent|defaultSampleSizePresent|defaultSampleFlagsPresent|defaultSampleDurationPresent
+  let flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent|defaultSampleFlagsPresent|defaultSampleDurationPresent
 
   if (config.streamType == 27) {
       result.push(bytes.u32(flags))        // track fragment flags
       result.push(bytes.u32(config.trackID)) // track id
-      const firstSample = config.payload.filter(p => p.pcrBase !== undefined)[0]
+
+      const clocks        = config.payload.filter(p => p.pcrBase !== undefined)
+      const firstSample   = clocks[0]
+      const secondSample  = clocks[1]
+
       if (firstSample) {
         result.push(bytes.u32(0))                             // sample description index present
-        result.push(bytes.u32(((firstSample.pcrBase >> 9) / 90000))) // default sample duration
+        result.push(bytes.u32(secondSample.pcrBase - firstSample.pcrBase))      // default sample duration
         result.push(bytes.u32((firstSample.nalu.length)))     // default sample size
         result.push(bytes.u32(0x2000000))                     // default sample flags
       }
@@ -499,39 +503,43 @@ export const tfdt = (config) => {
     bytes.strToUint8('tfdt'),
     new Uint8Array([1]),
     new Uint8Array([0, 0, 0]),
-    bytes.u64(config.payload[0].decode)
+    bytes.u64(config.decode)
   ]
 }
 
 export const trun = (config) => {
-  const dataOffsetPresent                   = 0x000001
-  const firstSampleFlagsPresent             = 0x000004
-  const sampleDurationPresent               = 0x000100
-  const sampleSizePresent                   = 0x000200
-  const sampleFlagsPresent                  = 0x000400
-  const sampleCompositionTimeOffsetsPresent = 0x000800
+  let payload     = config.payload || []
+  let sampleCount = payload.length
 
-  const flags = dataOffsetPresent|sampleDurationPresent|sampleSizePresent|sampleFlagsPresent
+  const dataOffsetPresent                   = 0x0001
+  const firstSampleFlagsPresent             = 0x0004
+  const sampleDurationPresent               = 0x0100
+  const sampleSizePresent                   = 0x0200
+  const sampleFlagsPresent                  = 0x0400
+  const sampleCompositionTimeOffsetsPresent = 0x0800
+
+  const flags = dataOffsetPresent|sampleDurationPresent|sampleFlagsPresent|sampleSizePresent
 
   let result = [
     bytes.strToUint8('trun'),
-    bytes.u32(flags),               // trun flags
-    bytes.u32(config.payload.length),   // sample count
+    bytes.u32(flags),                   // trun flags
+    bytes.u32(sampleCount),             // sample count
+    bytes.u32(config.offset)            // offset
   ]
 
-
-  let lastOffset = config.offset
   let lastDuration
-  config.payload.forEach(g => {
-
-    result.push(bytes.u32(lastOffset)) // dataOffset
-    lastOffset += g.nalu.length
+  payload.forEach(g => {
 
     if (g.pcrBase) {
-      lastDuration = (((g.pcrBase >> 9) / 90000))
-      result.push(bytes.u32(lastDuration))  // duration
+      let duration = 0
+      if (lastDuration) {
+        duration = (g.pcrBase - lastDuration)
+      }
+
+      result.push(bytes.u32(duration))  // duration
+      lastDuration = g.pcrBase
     } else {
-      result.push(bytes.u32(lastDuration))
+      result.push(bytes.u32(0))
     }
 
     result.push(bytes.u32(g.nalu.length))
@@ -558,7 +566,9 @@ export const mfhd = (config) => {
 export const mdat = (config) => {
   let result = [bytes.strToUint8('mdat')]
   config.payload.forEach(entry => {
-    result.push(new Uint8Array(entry.nalu))
+    let b = new Uint8Array(entry.nalu)
+    result.push(bytes.u32(entry.nalu.length))
+    result.push(b)
   })
   return result
 }
@@ -574,7 +584,7 @@ export const flatten = (atom) => {
 export const prependSize = (atom, padding) => {
   const arr   = flatten(atom)
   const sum   = (acc, curr) => { return acc + curr.length  }
-  let size  = arr.reduce(sum, 0) + 4
+  let size    = arr.reduce(sum, 0) + 4
   if (padding) { size += padding }
   arr.unshift(bytes.u32(size))
   return arr

@@ -5,7 +5,6 @@ import ElementaryStream from '../parsers/container/ts/elementary-stream'
 class Transmuxer {
 
   constructor() {
-    this.decodeCount          = 0
     this.currentOffset        = 0
     this.currentMediaSequence = 1
   }
@@ -22,32 +21,37 @@ class Transmuxer {
     let result    = []
     let track     = ts.tracks.filter(t => t.streamType == streamType)[0]
     let currentSequence
+    let decode    = 0
     track.chunks.forEach(chunk => {
       const nalu      = chunk.nalu
       const naluType  = nalu[0] & 0x1f
       if (naluType === 1) {
         if (currentSequence) {
-          if (chunk.pcrBase) { this.decodeCount +=  ((chunk.pcrBase >> 9) / 90000) }
           currentSequence.push(chunk)
         }
       }
 
       if (naluType === 5) {
         if (currentSequence && currentSequence.length > 1) {
-          let offset          = currentSequence.reduce((acc, curr) => acc + curr.nalu.length, 0)
-          const padding       = 0 // 4 + 4 + 4 + 8 + 8 + 8 + 8 + 4 + 4 + 4 + 4 + 4 + 4
-          this.currentOffset += (offset) + padding
+
+          let x       = atoms.moof({payload: currentSequence})
+          let y       = atoms.build(x)
+          this.currentOffset = y.length + (8*4)
+
           result.push({currentMediaSequence: this.currentMediaSequence++,
                                     payload: currentSequence,
                                     trackID: track.trackID,
                                  streamType: streamType,
-                                     offset: this.currentOffset})
+                                     offset: this.currentOffset,
+                                     decode: decode})
+
+          decode = currentSequence.filter(s => s.pcrBase != undefined)
+          .reduce((acc, curr) => acc + (curr.pcrBase >> 9), 0)
+
+          this.currentOffset += currentSequence.reduce((acc, curr) => acc + curr.nalu.length, 0)
+
         }
-        chunk.decode      = this.decodeCount
-        currentSequence   = [chunk]
-        if (chunk.pcrBase) {
-          this.decodeCount += ((chunk.pcrBase >> 9) / 90000)
-        }
+        currentSequence = [chunk]
       }
 
     })

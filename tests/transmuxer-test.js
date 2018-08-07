@@ -12,7 +12,7 @@ const tsURL2 = './tests/fixtures/apple-basic-ts/gear1/fileSequence1.ts'
 const assetA = fs.readFileSync(tsURL1)
 const assetB = fs.readFileSync(tsURL2)
 
-// const asset2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+const asset2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
 
 const initSegmentOut  = '/tmp/ftyp.mp4'
 const mediaSegmentOut = '/tmp/moof.mp4'
@@ -308,6 +308,20 @@ test('that we can build an media fragment', t=> {
 test.only('writing a segment', t=> {
   const bufferA  = Uint8Array.from(assetA)
   let tsA        = TransportStream.parse(bufferA)
+
+  console.log((901204 - 898204) / 90000);
+  let clocks = tsA.tracks[0].chunks.filter(c => c.pcrBase !== undefined).map(c => c.pcrBase)
+  clocks.reverse()
+  let results = []
+  for (var i = 1; i < clocks.length; i++) {
+    let result = (clocks[i-1] - clocks[i])
+    if (result > 0) {
+      results.push(result)
+    }
+  }
+
+  console.log(results.map(r => r/90000).reduce((a, c) => a + c), 0);
+
 
   let muxer     = new Transmuxer()
   const init    = muxer.buildInitializationSegment(tsA)
