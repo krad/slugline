@@ -48,7 +48,7 @@ class TransportStream {
     return this.tracks.map((t,idx) => {
       let result = {type: t.streamType, codec: t.codecBytes, id: idx+1}
       if (t.streamType === 27) {
-        result.sps = bytes.parseSPS(t.codecBytes[0].nalu)
+        result.sps = bytes.parseSPS(t.codecBytes[0])
       }
 
       return result

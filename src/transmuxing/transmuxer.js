@@ -23,19 +23,11 @@ class Transmuxer {
     let currentSequence
     let decode    = 0
     track.chunks.forEach(chunk => {
-      const nalu      = chunk.nalu
-      const naluType  = nalu[0] & 0x1f
-      if (naluType === 1) {
+
+      if (chunk.isKeyFrame) {
         if (currentSequence) {
-          currentSequence.push(chunk)
-        }
-      }
-
-      if (naluType === 5) {
-        if (currentSequence && currentSequence.length > 1) {
-
-          let x       = atoms.moof({payload: currentSequence})
-          let y       = atoms.build(x)
+          let x = atoms.moof({payload: currentSequence})
+          let y = atoms.build(x)
           this.currentOffset = y.length + (8*4)
 
           result.push({currentMediaSequence: this.currentMediaSequence++,
@@ -45,15 +37,17 @@ class Transmuxer {
                                      offset: this.currentOffset,
                                      decode: decode})
 
-          decode = currentSequence.filter(s => s.pcrBase != undefined)
-          .reduce((acc, curr) => acc + (curr.pcrBase >> 9), 0)
+          decode = currentSequence.reduce((acc, curr) => acc + (curr.duration), 0)
 
-          this.currentOffset += currentSequence.reduce((acc, curr) => acc + curr.nalu.length, 0)
+          // this.currentOffset += currentSequence.reduce((acc, curr) => acc + curr.nalu.length, 0)
 
         }
         currentSequence = [chunk]
+      } else {
+        if (currentSequence) {
+          currentSequence.push(chunk)
+        }
       }
-
     })
 
     return result

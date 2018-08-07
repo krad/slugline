@@ -45,7 +45,7 @@ class ElementaryStream {
     // Video
     if (this.streamType === 27) {
       const c                     = this.codecBytes
-      const arrayBuffer           = Uint8Array.from(c[0].nalu)
+      const arrayBuffer           = Uint8Array.from(c[0])
       const view                  = new DataView(arrayBuffer.buffer)
       const version               = view.getUint8(0)
       const profile               = view.getUint8(1)
@@ -84,10 +84,10 @@ class ElementaryStream {
 
   get codecBytes() {
     if (this.streamType === 27) {
-      return this.chunks.filter(chunk => {
-        const naluType = chunk.nalu[0] & 0x1f
-        if (naluType === 7 || naluType === 8) { return chunk.nalu }
-      }).slice(0, 2)
+      let configChunk = this.chunks .filter(c => c.hasConfig)[0]
+      let sps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 7)[0]
+      let pps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 8)[0]
+      return [sps, pps]
     }
 
     if (this.streamType === 15) {
@@ -104,53 +104,103 @@ class ElementaryStream {
 const parseVideoPackets = (es, streamPackets) => {
   let packetIdx       = 0
   let nalu            = []
-  let gotFirst        = false
+  let accessUnit
   while (packetIdx < streamPackets.length) {
     let packet = streamPackets[packetIdx]
     let data   = packet.data
     let cursor = 0
 
     while (cursor < data.byteLength) {
-      const found = foundDelimiter(data, cursor)
-      if (found[0]) {
-        if (gotFirst) {
-          let payload = {nalu: nalu}
+      if (data[cursor] === 0x00) {
+        if (data[cursor+1] === 0x00) {
+          if (data[cursor+2] === 0x00) {
+            if (data[cursor+3] === 0x01) {
+              if (data[cursor+4] === 9) {
+                if (accessUnit) { es.chunks.push(accessUnit) }
 
-          const header          = packet.header
-          const adaptationField = header.adaptationField
-          if (adaptationField && adaptationField.pcrBase) {
-            payload.pcrBase = adaptationField.pcrBase
+                accessUnit = new AccessUnit()
+                cursor += 4
+
+                if (packet.header.adaptationField && packet.header.adaptationField.pcrBase) {
+                  accessUnit.pcrBase = packet.header.adaptationField.pcrBase
+                }
+
+                continue
+              }
+            }
           }
-
-          es.chunks.push(payload)
-
-          nalu = []
-        } else {
-          gotFirst = true
         }
-        cursor += found[1]
-      } else {
-        if (gotFirst) { nalu.push(data[cursor]) }
-        cursor += 1
       }
+
+      if (accessUnit) { accessUnit.push(data[cursor]) }
+      cursor += 1
     }
 
     packetIdx += 1
   }
 }
 
-const foundDelimiter = (data, cursor) => {
-  if (cursor < data.byteLength - 4) {
-    if (data[cursor] === 0x00) {
-      if (data[cursor+1] === 0x00) {
-        if (data[cursor+2] === 0x01) { return [true, 3] }
-        if (data[cursor+2] === 0x00) {
-          if (data[cursor+3] === 0x01) { return [true, 4] }
-        }
-      }
+class AccessUnit {
+  constructor() {
+    this.data = []
+  }
+
+  push(byte) {
+    this.data.push(byte)
+  }
+
+  get duration() {
+    if (this.pcrBase) {
+      return (this.pcrBase >>> 9)
+    }
+    return 0
+  }
+
+  get isKeyFrame() {
+    return this.nalus.map(n => n[0] & 0x1f).filter(k => k === 5).length > 0
+  }
+
+  get hasConfig() {
+    return this.nalus.map(n => n[0] & 0x1f).filter(k => (k === 7) || (k === 8)).length > 0
+  }
+
+  get nalusWithoutConfig() {
+    if (this.hasConfig) {
+      return this.nalus.filter(n => ((n[0] & 0x1f) !== 7) && ((n[0] & 0x1f) !== 8) )
+    } else {
+      return this.nalus
     }
   }
-  return [false, 1]
+
+  get nalus() {
+    let result    = []
+    let cursor    = 0
+    let nalu
+    const buffer  = new Uint8Array(this.data)
+    while (cursor < buffer.byteLength) {
+      if (buffer[cursor] === 0x00) {
+        if (buffer[cursor+1] === 0x00) {
+          if (buffer[cursor+2] === 0x01) {
+            if (nalu) { result.push(nalu) }
+            nalu = []
+            cursor += 3
+            continue
+          }
+        }
+      }
+      if (nalu) { nalu.push(buffer[cursor]) }
+      cursor += 1
+    }
+    return result
+  }
+
+  get type() {
+    return this.data[0] & 0x1f
+  }
+
+  get length() {
+    return this.data.length
+  }
 }
 
 

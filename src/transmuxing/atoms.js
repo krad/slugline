@@ -121,7 +121,7 @@ export const mdhd = (config) => {
     new Uint8Array([0, 0, 0]),  // flags
     bytes.u32(0),      // creationTime // FIXME
     bytes.u32(0),      // modification time // FIXME
-    bytes.u32(30000),           // timescale
+    bytes.u32(90000),           // timescale
     bytes.u32(0),               // duration
     bytes.u16(0),               // language // FIXME
     bytes.u16(0),               // quality
@@ -294,8 +294,8 @@ export const avc1 = (config) => {
 }
 
 export const avcC = (config) => {
-  const sps = config.codec[0].nalu
-  const pps = config.codec[1].nalu
+  const sps = config.codec[0]
+  const pps = config.codec[1]
 
   return [
     bytes.strToUint8('avcC'),
@@ -483,15 +483,13 @@ export const tfhd = (config) => {
       result.push(bytes.u32(flags))        // track fragment flags
       result.push(bytes.u32(config.trackID)) // track id
 
-      const clocks        = config.payload.filter(p => p.pcrBase !== undefined)
-      const firstSample   = clocks[0]
-      const secondSample  = clocks[1]
+      const firstSample   = config.payload[0]
 
       if (firstSample) {
-        result.push(bytes.u32(0))                             // sample description index present
-        result.push(bytes.u32(secondSample.pcrBase - firstSample.pcrBase))      // default sample duration
-        result.push(bytes.u32((firstSample.nalu.length)))     // default sample size
-        result.push(bytes.u32(0x2000000))                     // default sample flags
+        result.push(bytes.u32(1))                         // sample description index present
+        result.push(bytes.u32(firstSample.duration))      // default sample duration
+        result.push(bytes.u32((firstSample.length)))      // default sample size
+        result.push(bytes.u32(0x2000000))                 // default sample flags
       }
   }
 
@@ -518,37 +516,26 @@ export const trun = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  const flags = dataOffsetPresent|sampleDurationPresent|sampleFlagsPresent|sampleSizePresent
+  const flags = dataOffsetPresent|sampleDurationPresent|sampleSizePresent|sampleFlagsPresent
 
   let result = [
     bytes.strToUint8('trun'),
     bytes.u32(flags),                   // trun flags
     bytes.u32(sampleCount),             // sample count
-    bytes.u32(config.offset)            // offset
+    bytes.s32(config.offset)            // offset
   ]
 
-  let lastDuration
   payload.forEach(g => {
 
-    if (g.pcrBase) {
-      let duration = 0
-      if (lastDuration) {
-        duration = (g.pcrBase - lastDuration)
-      }
+    result.push(bytes.u32(g.duration))  // duration
+    result.push(bytes.u32(g.length))  // size
 
-      result.push(bytes.u32(duration))  // duration
-      lastDuration = g.pcrBase
-    } else {
-      result.push(bytes.u32(0))
-    }
-
-    result.push(bytes.u32(g.nalu.length))
-
-    if ((g.nalu[0] & 0x1f) === 5) {
+    if (g.isKeyFrame) {
       result.push(bytes.u32(0x02000000)) // sample is depended on
     } else {
       result.push(bytes.u32(0x01000000)) // samples depends on a keyframe
     }
+
   })
 
   return result
@@ -565,10 +552,13 @@ export const mfhd = (config) => {
 
 export const mdat = (config) => {
   let result = [bytes.strToUint8('mdat')]
-  config.payload.forEach(entry => {
-    let b = new Uint8Array(entry.nalu)
-    result.push(bytes.u32(entry.nalu.length))
-    result.push(b)
+  config.payload.forEach(accessUnit => {
+
+    accessUnit.nalus.forEach(n => {
+      let b = new Uint8Array(n)
+      result.push(bytes.u32(b.length))
+      result.push(b)
+    })
   })
   return result
 }
