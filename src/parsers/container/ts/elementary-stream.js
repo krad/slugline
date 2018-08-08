@@ -252,6 +252,8 @@ class PESPacket {
       this.pesExtFieldLength = reader.readBits(7)
       reader.readBits(8)
     }
+
+    console.log(reader.currentBit, reader.length);
   }
 
 }
