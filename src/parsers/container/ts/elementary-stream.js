@@ -105,107 +105,22 @@ const parseVideoPackets = (es, streamPackets) => {
   let packetIdx       = 0
   let nalu            = []
   let accessUnit
-  let lastClock
-  let dur = 0
   while (packetIdx < streamPackets.length) {
     let packet = streamPackets[packetIdx]
-    let data   = packet.data
-    let cursor = 0
-
-    while (cursor < data.byteLength) {
-
-      const startCode = hasStartCode(data, cursor)
-      if (startCode > 0) {
-
-        // if (startCode === 3) {
-        //   // if (type === 33) {
-        //     console.log('--------');
-        //     let reader = new bytes.BitReader(data)
-        //     reader.currentBit = (cursor + startCode) * 8
-        //     console.log(reader.readBits(8))
-        //     reader.readBits(16);
-        //     console.log('purple:', reader.readBits(2));
-        //     console.log('scrambling:', reader.readBits(2));
-        //     console.log('priority:', reader.readBit());
-        //     console.log('align:', reader.readBit());
-        //     console.log('copyright:', reader.readBit());
-        //     console.log('original:', reader.readBit());
-        //
-        //     let p1 = reader.readBit()
-        //     let p2 = reader.readBit()
-        //
-        //     if (p1 === 0 && p2 === 0) {
-        //       console.log('no pts / dts');
-        //     }
-        //
-        //     if (p1 === 0 && p2 === 1) {
-        //       console.log('forbidden');
-        //     }
-        //
-        //     // if (p1 === 1&& p2 === 0) {
-        //     //   let high = reader.readBits(3)
-        //     //   reader.readBit()
-        //     //   let mid = reader.readBits(15)
-        //     //   reader.readBit()
-        //     //   let low = reader.readBits(15)
-        //     //   reader.readBit()
-        //     //   console.log(high, mid, low);
-        //     // }
-        //
-        //     if (p1 === 1 && p2 === 1) {
-        //       let high = reader.readBits(3)
-        //       reader.readBit()
-        //       let mid = reader.readBits(15)
-        //       reader.readBit()
-        //       let low = reader.readBits(15)
-        //       reader.readBit()
-        //       console.log(high, mid, low);
-        //     }
-        //
-        //     // reader.readBits(6)
-        //     // console.log(reader.readBits(8));
-        //     // console.log(reader.readBit());
-        //     // console.log(reader.readBit());
-        //     // console.log(reader.readBit());
-        //     // console.log(reader.readBit());
-        // }
-        const type = data[cursor + startCode]
-
-        // }
-
-        if (type === 9) {
-          dur += 15
-          if (accessUnit) { es.chunks.push(accessUnit) }
-          accessUnit = new AccessUnit()
-          accessUnit.duration = dur
-          if (packet.header.adaptationField && packet.header.adaptationField.pcrBase) {
-            lastClock = packet.header.adaptationField.pcrBase
-            accessUnit.pcrBase = packet.header.adaptationField.pcrBase
-          } else {
-            accessUnit.pcrBase = lastClock
-          }
-          cursor += startCode
+    let reader = new bytes.BitReader(packet.data)
+    while (reader.currentBit < reader.length * 8) {
+      let startCode = reader.readBits(24)
+      if (startCode === 0x000001) {
+        let type = reader.readBits(8)
+        if (type === 0xe0) {
+          let pes = new PESPacket(type, reader)
+          console.log(pes);
         }
-
       }
-
-      if (accessUnit) { accessUnit.push(data[cursor]) }
-      cursor += 1
     }
 
     packetIdx += 1
   }
-
-  // for (var i = 0; i < es.chunks.length; i++) {
-  //   let a = es.chunks[i]
-  //   let b = es.chunks[i+1]
-  //
-  //   if (b) {
-  //     a.duration = ((b.pcrBase - a.pcrBase))
-  //   } else {
-  //     a.duration = (es.chunks[i-1].duration)
-  //   }
-  // }
 }
 
 const hasStartCode = (data, cursor) => {
@@ -225,6 +140,120 @@ const hasStartCode = (data, cursor) => {
     }
   }
   return 0
+}
+
+class PESPacket {
+
+  constructor(streamID, reader) {
+    this.streamID = streamID
+    this.length   = reader.readBits(16)
+
+    reader.readBits(2)   // 10
+    this.scramblingControl      = reader.readBits(2)
+    this.priority               = reader.readBit()
+    this.alignmentIndicator     = reader.readBit()
+    this.copyright              = reader.readBit()
+    this.originalOrCopyright    = reader.readBit()
+    this.ptsDtsFlags            = reader.readBits(2)
+    this.escrFlag               = reader.readBit()
+    this.esRateFlag             = reader.readBit()
+    this.dsmTrickMode           = reader.readBit()
+    this.additionalCopyInfoFlag = reader.readBit()
+    this.pesCRCFlag             = reader.readBit()
+    this.pesExtFlag             = reader.readBit()
+    this.pesHeaderDataLength    = reader.readBits(8)
+
+    if (this.ptsDtsFlags === 2) {
+      reader.readBits(4)
+      let high = reader.readBits(3)
+      reader.readBit()
+      let mid = reader.readBits(15)
+      reader.readBit()
+      let low = reader.readBits(15)
+      reader.readBit()
+      this.pts = high + mid + low
+    }
+
+    if (this.ptsDtsFlags === 3) {
+      reader.readBits(4)
+      let high = reader.readBits(3)
+      reader.readBit()
+      let mid = reader.readBits(15)
+      reader.readBit()
+      let low = reader.readBits(15)
+      reader.readBit()
+      this.pts = high + mid + low
+
+      reader.readBits(4)
+      high = reader.readBits(3)
+      reader.readBit()
+      mid = reader.readBits(15)
+      reader.readBit()
+      low = reader.readBits(15)
+      reader.readBit()
+      this.dts = high + mid + low
+    }
+
+    if (this.escrFlag) {
+      reader.readBits(2)
+      let high = reader.readBits(3)
+      reader.readBit()
+      let mid = reader.readBits(15)
+      reader.readBit()
+      let low = reader.readBits(15)
+      reader.readBit()
+      let ext = reader.readBits(9)
+      reader.readBit()
+
+      this.scr    = high + mid + low
+      this.scrExt = ext
+    }
+
+    if (this.esRateFlag) {
+      reader.readBit()
+      this.esRate = reader.readBits(22)
+      reader.readBit()
+    }
+
+    if (this.additionalCopyInfoFlag) {
+      reader.readBit()
+      this.additionalCopyInfo = reader.readBits(7)
+    }
+
+    if (this.pesCRCFlag) {
+      this.pesCRC = reader.readBits(16)
+    }
+
+    if (this.pesExtFlag) {
+      this.pesPrivateHeaderFlag         = reader.readBit()
+      this.packHeaderFieldFlag          = reader.readBit()
+      this.programPacketSeqCounterFlag  = reader.readBit()
+      this.pSTDBufferFlag               = reader.readBit()
+      reader.readBits(3)
+      this.pesExtFlag2                  = reader.readBit()
+    }
+
+    if (this.programPacketSeqCounterFlag) {
+      reader.readBit()
+      this.packetSeqCounter = reader.readBits(7)
+      reader.readBit()
+      this.mpegIdent = reader.readBit()
+      this.stuffingLengt = reader.readBit(6)
+    }
+
+    if (this.pSTDBufferFlag) {
+      reader.readBits(2)
+      this.pSTDBufferScale = reader.readBit()
+      this.pSTDBufferSize  = reader.readBits(13)
+    }
+
+    if (this.pesExtFlag2) {
+      reader.readBit()
+      this.pesExtFieldLength = reader.readBits(7)
+      reader.readBits(8)
+    }
+  }
+
 }
 
 class AccessUnit {
@@ -259,27 +288,95 @@ class AccessUnit {
     }
   }
 
-  get nalus() {
-    let result    = []
-    let cursor    = 0
-    let nalu      = []
-    const buffer  = new Uint8Array(this.data)
-    while (cursor < buffer.byteLength) {
-      const startCode = hasStartCode(buffer, cursor)
-      if (startCode > 0) {
-        const firstByte = buffer[cursor + startCode]
-        const byteType = firstByte & 0x1f
-        if (nalu) { result.push(nalu) }
-        nalu = []
-        cursor += startCode
-        continue
-      }
+  get pes() {
+    let result = []
+    const buffer = new Uint8Array(this.data)
+    const reader = new bytes.BitReader(buffer)
+    while (reader.currentBit < reader.length * 8) {
+      const startCode = reader.readBits(24)
+      if (startCode === 0x000001) {
+        let type = reader.readBits(8)
+        console.log(type.toString(16), type & 0x1f);
 
-      if (nalu) { nalu.push(buffer[cursor]) }
-      cursor += 1
+        // console.log('sync');
+      }
     }
-    // console.log(result.map(n => n[0] & 0x1f));
-    return result
+
+  }
+
+  get nalus() {
+    // this.pes
+    return []
+    // let result    = []
+    // let cursor    = 0
+    // let nalu      = []
+    // const buffer  = new Uint8Array(this.data)
+    // while (cursor < buffer.byteLength) {
+    //   const startCode = hasStartCode(buffer, cursor)
+    //   if (startCode > 0) {
+    //     const firstByte = buffer[cursor + startCode]
+    //
+    //     if (firstByte === 0xe0) {
+    //       let reader = new bytes.BitReader(buffer)
+    //       reader.currentBit = (cursor + startCode + 1) * 8
+    //       console.log('-------------');
+    //       console.log(reader.readBits(16))
+    //       console.log(reader.readBits(2));
+    //       reader.readBits(6)
+    //       console.log(reader.readBits(2));
+    //       reader.readBits(6)
+    //       console.log(reader.readBits(8))
+    //       console.log(reader.readBits(4));
+    //
+    //       let ptsHigh = reader.readBits(3)
+    //       console.log('pts high', ptsHigh);
+    //       console.log(reader.readBit());
+    //
+    //       let ptsMid = reader.readBits(15)
+    //       console.log('pts mid', ptsMid);
+    //       console.log(reader.readBit());
+    //       let ptsLow = reader.readBits(15)
+    //       console.log('pts low', ptsLow);
+    //       console.log(reader.readBit());
+    //
+    //       console.log(reader.readBits(4));
+    //
+    //       let dtsHigh = reader.readBits(3)
+    //       console.log('dts high', dtsHigh);
+    //       console.log(reader.readBit());
+    //
+    //       let dtsMid = reader.readBits(15)
+    //       console.log('dts mid', dtsMid);
+    //       console.log(reader.readBit());
+    //
+    //       let dtsLow = reader.readBits(15)
+    //       console.log('dts low', dtsLow);
+    //       console.log(reader.readBit());
+    //
+    //       let pts = (ptsHigh + ptsMid + ptsLow)
+    //       let dts = (dtsHigh + dtsMid + dtsLow)
+    //       console.log('pts', pts);
+    //       console.log('dts', dts);
+    //
+    //       this.dts = dts
+    //       this.pts = pts
+    //       cursor += 1
+    //       continue
+    //
+    //     }
+    //
+    //     const byteType = firstByte & 0x1f
+    //     if (nalu) { result.push(nalu) }
+    //     nalu = []
+    //     cursor += startCode
+    //     continue
+    //   }
+    //
+    //   if (nalu) { nalu.push(buffer[cursor]) }
+    //   cursor += 1
+    // }
+    // // console.log(result.map(n => n[0] & 0x1f));
+    // return result
   }
 
   get type() {

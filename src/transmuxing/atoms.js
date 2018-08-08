@@ -485,7 +485,7 @@ export const tfhd = (config) => {
 
       if (firstSample) {
         result.push(bytes.u32(1))                         // sample description index present
-        result.push(bytes.u32(firstSample.duration))      // default sample duration
+        result.push(bytes.u32(firstSample.dts))      // default sample duration
         result.push(bytes.u32((firstSample.length)))      // default sample size
         result.push(bytes.u32(0x2000000))                 // default sample flags
       }
@@ -514,7 +514,7 @@ export const trun = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  const flags = dataOffsetPresent|sampleDurationPresent|sampleSizePresent|sampleFlagsPresent
+  const flags = dataOffsetPresent|sampleDurationPresent|sampleSizePresent|sampleFlagsPresent|sampleCompositionTimeOffsetsPresent
 
   let result = [
     bytes.strToUint8('trun'),
@@ -525,7 +525,9 @@ export const trun = (config) => {
 
   payload.forEach(g => {
 
-    result.push(bytes.u32(g.duration))  // duration
+    console.log(g);
+
+    result.push(bytes.u32(g.dts))  // duration
     result.push(bytes.u32(g.length))    // size
 
     if (g.isKeyFrame) {
@@ -534,7 +536,7 @@ export const trun = (config) => {
       result.push(bytes.u32(0x01000000)) // samples depends on a keyframe
     }
 
-    // result.push(bytes.u32(0))
+    result.push(bytes.u32(g.dts - g.pts))
 
   })
 
