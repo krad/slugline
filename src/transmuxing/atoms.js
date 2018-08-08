@@ -100,8 +100,6 @@ export const tkhd = (config) => {
     bytes.u32(height),                   // track height
   ]
 
-  console.log(width, height);
-
   return result
 }
 
@@ -222,10 +220,10 @@ export const stbl = (config) => {
   return [
     bytes.strToUint8('stbl'),
     stsd(config),             // sample description atom
-    stts(config),             // time to sample atom
-    stsc(config),             // sample to chunk atom
-    stsz(config),             // sample size atom
-    stco(config),             // chunk offset atom
+    // stts(config),             // time to sample atom
+    // stsc(config),             // sample to chunk atom
+    // stsz(config),             // sample size atom
+    // stco(config),             // chunk offset atom
   ]
 }
 
@@ -303,8 +301,8 @@ export const avcC = (config) => {
     new Uint8Array([sps[1]]),     // profile
     new Uint8Array([sps[2]]),     // profile compatibility
     new Uint8Array([sps[3]]),     // level indication
-    new Uint8Array([0b11111011]), // nalu size minus 1 (5 bits reserved all one - 3 bits)
-    new Uint8Array([0b11100001]), // sps count
+    new Uint8Array([0b11111111]), // nalu size minus 1 (5 bits reserved all one - 3 bits)
+    new Uint8Array([1]), // sps count
     bytes.u16(sps.length),        // sps length
     new Uint8Array(sps),          // sps bytes
     new Uint8Array([1]),          // pps count
@@ -528,13 +526,15 @@ export const trun = (config) => {
   payload.forEach(g => {
 
     result.push(bytes.u32(g.duration))  // duration
-    result.push(bytes.u32(g.length))  // size
+    result.push(bytes.u32(g.length))    // size
 
     if (g.isKeyFrame) {
       result.push(bytes.u32(0x02000000)) // sample is depended on
     } else {
       result.push(bytes.u32(0x01000000)) // samples depends on a keyframe
     }
+
+    // result.push(bytes.u32(0))
 
   })
 
@@ -552,8 +552,10 @@ export const mfhd = (config) => {
 
 export const mdat = (config) => {
   let result = [bytes.strToUint8('mdat')]
+
   config.payload.forEach(accessUnit => {
 
+    let b = new Uint8Array(accessUnit.data)
     accessUnit.nalus.forEach(n => {
       let b = new Uint8Array(n)
       result.push(bytes.u32(b.length))

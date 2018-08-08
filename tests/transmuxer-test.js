@@ -86,20 +86,20 @@ test('that we can parse a sps', t=> {
 
   const buffer = Uint8Array.from(assetA)
   let ts       = TransportStream.parse(buffer)
-  let muxer    = new Transmuxer(ts)
 
-  t.ok(muxer.config[0].sps, 'elementary stream had a parsed sps')
+  t.ok(ts.tracksConfig[0].sps, 'elementary stream had a parsed sps')
+  const sps = ts.tracksConfig[0].sps
 
-  const sps = muxer.config[0].sps
-  t.equals(77, sps.profileIDC,          'got profileIDC')
-  t.equals(0, sps.constraint_set0_flag, 'got constraint_set0_flag')
-  t.equals(1, sps.constraint_set1_flag, 'got constraint_set1_flag')
-  t.equals(0, sps.constraint_set2_flag, 'got constraint_set2_flag')
-  t.equals(0, sps.constraint_set3_flag, 'got constraint_set3_flag')
-  t.equals(0, sps.constraint_set4_flag, 'got constraint_set4_flag')
-  t.equals(21, sps.levelIDC,            'got levelIDC')
-  t.equals(400, sps.width,              'got width')
-  t.equals(300, sps.height,             'got height')
+  t.equals(77, sps.profileIDC,                 'got profileIDC')
+  t.equals(0, sps.constraint_set0_flag,        'got constraint_set0_flag')
+  t.equals(1, sps.constraint_set1_flag,        'got constraint_set1_flag')
+  t.equals(0, sps.constraint_set2_flag,        'got constraint_set2_flag')
+  t.equals(0, sps.constraint_set3_flag,        'got constraint_set3_flag')
+  t.equals(0, sps.constraint_set4_flag,        'got constraint_set4_flag')
+  t.equals(21, sps.levelIDC,                   'got levelIDC')
+  t.equals(400, sps.width,                     'got width')
+  t.equals(300, sps.height,                    'got height')
+  t.equals(1, sps.vui_parameters_present_flag, 'vui params were signaled as being present')
 
   console.log(sps);
 
@@ -308,20 +308,6 @@ test('that we can build an media fragment', t=> {
 test.only('writing a segment', t=> {
   const bufferA  = Uint8Array.from(assetA)
   let tsA        = TransportStream.parse(bufferA)
-
-  console.log((901204 - 898204) / 90000);
-  let clocks = tsA.tracks[0].chunks.filter(c => c.pcrBase !== undefined).map(c => c.pcrBase)
-  clocks.reverse()
-  let results = []
-  for (var i = 1; i < clocks.length; i++) {
-    let result = (clocks[i-1] - clocks[i])
-    if (result > 0) {
-      results.push(result)
-    }
-  }
-
-  console.log(results.map(r => r/90000).reduce((a, c) => a + c), 0);
-
 
   let muxer     = new Transmuxer()
   const init    = muxer.buildInitializationSegment(tsA)

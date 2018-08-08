@@ -7,6 +7,7 @@ class Transmuxer {
   constructor() {
     this.currentOffset        = 0
     this.currentMediaSequence = 1
+    this.decode               = 0
   }
 
   buildInitializationSegment(ts) {
@@ -21,7 +22,6 @@ class Transmuxer {
     let result    = []
     let track     = ts.tracks.filter(t => t.streamType == streamType)[0]
     let currentSequence
-    let decode    = 0
     track.chunks.forEach(chunk => {
 
       if (chunk.isKeyFrame) {
@@ -35,11 +35,9 @@ class Transmuxer {
                                     trackID: track.trackID,
                                  streamType: streamType,
                                      offset: this.currentOffset,
-                                     decode: decode})
+                                     decode: this.decode})
 
-          decode = currentSequence.reduce((acc, curr) => acc + (curr.duration), 0)
-
-          // this.currentOffset += currentSequence.reduce((acc, curr) => acc + curr.nalu.length, 0)
+          this.decode += currentSequence.reduce((acc, curr) => acc + (curr.duration/90000), 0)
 
         }
         currentSequence = [chunk]

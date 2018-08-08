@@ -6,8 +6,9 @@ import { MediaPacket } from './packet'
 
 class TransportStreamParser {
   constructor() {
-    this.PAT    = undefined
-    this.PMT_ID = undefined
+    this.PAT          = undefined
+    this.PMT_ID       = undefined
+    this.trackPIDs    = []
   }
 
   parse(arrayBuffer) {

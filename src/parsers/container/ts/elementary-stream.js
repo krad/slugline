@@ -105,31 +105,88 @@ const parseVideoPackets = (es, streamPackets) => {
   let packetIdx       = 0
   let nalu            = []
   let accessUnit
+  let lastClock
+  let dur = 0
   while (packetIdx < streamPackets.length) {
     let packet = streamPackets[packetIdx]
     let data   = packet.data
     let cursor = 0
 
     while (cursor < data.byteLength) {
-      if (data[cursor] === 0x00) {
-        if (data[cursor+1] === 0x00) {
-          if (data[cursor+2] === 0x00) {
-            if (data[cursor+3] === 0x01) {
-              if (data[cursor+4] === 9) {
-                if (accessUnit) { es.chunks.push(accessUnit) }
 
-                accessUnit = new AccessUnit()
-                cursor += 4
+      const startCode = hasStartCode(data, cursor)
+      if (startCode > 0) {
 
-                if (packet.header.adaptationField && packet.header.adaptationField.pcrBase) {
-                  accessUnit.pcrBase = packet.header.adaptationField.pcrBase
-                }
+        // if (startCode === 3) {
+        //   // if (type === 33) {
+        //     console.log('--------');
+        //     let reader = new bytes.BitReader(data)
+        //     reader.currentBit = (cursor + startCode) * 8
+        //     console.log(reader.readBits(8))
+        //     reader.readBits(16);
+        //     console.log('purple:', reader.readBits(2));
+        //     console.log('scrambling:', reader.readBits(2));
+        //     console.log('priority:', reader.readBit());
+        //     console.log('align:', reader.readBit());
+        //     console.log('copyright:', reader.readBit());
+        //     console.log('original:', reader.readBit());
+        //
+        //     let p1 = reader.readBit()
+        //     let p2 = reader.readBit()
+        //
+        //     if (p1 === 0 && p2 === 0) {
+        //       console.log('no pts / dts');
+        //     }
+        //
+        //     if (p1 === 0 && p2 === 1) {
+        //       console.log('forbidden');
+        //     }
+        //
+        //     // if (p1 === 1&& p2 === 0) {
+        //     //   let high = reader.readBits(3)
+        //     //   reader.readBit()
+        //     //   let mid = reader.readBits(15)
+        //     //   reader.readBit()
+        //     //   let low = reader.readBits(15)
+        //     //   reader.readBit()
+        //     //   console.log(high, mid, low);
+        //     // }
+        //
+        //     if (p1 === 1 && p2 === 1) {
+        //       let high = reader.readBits(3)
+        //       reader.readBit()
+        //       let mid = reader.readBits(15)
+        //       reader.readBit()
+        //       let low = reader.readBits(15)
+        //       reader.readBit()
+        //       console.log(high, mid, low);
+        //     }
+        //
+        //     // reader.readBits(6)
+        //     // console.log(reader.readBits(8));
+        //     // console.log(reader.readBit());
+        //     // console.log(reader.readBit());
+        //     // console.log(reader.readBit());
+        //     // console.log(reader.readBit());
+        // }
+        const type = data[cursor + startCode]
 
-                continue
-              }
-            }
+        // }
+
+        if (type === 9) {
+          dur += 15
+          if (accessUnit) { es.chunks.push(accessUnit) }
+          accessUnit = new AccessUnit()
+          accessUnit.duration = dur
+          if (packet.header.adaptationField && packet.header.adaptationField.pcrBase) {
+            lastClock = packet.header.adaptationField.pcrBase
+            accessUnit.pcrBase = packet.header.adaptationField.pcrBase
+          } else {
+            accessUnit.pcrBase = lastClock
           }
+          cursor += startCode
         }
+
       }
 
       if (accessUnit) { accessUnit.push(data[cursor]) }
@@ -138,6 +195,36 @@ const parseVideoPackets = (es, streamPackets) => {
 
     packetIdx += 1
   }
+
+  // for (var i = 0; i < es.chunks.length; i++) {
+  //   let a = es.chunks[i]
+  //   let b = es.chunks[i+1]
+  //
+  //   if (b) {
+  //     a.duration = ((b.pcrBase - a.pcrBase))
+  //   } else {
+  //     a.duration = (es.chunks[i-1].duration)
+  //   }
+  // }
+}
+
+const hasStartCode = (data, cursor) => {
+  if (data[cursor] === 0x00) {
+    if (data[cursor+1] === 0x00) {
+
+      if (data[cursor+2] === 0x01) {
+        return 3
+      }
+
+      if (data[cursor+2] === 0x00) {
+        if (data[cursor+3] === 0x01) {
+          return 4
+        }
+      }
+
+    }
+  }
+  return 0
 }
 
 class AccessUnit {
@@ -149,12 +236,12 @@ class AccessUnit {
     this.data.push(byte)
   }
 
-  get duration() {
-    if (this.pcrBase) {
-      return (this.pcrBase >>> 9)
-    }
-    return 0
-  }
+  // get duration() {
+  //   if (this.pcrBase) {
+  //     return this.pcrBase >> 9
+  //   }
+  //   return 0
+  // }
 
   get isKeyFrame() {
     return this.nalus.map(n => n[0] & 0x1f).filter(k => k === 5).length > 0
@@ -175,22 +262,23 @@ class AccessUnit {
   get nalus() {
     let result    = []
     let cursor    = 0
-    let nalu
+    let nalu      = []
     const buffer  = new Uint8Array(this.data)
     while (cursor < buffer.byteLength) {
-      if (buffer[cursor] === 0x00) {
-        if (buffer[cursor+1] === 0x00) {
-          if (buffer[cursor+2] === 0x01) {
-            if (nalu) { result.push(nalu) }
-            nalu = []
-            cursor += 3
-            continue
-          }
-        }
+      const startCode = hasStartCode(buffer, cursor)
+      if (startCode > 0) {
+        const firstByte = buffer[cursor + startCode]
+        const byteType = firstByte & 0x1f
+        if (nalu) { result.push(nalu) }
+        nalu = []
+        cursor += startCode
+        continue
       }
+
       if (nalu) { nalu.push(buffer[cursor]) }
       cursor += 1
     }
+    // console.log(result.map(n => n[0] & 0x1f));
     return result
   }
 
@@ -199,7 +287,7 @@ class AccessUnit {
   }
 
   get length() {
-    return this.data.length
+    return this.nalus.reduce((a, c) => a + (c.length+4), 0)
   }
 }
 
