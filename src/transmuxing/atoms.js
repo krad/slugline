@@ -525,7 +525,7 @@ export const trun = (config) => {
 
   payload.forEach(g => {
 
-    console.log(g);
+    // console.log(g);
 
     result.push(bytes.u32(g.dts))  // duration
     result.push(bytes.u32(g.length))    // size

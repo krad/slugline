@@ -21,7 +21,16 @@ class ElementaryStream {
     const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
 
     if (streamType === 27) {
-      parseVideoPackets(es, streamPackets)
+
+      let pkts  = parsePES(streamPackets)
+      let units = parseAccessUnits(pkts)
+
+      units.forEach(au => {
+        console.log(au.nalus.map(n => n[0] & 0x1f), au.pts, au.dts);
+      })
+
+      console.log(pkts.length);
+      console.log(units.length);
     }
 
     if (streamType === 15) {
@@ -84,7 +93,7 @@ class ElementaryStream {
 
   get codecBytes() {
     if (this.streamType === 27) {
-      let configChunk = this.chunks .filter(c => c.hasConfig)[0]
+      let configChunk = this.chunks.filter(c => c.hasConfig)[0]
       let sps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 7)[0]
       let pps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 8)[0]
       return [sps, pps]
@@ -98,72 +107,109 @@ class ElementaryStream {
 }
 
 
-/**
- * Parse h264 NALUs found across all video packets
- */
-const parseVideoPackets = (es, streamPackets) => {
-  let packetIdx       = 0
-  let nalu            = []
-  let accessUnit
-  while (packetIdx < streamPackets.length) {
-    let packet = streamPackets[packetIdx]
+const parsePES = (progamPackets) => {
+  let packetIdx  = 0
+  let result     = []
+  let pes
+
+  let syncBytes = new Uint8Array([0, 0, 0])
+  while (packetIdx < progamPackets.length) {
+    let packet = progamPackets[packetIdx]
     let reader = new bytes.BitReader(packet.data)
-    while (reader.currentBit < reader.length * 8) {
-      let startCode = reader.readBits(24)
-      if (startCode === 0x000001) {
+
+    while (reader.currentBit <= (reader.length * 8)) {
+      syncBytes[2] = syncBytes[1]
+      syncBytes[1] = syncBytes[0]
+      syncBytes[0] = reader.readBits(8)
+      if (syncBytes[2] === 0x00 && syncBytes[1] === 0x00 && syncBytes[0] === 0x01) {
         let type = reader.readBits(8)
         if (type === 0xe0) {
-          let pes = new PESPacket(type, reader)
-          console.log(pes);
+          if (pes) { result.push(pes) }
+          pes = new PESPacket(type, reader)
+        } else {
+          pes.push(syncBytes[0])
+          pes.push(type)
+        }
+
+      } else {
+        if (pes) {
+          pes.push(syncBytes[0])
+        }
+      }
+    }
+    packetIdx += 1
+  }
+
+  return result
+}
+
+const parseAccessUnits = (pes) => {
+  let packetIdx = 0
+  let result    = []
+  let accessUnit
+
+  let syncBytes = new Uint8Array([0, 0, 0])
+  while (packetIdx < pes.length) {
+    let packet = pes[packetIdx]
+    let buffer = new Uint8Array(packet.payload)
+    let reader = new bytes.BitReader(buffer)
+    while(reader.currentBit < reader.length * 8) {
+      syncBytes[2] = syncBytes[1]
+      syncBytes[1] = syncBytes[0]
+      syncBytes[0] = reader.readBits(8)
+      if (syncBytes[2] === 0x00 && syncBytes[1] === 0x00 && syncBytes[0] === 0x01) {
+
+        const next = reader.readBits(8)
+        const type = next & 0x1f
+        if (type === 9) {
+          if (accessUnit) { result.push(accessUnit) }
+          accessUnit        = new AccessUnit()
+          accessUnit.packet = packet.header
+          accessUnit.push(next)
+        } else {
+          accessUnit.push(syncBytes[0])
+          accessUnit.push(next)
+        }
+
+      } else {
+        if (accessUnit) {
+          accessUnit.push(syncBytes[0])
         }
       }
     }
 
     packetIdx += 1
   }
+  return result
 }
 
-const hasStartCode = (data, cursor) => {
-  if (data[cursor] === 0x00) {
-    if (data[cursor+1] === 0x00) {
-
-      if (data[cursor+2] === 0x01) {
-        return 3
-      }
-
-      if (data[cursor+2] === 0x00) {
-        if (data[cursor+3] === 0x01) {
-          return 4
-        }
-      }
-
-    }
-  }
-  return 0
-}
 
 class PESPacket {
 
   constructor(streamID, reader) {
-    this.streamID = streamID
-    this.length   = reader.readBits(16)
+    this.header = {}
 
-    reader.readBits(2)   // 10
-    this.scramblingControl      = reader.readBits(2)
-    this.priority               = reader.readBit()
-    this.alignmentIndicator     = reader.readBit()
-    this.copyright              = reader.readBit()
-    this.originalOrCopyright    = reader.readBit()
-    this.ptsDtsFlags            = reader.readBits(2)
-    this.escrFlag               = reader.readBit()
-    this.esRateFlag             = reader.readBit()
-    this.dsmTrickMode           = reader.readBit()
-    this.additionalCopyInfoFlag = reader.readBit()
-    this.pesCRCFlag             = reader.readBit()
-    this.pesExtFlag             = reader.readBit()
-    this.pesHeaderDataLength    = reader.readBits(8)
+    this.header.streamID              = streamID
+    this.header.length                = reader.readBits(16)
 
-    if (this.ptsDtsFlags === 2) {
+    this.header.markerBits             = reader.readBits(2)   // 10
+    this.header.scramblingControl      = reader.readBits(2)
+    this.header.priority               = reader.readBit()
+    this.header.alignmentIndicator     = reader.readBit()
+    this.header.copyright              = reader.readBit()
+    this.header.originalOrCopyright    = reader.readBit()
+    this.header.ptsDtsFlags            = reader.readBits(2)
+    this.header.escrFlag               = reader.readBit()
+    this.header.esRateFlag             = reader.readBit()
+    this.header.dsmTrickMode           = reader.readBit()
+    this.header.additionalCopyInfoFlag = reader.readBit()
+    this.header.pesCRCFlag             = reader.readBit()
+    this.header.pesExtFlag             = reader.readBit()
+    this.header.pesHeaderDataLength    = reader.readBits(8)
+
+    const bitAfterHeaderLengthCheck = reader.currentBit
+
+    if (this.header.ptsDtsFlags === 2) {
       reader.readBits(4)
       let high = reader.readBits(3)
       reader.readBit()
@@ -171,10 +217,10 @@ class PESPacket {
       reader.readBit()
       let low = reader.readBits(15)
       reader.readBit()
-      this.pts = high + mid + low
+      this.header.pts = high + mid + low
     }
 
-    if (this.ptsDtsFlags === 3) {
+    if (this.header.ptsDtsFlags === 3) {
       reader.readBits(4)
       let high = reader.readBits(3)
       reader.readBit()
@@ -182,7 +228,7 @@ class PESPacket {
       reader.readBit()
       let low = reader.readBits(15)
       reader.readBit()
-      this.pts = high + mid + low
+      this.header.pts = high + mid + low
 
       reader.readBits(4)
       high = reader.readBits(3)
@@ -191,7 +237,7 @@ class PESPacket {
       reader.readBit()
       low = reader.readBits(15)
       reader.readBit()
-      this.dts = high + mid + low
+      this.header.dts = high + mid + low
     }
 
     if (this.escrFlag) {
@@ -205,74 +251,96 @@ class PESPacket {
       let ext = reader.readBits(9)
       reader.readBit()
 
-      this.scr    = high + mid + low
-      this.scrExt = ext
+      this.header.scr    = high + mid + low
+      this.header.scrExt = ext
     }
 
-    if (this.esRateFlag) {
+    if (this.header.esRateFlag) {
       reader.readBit()
-      this.esRate = reader.readBits(22)
+      this.header.esRate = reader.readBits(22)
       reader.readBit()
     }
 
-    if (this.additionalCopyInfoFlag) {
+    if (this.header.additionalCopyInfoFlag) {
       reader.readBit()
-      this.additionalCopyInfo = reader.readBits(7)
+      this.header.additionalCopyInfo = reader.readBits(7)
     }
 
-    if (this.pesCRCFlag) {
-      this.pesCRC = reader.readBits(16)
+    if (this.header.pesCRCFlag) {
+      this.header.pesCRC = reader.readBits(16)
     }
 
-    if (this.pesExtFlag) {
-      this.pesPrivateHeaderFlag         = reader.readBit()
-      this.packHeaderFieldFlag          = reader.readBit()
-      this.programPacketSeqCounterFlag  = reader.readBit()
-      this.pSTDBufferFlag               = reader.readBit()
+    if (this.header.pesExtFlag) {
+      this.header.pesPrivateHeaderFlag         = reader.readBit()
+      this.header.packHeaderFieldFlag          = reader.readBit()
+      this.header.programPacketSeqCounterFlag  = reader.readBit()
+      this.header.pSTDBufferFlag               = reader.readBit()
       reader.readBits(3)
-      this.pesExtFlag2                  = reader.readBit()
+      this.header.pesExtFlag2                  = reader.readBit()
     }
 
-    if (this.programPacketSeqCounterFlag) {
+    if (this.header.programPacketSeqCounterFlag) {
       reader.readBit()
-      this.packetSeqCounter = reader.readBits(7)
+      this.header.packetSeqCounter = reader.readBits(7)
       reader.readBit()
-      this.mpegIdent = reader.readBit()
-      this.stuffingLengt = reader.readBit(6)
+      this.header.mpegIdent = reader.readBit()
+      this.header.stuffingLength = reader.readBit(6)
     }
 
-    if (this.pSTDBufferFlag) {
+    if (this.header.pSTDBufferFlag) {
       reader.readBits(2)
-      this.pSTDBufferScale = reader.readBit()
-      this.pSTDBufferSize  = reader.readBits(13)
+      this.header.pSTDBufferScale = reader.readBit()
+      this.header.pSTDBufferSize  = reader.readBits(13)
     }
 
-    if (this.pesExtFlag2) {
+    if (this.header.pesExtFlag2) {
       reader.readBit()
-      this.pesExtFieldLength = reader.readBits(7)
+      this.header.pesExtFieldLength = reader.readBits(7)
       reader.readBits(8)
     }
 
-    console.log(reader.currentBit, reader.length);
+    const bitAfterHeaderParsing = reader.currentBit
+    const parsedBytes           = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
+    if (parsedBytes !== this.header.pesHeaderDataLength) {
+      console.log('!!!! Failed to parse full PES packet. !!!!')
+    }
+
+    this.payload = []
+  }
+
+  push(bytes) {
+    this.payload.push(bytes)
+  }
+
+  get length() {
+    return this.payload.length
   }
 
 }
 
 class AccessUnit {
+
   constructor() {
-    this.data = []
+    this.data     = []
   }
 
   push(byte) {
     this.data.push(byte)
   }
 
-  // get duration() {
-  //   if (this.pcrBase) {
-  //     return this.pcrBase >> 9
-  //   }
-  //   return 0
-  // }
+  get pts() {
+    if (this.packet) {
+      return this.packet.pts
+    }
+    return undefined
+  }
+
+  get dts() {
+    if (this.packet) {
+      return this.packet.dts
+    }
+    return undefined
+  }
 
   get isKeyFrame() {
     return this.nalus.map(n => n[0] & 0x1f).filter(k => k === 5).length > 0
@@ -290,95 +358,26 @@ class AccessUnit {
     }
   }
 
-  get pes() {
-    let result = []
-    const buffer = new Uint8Array(this.data)
-    const reader = new bytes.BitReader(buffer)
-    while (reader.currentBit < reader.length * 8) {
-      const startCode = reader.readBits(24)
-      if (startCode === 0x000001) {
-        let type = reader.readBits(8)
-        console.log(type.toString(16), type & 0x1f);
+  get nalus() {
+    let results   = []
+    let nalu      = []
+    let buffer    = new Uint8Array(this.data)
+    let reader    = new bytes.BitReader(buffer)
+    let syncBytes = new Uint8Array([0, 0, 0])
 
-        // console.log('sync');
+    while(reader.currentBit < reader.length * 8) {
+      syncBytes[2] = syncBytes[1]
+      syncBytes[1] = syncBytes[0]
+      syncBytes[0] = reader.readBits(8)
+
+      if (syncBytes[2] === 0x00 && syncBytes[1] === 0x00 && syncBytes[0] === 0x01) {
+        results.push(nalu)
+        nalu = []
+      } else {
+        nalu.push(syncBytes[0])
       }
     }
-
-  }
-
-  get nalus() {
-    // this.pes
-    return []
-    // let result    = []
-    // let cursor    = 0
-    // let nalu      = []
-    // const buffer  = new Uint8Array(this.data)
-    // while (cursor < buffer.byteLength) {
-    //   const startCode = hasStartCode(buffer, cursor)
-    //   if (startCode > 0) {
-    //     const firstByte = buffer[cursor + startCode]
-    //
-    //     if (firstByte === 0xe0) {
-    //       let reader = new bytes.BitReader(buffer)
-    //       reader.currentBit = (cursor + startCode + 1) * 8
-    //       console.log('-------------');
-    //       console.log(reader.readBits(16))
-    //       console.log(reader.readBits(2));
-    //       reader.readBits(6)
-    //       console.log(reader.readBits(2));
-    //       reader.readBits(6)
-    //       console.log(reader.readBits(8))
-    //       console.log(reader.readBits(4));
-    //
-    //       let ptsHigh = reader.readBits(3)
-    //       console.log('pts high', ptsHigh);
-    //       console.log(reader.readBit());
-    //
-    //       let ptsMid = reader.readBits(15)
-    //       console.log('pts mid', ptsMid);
-    //       console.log(reader.readBit());
-    //       let ptsLow = reader.readBits(15)
-    //       console.log('pts low', ptsLow);
-    //       console.log(reader.readBit());
-    //
-    //       console.log(reader.readBits(4));
-    //
-    //       let dtsHigh = reader.readBits(3)
-    //       console.log('dts high', dtsHigh);
-    //       console.log(reader.readBit());
-    //
-    //       let dtsMid = reader.readBits(15)
-    //       console.log('dts mid', dtsMid);
-    //       console.log(reader.readBit());
-    //
-    //       let dtsLow = reader.readBits(15)
-    //       console.log('dts low', dtsLow);
-    //       console.log(reader.readBit());
-    //
-    //       let pts = (ptsHigh + ptsMid + ptsLow)
-    //       let dts = (dtsHigh + dtsMid + dtsLow)
-    //       console.log('pts', pts);
-    //       console.log('dts', dts);
-    //
-    //       this.dts = dts
-    //       this.pts = pts
-    //       cursor += 1
-    //       continue
-    //
-    //     }
-    //
-    //     const byteType = firstByte & 0x1f
-    //     if (nalu) { result.push(nalu) }
-    //     nalu = []
-    //     cursor += startCode
-    //     continue
-    //   }
-    //
-    //   if (nalu) { nalu.push(buffer[cursor]) }
-    //   cursor += 1
-    // }
-    // // console.log(result.map(n => n[0] & 0x1f));
-    // return result
+    return results
   }
 
   get type() {
