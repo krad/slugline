@@ -542,7 +542,7 @@ export const trun = (config) => {
       result.push(bytes.u32(0x01000000)) // samples depends on a keyframe
     }
 
-    result.push(bytes.u32(g.pts - g.dts))
+    result.push(bytes.u32(g.pts))
 
   })
 

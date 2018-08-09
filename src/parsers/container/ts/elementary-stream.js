@@ -97,7 +97,7 @@ class ElementaryStream {
       let configChunk = this.chunks.filter(c => c.hasConfig)[0]
       let sps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 7)[0]
       let pps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 8)[0]
-      console.log(sps.map(s => s.toString(16)), pps.map(p => p.toString(16)));
+      // console.log(sps.map(s => s.toString(16)), pps.map(p => p.toString(16)));
       return [sps, pps]
     }
 
@@ -142,6 +142,7 @@ const parsePES = (progamPackets) => {
     packetIdx += 1
   }
 
+  result.push(pes)
   return result
 }
 
@@ -163,6 +164,10 @@ const parseAccessUnits = (pes) => {
 
         const next = reader.readBits(8)
         const type = next & 0x1f
+        if (type === 5) {
+          console.log(type);
+        }
+        // console.log(type);
         if (type === 9) {
           if (accessUnit) { result.push(accessUnit) }
           accessUnit        = new AccessUnit()
@@ -182,6 +187,9 @@ const parseAccessUnits = (pes) => {
 
     packetIdx += 1
   }
+
+  result.push(accessUnit)
+
   return result
 }
 

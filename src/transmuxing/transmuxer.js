@@ -53,7 +53,7 @@ class Transmuxer {
 
   buildMediaSegment(ts) {
     const sequences = this.buildSequences(ts, 27)
-
+    // console.log(sequences);
     let result = []
     sequences.forEach(seq => {
       result.push(atoms.moof(seq))
