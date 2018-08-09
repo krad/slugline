@@ -26,11 +26,12 @@ class ElementaryStream {
       let units = parseAccessUnits(pkts)
 
       units.forEach(au => {
-        console.log(au.nalus.map(n => n[0] & 0x1f), au.pts, au.dts);
+        es.chunks.push(au)
+        // console.log(au.nalus.map(n => n[0] & 0x1f), au.pts, au.dts);
       })
 
-      console.log(pkts.length);
-      console.log(units.length);
+      // console.log(pkts.length);
+      // console.log(units.length);
     }
 
     if (streamType === 15) {
@@ -96,6 +97,7 @@ class ElementaryStream {
       let configChunk = this.chunks.filter(c => c.hasConfig)[0]
       let sps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 7)[0]
       let pps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 8)[0]
+      console.log(sps.map(s => s.toString(16)), pps.map(p => p.toString(16)));
       return [sps, pps]
     }
 
@@ -222,13 +224,14 @@ class PESPacket {
 
     if (this.header.ptsDtsFlags === 3) {
       reader.readBits(4)
+
       let high = reader.readBits(3)
       reader.readBit()
       let mid = reader.readBits(15)
       reader.readBit()
       let low = reader.readBits(15)
       reader.readBit()
-      this.header.pts = high + mid + low
+      this.header.pts = (high + mid + low)
 
       reader.readBits(4)
       high = reader.readBits(3)
@@ -237,7 +240,7 @@ class PESPacket {
       reader.readBit()
       low = reader.readBits(15)
       reader.readBit()
-      this.header.dts = high + mid + low
+      this.header.dts = (high + mid + low)
     }
 
     if (this.escrFlag) {
@@ -371,7 +374,7 @@ class AccessUnit {
       syncBytes[0] = reader.readBits(8)
 
       if (syncBytes[2] === 0x00 && syncBytes[1] === 0x00 && syncBytes[0] === 0x01) {
-        results.push(nalu)
+        results.push(nalu.slice(0, -2))
         nalu = []
       } else {
         nalu.push(syncBytes[0])
@@ -385,7 +388,7 @@ class AccessUnit {
   }
 
   get length() {
-    return this.nalus.reduce((a, c) => a + (c.length+4), 0)
+    return this.nalusWithoutConfig.reduce((a, c) => a + (c.length+4), 0)
   }
 }
 

@@ -69,9 +69,6 @@ export const tkhd = (config) => {
     if (config.sps) {
       width   = config.sps.width
       height  = config.sps.height
-
-      width   = (width >>> 0)
-      height  = (height >>> 0)
     }
   }
 
@@ -93,12 +90,21 @@ export const tkhd = (config) => {
     bytes.u64(0),                        // reserved
     bytes.u16(0),                        // layer
     bytes.u16(0),                        // alternate group
-    bytes.u16(0x0100),                   // volume
+    bytes.u16(0),                        // volume
     bytes.u16(0),                        // reserved
     new Uint8Array(matrix),              // matrix struct
-    bytes.u32(width),                    // track width
-    bytes.u32(height),                   // track height
+    new Uint8Array([(width >> 8) & 0xff, (width & 0xff), 0x00, 0x00]),
+    new Uint8Array([(height >> 8) & 0xff, (height & 0xff), 0x00, 0x00]),
+    // bytes.u32(width),                    // track width
+    // bytes.u32(height),                   // track height
   ]
+
+  // (width >> 8) & 0xFF,
+  //    width & 0xFF,
+  //    0x00, 0x00, // width
+  //    (height >> 8) & 0xFF,
+  //    height & 0xFF,
+  //    0x00, 0x00 // height
 
   return result
 }
@@ -268,7 +274,7 @@ export const avc1 = (config) => {
 
   return [
     bytes.strToUint8('avc1'),
-    new Uint8Array(6),         // reserved
+    new Uint8Array([0, 0, 0, 0, 0, 0]),         // reserved
     bytes.u16(1),              // data reference index
     bytes.u16(0),              // version
     bytes.u16(0),              // revision level
@@ -281,9 +287,9 @@ export const avc1 = (config) => {
     bytes.u32(4718592),        // vertical resolution
     bytes.u32(0),              // data size
     bytes.u16(1),              // frame count
-    new Uint8Array(1),         // compressorName size
+    new Uint8Array([0]),         // compressorName size
     new Uint8Array(31),        // padding
-    bytes.s16(24),             // depth
+    bytes.s16(16),             // depth
     bytes.s16(-1),             // color table id
     avcC(config),
     colr(config),
@@ -292,9 +298,9 @@ export const avc1 = (config) => {
 }
 
 export const avcC = (config) => {
+  console.log(config);
   const sps = config.codec[0]
   const pps = config.codec[1]
-
   return [
     bytes.strToUint8('avcC'),
     new Uint8Array([1]),          // version
@@ -302,7 +308,7 @@ export const avcC = (config) => {
     new Uint8Array([sps[2]]),     // profile compatibility
     new Uint8Array([sps[3]]),     // level indication
     new Uint8Array([0b11111111]), // nalu size minus 1 (5 bits reserved all one - 3 bits)
-    new Uint8Array([1]), // sps count
+    new Uint8Array([1]),          // sps count
     bytes.u16(sps.length),        // sps length
     new Uint8Array(sps),          // sps bytes
     new Uint8Array([1]),          // pps count
@@ -317,7 +323,7 @@ export const colr = (config) => {
     bytes.strToUint8('nclx'),     // color parameter
     bytes.u16(1),                 // primaries index
     bytes.u16(1),                 // transfer function index
-    bytes.u16(1),                 // matrix index
+    bytes.u16(0),                 // matrix index
     new Uint8Array(1),            // unknown
   ]
 }
@@ -485,7 +491,7 @@ export const tfhd = (config) => {
 
       if (firstSample) {
         result.push(bytes.u32(1))                         // sample description index present
-        result.push(bytes.u32(firstSample.dts))      // default sample duration
+        result.push(bytes.u32(firstSample.pts))      // default sample duration
         result.push(bytes.u32((firstSample.length)))      // default sample size
         result.push(bytes.u32(0x2000000))                 // default sample flags
       }
@@ -558,7 +564,7 @@ export const mdat = (config) => {
   config.payload.forEach(accessUnit => {
 
     let b = new Uint8Array(accessUnit.data)
-    accessUnit.nalus.forEach(n => {
+    accessUnit.nalusWithoutConfig.forEach(n => {
       let b = new Uint8Array(n)
       result.push(bytes.u32(b.length))
       result.push(b)

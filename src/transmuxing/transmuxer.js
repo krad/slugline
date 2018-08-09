@@ -37,7 +37,7 @@ class Transmuxer {
                                      offset: this.currentOffset,
                                      decode: this.decode})
 
-          this.decode += currentSequence.reduce((acc, curr) => acc + (curr.dts), 0)
+          this.decode += currentSequence.reduce((acc, curr) => acc + (curr.pts), 0)
 
         }
         currentSequence = [chunk]
