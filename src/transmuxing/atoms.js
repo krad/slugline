@@ -533,7 +533,7 @@ export const trun = (config) => {
 
     // console.log(g);
 
-    result.push(bytes.u32(g.dts))  // duration
+    result.push(bytes.u32(g.pts))  // duration
     result.push(bytes.u32(g.length))    // size
 
     if (g.isKeyFrame) {
@@ -542,7 +542,7 @@ export const trun = (config) => {
       result.push(bytes.u32(0x01000000)) // samples depends on a keyframe
     }
 
-    result.push(bytes.u32(g.dts - g.pts))
+    result.push(bytes.u32(g.pts - g.dts))
 
   })
 
