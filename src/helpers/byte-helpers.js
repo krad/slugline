@@ -361,7 +361,7 @@ export const packetStreamBitReader = (packetStreamGenerator) => {
         return false
       }
       return true
-    }
+    },
   }
 }
 
@@ -369,101 +369,78 @@ export const streamReader = (packets) => {
   return packetStreamBitReader(packetStreamGenerator(packetGenerator(packets)))
 }
 
-export const elementaryStreamIterator = (es, breakFlag) => {
+export const elementaryStreamIterator = (es, delimiter, includeDelimiter) => {
 
-  let reader
-  if (es[0].constructor.name === 'Array') {
-    reader = streamReader(es)
-  } else if(es[0].constructor.name === 'MediaPacket') {
-    reader = streamReader(es)
-  } else if(es[0].constructor.name === 'PESPacket') {
-    reader = streamReader(es)
-  } else {
-    let buffer = new Uint8Array(es)
-    reader     = new BitReader(buffer)
-  }
-
-  let isFirst = true
+  const reader  = constructBitReader(es)
+  let isFirst   = true
+  if (delimiter === undefined)        { delimiter = [0, 0, 0, 1] }
+  if (includeDelimiter === undefined) { includeDelimiter = false }
 
   return {
     next: () => {
 
-      let syncBytes = new Uint8Array([0, 0, 0, 0])
       let parse     = true
       let result    = []
       while (parse) {
-
-        if(reader.atEnd()) { parse = false; break }
-
-        let byte = reader.readBits(8)
-        syncBytes[3] = syncBytes[2]
-        syncBytes[2] = syncBytes[1]
-        syncBytes[1] = syncBytes[0]
-        syncBytes[0] = byte
-
-        if (syncBytes[3] === 0x00 &&
-            syncBytes[2] === 0x00 &&
-            syncBytes[1] === 0x00 &&
-            syncBytes[0] === 0x01)
-        {
-          if (breakFlag !== undefined) {
-
-            let next = reader.readBits(8)
-            if (next === breakFlag) {
-              isFirst = false
-              reader.rewind(8)
-
-              result = result.slice(0, -3)
-              if (result.length > 0) { parse = false; break }
-            } else {
-              reader.rewind(8)
-              result.push(byte)
-            }
-
-          } else {
-            isFirst = false
-            result = result.slice(0, -3)
-            if (result.length > 0) { parse = false; break }
-          }
-
-        } else if(syncBytes[2] == 0x00 && syncBytes[1] == 0x00 && syncBytes[0] == 0x01) {
-
-          if (breakFlag !== undefined) {
-
-            let next = reader.readBits(8)
-            if (next === breakFlag) {
-              isFirst = false
-              reader.rewind(8)
-
-              result = result.slice(0, -2)
-              if (result.length > 0) { parse = false; break }
-            } else {
-              reader.rewind(8)
-              result.push(byte)
-            }
-
-          } else {
-            isFirst = false
-            result = result.slice(0, -2)
-            if (result.length > 0) { parse = false; break }
-          }
-
-        } else {
-          if (!isFirst) {
-            if (byte !== undefined) { result.push(byte) }
-          }
+        if(reader.atEnd()) {
+          // If we're at the last result and need to prepend the delimiter
+          if (result.length > 0) { if (includeDelimiter) { result.unshift(...delimiter) } }
+          parse = false; break
         }
 
+        let byte = reader.readBits(8)
+        if (byte !== undefined) { result.push(byte) }
+
+        const check = result.slice(-delimiter.length)
+        if (equal(check, delimiter)) {
+          if (!isFirst) {
+            if (includeDelimiter) {
+              result.unshift(...check)
+              result = result.slice(0, -delimiter.length)
+            } else {
+              result = result.slice(0, -delimiter.length)
+            }
+            parse  = false; break
+          } else {
+            isFirst = false
+            result = []
+          }
+        }
       }
 
-      if (result.length > 0) {
-        return result
-      }
-
+      /// Outside parse loop
+      if (result.length > 0) { return result }
       return undefined
     },
 
     reader: reader
   }
 
+}
+
+export const equal = (bufA, bufB) => {
+  if (bufA.length != bufB.length) {
+    return false
+  }
+
+  for (let i = 0 ; i != bufA.length ; i++) {
+    if (bufA[i] != bufB[i]) { return false }
+  }
+
+  return true
+}
+
+const constructBitReader = (stream) => {
+  let reader
+  if (stream[0].constructor.name === 'Array') {
+    reader = streamReader(stream)
+  } else if(stream[0].constructor.name === 'MediaPacket') {
+    reader = streamReader(stream)
+  } else if(stream[0].constructor.name === 'PESPacket') {
+    reader = streamReader(stream)
+  } else {
+    let buffer = new Uint8Array(stream)
+    reader     = new BitReader(buffer)
+  }
+  return reader
 }
