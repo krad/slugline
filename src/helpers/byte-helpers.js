@@ -272,14 +272,14 @@ export class BitReader {
   }
 
   atEnd() {
-    if (this.currentBit >= this.length*8) { return true }
+    if (this.currentBit >= this.data.length*8) { return true }
     return false
   }
 }
 
 
 export const packetGenerator = (packets) => {
-  let packetIdx = 0
+  let packetIdx = -1
   return {
     next: () => {
       return packets[packetIdx++]
@@ -368,27 +368,29 @@ export const streamReader = (packets) => {
   return packetStreamBitReader(packetStreamGenerator(packetGenerator(packets)))
 }
 
-export const elementaryStreamIterator = (es) => {
+export const elementaryStreamIterator = (es, breakFlag) => {
 
   let reader
   if (es[0].constructor.name === 'Array') {
     reader = streamReader(es)
+  } else if(es[0].constructor.name === 'MediaPacket') {
+    reader = streamReader(es)
   } else {
     let buffer = new Uint8Array(es)
-    reader = new BitReader(buffer)
+    reader     = new BitReader(buffer)
   }
+
+  let isFirst = true
 
   return {
     next: () => {
+
       let syncBytes = new Uint8Array([0, 0, 0, 0])
       let parse     = true
       let result    = []
       while (parse) {
 
-        if(reader.atEnd()) {
-          parse = false
-          break
-        }
+        if(reader.atEnd()) { parse = false; break }
 
         let byte = reader.readBits(8)
         syncBytes[3] = syncBytes[2]
@@ -401,21 +403,60 @@ export const elementaryStreamIterator = (es) => {
             syncBytes[1] === 0x00 &&
             syncBytes[0] === 0x01)
         {
+          if (breakFlag !== undefined) {
 
-          result = result.slice(0, -3)
-          if (result.length > 0) { parse = false; break }
+            let next = reader.readBits(8)
+            if (next === breakFlag) {
+              isFirst = false
+              result = result.slice(0, -3)
+              if (result.length > 0) { parse = false; break }
+            } else {
+              reader.rewind(8)
+              result.push(byte)
+            }
+
+          } else {
+            isFirst = false
+            result = result.slice(0, -3)
+            if (result.length > 0) { parse = false; break }
+          }
 
         } else if(syncBytes[2] == 0x00 && syncBytes[1] == 0x00 && syncBytes[0] == 0x01) {
 
-          result = result.slice(0, -2)
-          if (result.length > 0) { parse = false; break }
+          if (breakFlag !== undefined) {
+
+            let next = reader.readBits(8)
+            if (next === breakFlag) {
+              isFirst = false
+              result = result.slice(0, -2)
+              if (result.length > 0) { parse = false; break }
+            } else {
+              reader.rewind(8)
+              result.push(byte)
+            }
+
+          } else {
+            isFirst = false
+            result = result.slice(0, -2)
+            if (result.length > 0) { parse = false; break }
+          }
 
         } else {
-          if (byte !== undefined) { result.push(byte) }
+          if (!isFirst) {
+            if (byte !== undefined) { result.push(byte) }
+          }
         }
+
       }
-      return result
-    }
+
+      if (result.length > 0) {
+        return result
+      }
+
+      return undefined
+    },
+
+    reader: reader
   }
 
 }

@@ -14,21 +14,24 @@ class ElementaryStream {
 
     const pmt   = transportStream.packets.filter(p => p.constructor.name === 'PMT')[0]
     const track = pmt.tracks.filter(t => t.streamType === streamType)[0]
+    const programPIDs = pmt.tracks.map(t => t.elementaryPID)
 
     if (!pmt)   { throw 'PMT not present in transport stream' }
     if (!track) { throw 'Track for stream type not found' }
 
-    const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
+    // const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
+    const streamPackets = transportStream.packets.filter(p => programPIDs.includes(p.header.PID))
 
     if (streamType === 27) {
 
       let pkts  = parsePES(streamPackets)
-      let units = parseAccessUnits(pkts)
+      // let units = parseAccessUnits(pkts)
 
-      units.forEach(au => {
-        es.chunks.push(au)
-        // console.log(au.nalus.map(n => n[0] & 0x1f), au.pts, au.dts);
-      })
+      es.chunks.push([])
+      // units.forEach(au => {
+      //   es.chunks.push(au)
+      //   // console.log(au.nalus.map(n => n[0] & 0x1f), au.pts, au.dts);
+      // })
 
       // console.log(pkts.length);
       // console.log(units.length);
@@ -109,90 +112,20 @@ class ElementaryStream {
 }
 
 
-const parsePES = (progamPackets) => {
-  let packetIdx  = 0
-  let result     = []
-  let pes
+const parsePES = (programPackets) => {
+  let result = []
 
-  let syncBytes = new Uint8Array([0, 0, 0])
-  while (packetIdx < progamPackets.length) {
-    let packet = progamPackets[packetIdx]
-    let reader = new bytes.BitReader(packet.data)
-
-    while (reader.currentBit <= (reader.length * 8)) {
-      syncBytes[2] = syncBytes[1]
-      syncBytes[1] = syncBytes[0]
-      syncBytes[0] = reader.readBits(8)
-      if (syncBytes[2] === 0x00 && syncBytes[1] === 0x00 && syncBytes[0] === 0x01) {
-        let type = reader.readBits(8)
-        if (type === 0xe0) {
-          if (pes) { result.push(pes) }
-          pes = new PESPacket(type, reader)
-        } else {
-          pes.push(syncBytes[0])
-          pes.push(type)
-        }
-
-      } else {
-        if (pes) {
-          pes.push(syncBytes[0])
-        }
-      }
-    }
-    packetIdx += 1
+  const itr = bytes.elementaryStreamIterator(programPackets, 0xe0)
+  let parse = true
+  while (parse) {
+    let p = itr.next()
+    if (p === undefined) { parse = false; break }
+    const packet = new PESPacket(0xe0, new bytes.BitReader(p))
+    result.push(packet)
   }
-
-  result.push(pes)
-  return result
-}
-
-const parseAccessUnits = (pes) => {
-  let packetIdx = 0
-  let result    = []
-  let accessUnit
-
-  let syncBytes = new Uint8Array([0, 0, 0])
-  while (packetIdx < pes.length) {
-    let packet = pes[packetIdx]
-    let buffer = new Uint8Array(packet.payload)
-    let reader = new bytes.BitReader(buffer)
-    while(reader.currentBit < reader.length * 8) {
-      syncBytes[2] = syncBytes[1]
-      syncBytes[1] = syncBytes[0]
-      syncBytes[0] = reader.readBits(8)
-      if (syncBytes[2] === 0x00 && syncBytes[1] === 0x00 && syncBytes[0] === 0x01) {
-
-        const next = reader.readBits(8)
-        const type = next & 0x1f
-        if (type === 5) {
-          console.log(type);
-        }
-        // console.log(type);
-        if (type === 9) {
-          if (accessUnit) { result.push(accessUnit) }
-          accessUnit        = new AccessUnit()
-          accessUnit.packet = packet.header
-          accessUnit.push(next)
-        } else {
-          accessUnit.push(syncBytes[0])
-          accessUnit.push(next)
-        }
-
-      } else {
-        if (accessUnit) {
-          accessUnit.push(syncBytes[0])
-        }
-      }
-    }
-
-    packetIdx += 1
-  }
-
-  result.push(accessUnit)
 
   return result
 }
-
 
 class PESPacket {
 
@@ -227,7 +160,7 @@ class PESPacket {
       reader.readBit()
       let low = reader.readBits(15)
       reader.readBit()
-      this.header.pts = high + mid + low
+      this.header.pts = low + mid + high
     }
 
     if (this.header.ptsDtsFlags === 3) {
@@ -239,7 +172,7 @@ class PESPacket {
       reader.readBit()
       let low = reader.readBits(15)
       reader.readBit()
-      this.header.pts = (high + mid + low)
+      this.header.pts = (low + mid + high)
 
       reader.readBits(4)
       high = reader.readBits(3)
@@ -248,7 +181,7 @@ class PESPacket {
       reader.readBit()
       low = reader.readBits(15)
       reader.readBit()
-      this.header.dts = (high + mid + low)
+      this.header.dts = (low + mid + high)
     }
 
     if (this.escrFlag) {
@@ -314,17 +247,25 @@ class PESPacket {
     const parsedBytes           = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
     if (parsedBytes !== this.header.pesHeaderDataLength) {
       console.log('!!!! Failed to parse full PES packet. !!!!')
+      console.log(this)
+      console.log('parsed bytes:', parsedBytes)
+      console.log('parsed header length:', this.header.pesHeaderDataLength)
     }
 
-    this.payload = []
+    this.data = []
+    while (!reader.atEnd()) {
+      let bits = reader.readBits(8)
+      this.data.push(bits)
+    }
+
   }
 
   push(bytes) {
-    this.payload.push(bytes)
+    this.data.push(bytes)
   }
 
   get length() {
-    return this.payload.length
+    return this.data.length
   }
 
 }
@@ -470,5 +411,12 @@ class ADTS {
     this.payload                 = new Uint8Array()
   }
 }
+
+const unique = (arr) => {
+  return arr.filter((val, idx, self) => {
+    return self.indexOf(val) === idx
+  })
+}
+
 
 export default ElementaryStream
