@@ -275,6 +275,7 @@ export class BitReader {
     if (this.currentBit >= this.data.length*8) { return true }
     return false
   }
+
 }
 
 
@@ -375,6 +376,8 @@ export const elementaryStreamIterator = (es, breakFlag) => {
     reader = streamReader(es)
   } else if(es[0].constructor.name === 'MediaPacket') {
     reader = streamReader(es)
+  } else if(es[0].constructor.name === 'PESPacket') {
+    reader = streamReader(es)
   } else {
     let buffer = new Uint8Array(es)
     reader     = new BitReader(buffer)
@@ -408,6 +411,8 @@ export const elementaryStreamIterator = (es, breakFlag) => {
             let next = reader.readBits(8)
             if (next === breakFlag) {
               isFirst = false
+              reader.rewind(8)
+
               result = result.slice(0, -3)
               if (result.length > 0) { parse = false; break }
             } else {
@@ -428,6 +433,8 @@ export const elementaryStreamIterator = (es, breakFlag) => {
             let next = reader.readBits(8)
             if (next === breakFlag) {
               isFirst = false
+              reader.rewind(8)
+
               result = result.slice(0, -2)
               if (result.length > 0) { parse = false; break }
             } else {

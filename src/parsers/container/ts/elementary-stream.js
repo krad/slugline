@@ -19,22 +19,17 @@ class ElementaryStream {
     if (!pmt)   { throw 'PMT not present in transport stream' }
     if (!track) { throw 'Track for stream type not found' }
 
-    // const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
-    const streamPackets = transportStream.packets.filter(p => programPIDs.includes(p.header.PID))
+    const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
+    // const streamPackets = transportStream.packets.filter(p => programPIDs.includes(p.header.PID))
 
     if (streamType === 27) {
 
       let pkts  = parsePES(streamPackets)
-      // let units = parseAccessUnits(pkts)
+      let units = parseAccessUnits(pkts)
 
-      es.chunks.push([])
-      // units.forEach(au => {
-      //   es.chunks.push(au)
-      //   // console.log(au.nalus.map(n => n[0] & 0x1f), au.pts, au.dts);
-      // })
-
-      // console.log(pkts.length);
-      // console.log(units.length);
+      units.forEach(au => {
+        es.chunks.push(au)
+      })
     }
 
     if (streamType === 15) {
@@ -120,9 +115,52 @@ const parsePES = (programPackets) => {
   while (parse) {
     let p = itr.next()
     if (p === undefined) { parse = false; break }
-    const packet = new PESPacket(0xe0, new bytes.BitReader(p))
+    const packet = new PESPacket(p[0], new bytes.BitReader(p.slice(1)))
     result.push(packet)
   }
+
+  return result
+}
+
+const parseAccessUnits = (pes) => {
+  let result = []
+
+  const itr = bytes.elementaryStreamIterator(pes)
+
+  let parse = true
+  let accessUnit
+  while(parse) {
+    let x = itr.next()
+    if (x === undefined) { parse = false; break }
+
+    // console.log('-------');
+    let reader = new bytes.BitReader(x)
+    let forbidden_bit = reader.readBit()
+    let nal_ref_idc   = reader.readBits(2)
+    let nal_unit_type = reader.readBits(5)
+
+    if (nal_unit_type === 9 && forbidden_bit === 0) {
+      if (accessUnit) { result.push(accessUnit) }
+      accessUnit = new AccessUnit()
+      accessUnit.packet = itr.reader.currentPacket().header
+      accessUnit.push(x)
+    } else {
+      if (forbidden_bit === 0) {
+        accessUnit.push(x)
+      } else {
+        console.log(accessUnit.lastNalu);
+        accessUnit.lastNalu.push(x)
+        // console.log(nal_unit_type, reader.readBits(8).toString(16));
+        // console.log(accessUnit.nalus[accessUnit.nalus.length-1])
+      }
+    }
+  }
+
+  // console.log(result.filter(r => r.hasConfig)[8].nalus.filter(n => (n[0] & 0x1f) === 7 ))
+  // console.log(result[3].nalus.map(n => n[0] & 0x1f));
+
+  // console.log(result.length);
+
 
   return result
 }
@@ -252,7 +290,10 @@ class PESPacket {
       console.log('parsed header length:', this.header.pesHeaderDataLength)
     }
 
-    this.data = []
+
+    // let size = reader.data.length - (reader.currentBit / 8)
+    this.data = []//new Uint8Array(size)
+
     while (!reader.atEnd()) {
       let bits = reader.readBits(8)
       this.data.push(bits)
@@ -273,11 +314,15 @@ class PESPacket {
 class AccessUnit {
 
   constructor() {
-    this.data     = []
+    this.nalus = []
   }
 
-  push(byte) {
-    this.data.push(byte)
+  push(nalu) {
+    this.nalus.push(nalu)
+  }
+
+  get lastNalu() {
+    return this.nalus[this.nalus.length-1]
   }
 
   get pts() {
@@ -308,32 +353,6 @@ class AccessUnit {
     } else {
       return this.nalus
     }
-  }
-
-  get nalus() {
-    let results   = []
-    let nalu      = []
-    let buffer    = new Uint8Array(this.data)
-    let reader    = new bytes.BitReader(buffer)
-    let syncBytes = new Uint8Array([0, 0, 0])
-
-    while(reader.currentBit < reader.length * 8) {
-      syncBytes[2] = syncBytes[1]
-      syncBytes[1] = syncBytes[0]
-      syncBytes[0] = reader.readBits(8)
-
-      if (syncBytes[2] === 0x00 && syncBytes[1] === 0x00 && syncBytes[0] === 0x01) {
-        results.push(nalu.slice(0, -2))
-        nalu = []
-      } else {
-        nalu.push(syncBytes[0])
-      }
-    }
-    return results
-  }
-
-  get type() {
-    return this.data[0] & 0x1f
   }
 
   get length() {

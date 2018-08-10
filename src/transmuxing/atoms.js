@@ -520,7 +520,7 @@ export const trun = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  const flags = dataOffsetPresent|sampleDurationPresent|sampleSizePresent|sampleFlagsPresent|sampleCompositionTimeOffsetsPresent
+  const flags = dataOffsetPresent|sampleDurationPresent|sampleSizePresent|sampleFlagsPresent
 
   let result = [
     bytes.strToUint8('trun'),
@@ -530,7 +530,6 @@ export const trun = (config) => {
   ]
 
   payload.forEach(g => {
-
     // console.log(g);
 
     result.push(bytes.u32(g.pts))  // duration
@@ -542,7 +541,7 @@ export const trun = (config) => {
       result.push(bytes.u32(0x01000000)) // samples depends on a keyframe
     }
 
-    result.push(bytes.u32(g.pts))
+    // result.push(bytes.u32(g.pts))
 
   })
 

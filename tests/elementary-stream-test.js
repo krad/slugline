@@ -75,18 +75,18 @@ test('that we can parse parse packets from an elementary stream', t=> {
 
   let a = itr.next()
   t.ok(a, 'got a chunk back')
-  t.deepEquals(a, [66, 66, 66, 66, 0, 0, 0, 0, 1, 67, 67, 67, 67], 'got first packet')
+  t.deepEquals(a, [0xe0, 66, 66, 66, 66, 0, 0, 0, 0, 1, 67, 67, 67, 67], 'got first packet')
 
   let b = itr.next()
   t.ok(b, 'got the next chunk')
-  t.deepEquals(b, [0x44, 0x44, 0x44, 0x44, 0x00], 'got the next packet')
+  t.deepEquals(b, [0xe0, 0x44, 0x44, 0x44, 0x44, 0x00], 'got the next packet')
 
   let c = itr.next()
   t.ok(c, 'got the next chunk')
-  t.deepEquals(c, [0x45, 0x45, 0x45, 0x45, 0xe0], 'got the correct bytes')
+  t.deepEquals(c, [0xe0, 0x45, 0x45, 0x45, 0x45, 0xe0], 'got the correct bytes')
 
   let d = itr.next()
-  t.deepEquals(d, [0x00, 0x00, 0x00, 0x02], 'got the correct bytes')
+  t.deepEquals(d, [0xe0, 0x00, 0x00, 0x00, 0x02], 'got the correct bytes')
 
   t.notOk(itr.next(), 'did not get a next segment because we are at the end')
 
