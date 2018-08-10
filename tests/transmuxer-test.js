@@ -297,7 +297,6 @@ test('that we can build an media fragment', t=> {
 
   /////////////////////////
   // Build and actual payload now
-
   muxer         = new Transmuxer()
   const payload = muxer.buildMediaSegment(tsA)
   fs.appendFileSync(mediaSegmentOut, new Buffer(payload))
@@ -305,13 +304,13 @@ test('that we can build an media fragment', t=> {
   t.end()
 })
 
-test.only('writing a segment', t=> {
+test('writing a segment', t=> {
   const bufferA  = Uint8Array.from(asset2)
   let tsA        = TransportStream.parse(bufferA)
   let muxer     = new Transmuxer()
-  const init    = muxer.buildInitializationSegment(tsA)
+  // const init    = muxer.buildInitializationSegment(tsA)
   const payload = muxer.buildMediaSegment(tsA)
-  fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
+  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
   //
   t.end()

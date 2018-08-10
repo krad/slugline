@@ -112,7 +112,6 @@ export const parseSPS = (input) => {
 
   const extras = [100, 122, 244, 44, 83, 86, 118, 128]
   if (extras.includes(sps.profileIDC)) {
-    console.log('hi.....');
     sps.chroma_format_idc = reader.readExpGolomb()
     if (sps.chroma_format_idc === 3) {
       sps.separate_color_plane_flag = reader.readBit()
@@ -240,6 +239,10 @@ export class BitReader {
     this.currentBit = 0
   }
 
+  currentBit() {
+    return this.currentBit
+  }
+
   readBit() {
     let index   = Math.floor(this.currentBit / 8)
     let offset  = this.currentBit % 8 + 1
@@ -267,4 +270,152 @@ export class BitReader {
     result += (1 << i) - 1
     return result
   }
+
+  atEnd() {
+    if (this.currentBit >= this.length*8) { return true }
+    return false
+  }
+}
+
+
+export const packetGenerator = (packets) => {
+  let packetIdx = 0
+  return {
+    next: () => {
+      return packets[packetIdx++]
+    }
+  }
+}
+
+export const packetStreamGenerator = (packetGenerator) => {
+  let currentPacket = packetGenerator.next()
+
+  return {
+    next: () => {
+      currentPacket = packetGenerator.next()
+      if (currentPacket) {
+        if (currentPacket.constructor.name === 'Array') {
+          return new BitReader(new Uint8Array(currentPacket))
+        } else {
+          return new BitReader(new Uint8Array(currentPacket.data))
+        }
+      }
+    },
+    currentPacket: () => {
+      return currentPacket
+    }
+  }
+}
+
+export const packetStreamBitReader = (packetStreamGenerator) => {
+  let reader = packetStreamGenerator.next()
+  return {
+
+    readBit: () => {
+      if (reader) {
+        if (reader.currentBit < (reader.length * 8)) {
+          return reader.readBit()
+        } else {
+          reader = packetStreamGenerator.next()
+          if (reader) {
+            return reader.readBit()
+          }
+        }
+      }
+    },
+
+    readBits: (n) => {
+      if (reader) {
+        if (reader.currentBit < (reader.length * 8)) {
+          return reader.readBits(n)
+        } else {
+          reader = packetStreamGenerator.next()
+          if (reader) {
+            return reader.readBits(n)
+          }
+        }
+      }
+    },
+
+    currentBit: () => {
+      if (reader) {
+        return reader.currentBit
+      }
+    },
+
+    currentPacket: () => {
+      if (packetStreamGenerator) {
+        return packetStreamGenerator.currentPacket()
+      }
+    },
+
+    rewind: (n) => {
+      if (reader) {
+        reader.currentBit -= 8
+      }
+    },
+
+    atEnd() {
+      if (reader) {
+        return false
+      }
+      return true
+    }
+  }
+}
+
+export const streamReader = (packets) => {
+  return packetStreamBitReader(packetStreamGenerator(packetGenerator(packets)))
+}
+
+export const elementaryStreamIterator = (es) => {
+
+  let reader
+  if (es[0].constructor.name === 'Array') {
+    reader = streamReader(es)
+  } else {
+    let buffer = new Uint8Array(es)
+    reader = new BitReader(buffer)
+  }
+
+  return {
+    next: () => {
+      let syncBytes = new Uint8Array([0, 0, 0, 0])
+      let parse     = true
+      let result    = []
+      while (parse) {
+
+        if(reader.atEnd()) {
+          parse = false
+          break
+        }
+
+        let byte = reader.readBits(8)
+        syncBytes[3] = syncBytes[2]
+        syncBytes[2] = syncBytes[1]
+        syncBytes[1] = syncBytes[0]
+        syncBytes[0] = byte
+
+        if (syncBytes[3] === 0x00 &&
+            syncBytes[2] === 0x00 &&
+            syncBytes[1] === 0x00 &&
+            syncBytes[0] === 0x01)
+        {
+
+          result = result.slice(0, -3)
+          if (result.length > 0) { parse = false; break }
+
+        } else if(syncBytes[2] == 0x00 && syncBytes[1] == 0x00 && syncBytes[0] == 0x01) {
+
+          result = result.slice(0, -2)
+          if (result.length > 0) { parse = false; break }
+
+        } else {
+          if (byte !== undefined) { result.push(byte) }
+        }
+      }
+      return result
+    }
+  }
+
 }
