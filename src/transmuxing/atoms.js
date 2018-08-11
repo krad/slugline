@@ -32,18 +32,26 @@ export const moov = (config) => {
 }
 
 export const mvhd = (config) => {
+
+  const matrix = [0x00, 0x01, 0x00, 0x00,
+                  0x00, 0x00, 0x00,
+                  0x00, 0x01, 0x00, 0x00,
+                  0x00, 0x00, 0x00,
+                  0x40, 0x00, 0x00, 0x00]
+
   return [
     bytes.strToUint8('mvhd'),
     new Uint8Array(1),      // version
     new Uint8Array(3),      // flags
-    bytes.u32(0),           // creation time     // FIXME
-    bytes.u32(0),           // modification time // FIXME
-    bytes.u32(90000),       // timescale         // FIXME
-    bytes.u32(0),           // duration          // FIXME
-    bytes.u32(0x00010000),  // prefered rate     // FIXME
+    bytes.u32(0),           // creation time
+    bytes.u32(0),           // modification time
+    bytes.u32(90000),          // timescale
+    bytes.u32(0),           // duration
+    bytes.u32(0x00010000),  // prefered rate
     bytes.s16(0x0100),      // prefered volume
     new Uint8Array(10),     // reserved
-    new Uint8Array(36),     // matrix struct // FIXME
+    new Uint8Array(matrix), // matrix struct
+    new Uint8Array(matrix), // FIXME
     bytes.u32(0),           // preview time
     bytes.u32(0),           // preview duration
     bytes.u32(0),           // posterTime
@@ -72,39 +80,34 @@ export const tkhd = (config) => {
     }
   }
 
-  const matrix = [0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                  0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-                  0x64, 0x00, 0x00, 0x00]
-
   let result = [
     bytes.strToUint8('tkhd'),
     new Uint8Array([0]),                 // version
     new Uint8Array([0x00, 0x00, 0x01]),  // flags
-    bytes.u32(0),               // creation time // FIXME
-    bytes.u32(0),               // modification time // FIXME
+    bytes.u32(0),                        // creation time // FIXME
+    bytes.u32(0),                        // modification time // FIXME
     bytes.u32(config.id),                // track id
     bytes.u32(0),                        // reserved
     bytes.u32(0),                        // duration
     bytes.u64(0),                        // reserved
-    bytes.u16(0),                        // layer
-    bytes.u16(0),                        // alternate group
-    bytes.u16(0),                        // volume
+    bytes.s16(0),                        // layer
+    bytes.s16(0),                        // alternate group
+    bytes.s16(0),                        // volume
     bytes.u16(0),                        // reserved
-    new Uint8Array(matrix),              // matrix struct
-    new Uint8Array([(width >> 8) & 0xff, (width & 0xff), 0x00, 0x00]),
-    new Uint8Array([(height >> 8) & 0xff, (height & 0xff), 0x00, 0x00]),
-    // bytes.u32(width),                    // track width
-    // bytes.u32(height),                   // track height
   ]
 
-  // (width >> 8) & 0xFF,
-  //    width & 0xFF,
-  //    0x00, 0x00, // width
-  //    (height >> 8) & 0xFF,
-  //    height & 0xFF,
-  //    0x00, 0x00 // height
+  const matrix = [0x00, 0x01, 0x00, 0x00,
+                  0x00, 0x00, 0x00,
+                  0x00, 0x01, 0x00, 0x00,
+                  0x00, 0x00, 0x00,
+                  0x40, 0x00, 0x00, 0x00]
+
+  result.push(new Uint8Array(matrix))
+  result.push(new Uint8Array(matrix))
+
+
+  result.push(new Uint8Array([(width >> 8) & 0xff, (width & 0xff), 0x00, 0x00]))
+  result.push(new Uint8Array([(height >> 8) & 0xff, (height & 0xff), 0x00, 0x00]))
 
   return result
 }
@@ -123,9 +126,9 @@ export const mdhd = (config) => {
     bytes.strToUint8('mdhd'),
     new Uint8Array(1),          // version
     new Uint8Array([0, 0, 0]),  // flags
-    bytes.u32(0),      // creationTime // FIXME
-    bytes.u32(0),      // modification time // FIXME
-    bytes.u32(90000),           // timescale
+    bytes.u32(0),               // creationTime // FIXME
+    bytes.u32(0),               // modification time // FIXME
+    bytes.u32(90000),            // timescale
     bytes.u32(0),               // duration
     bytes.u16(0),               // language // FIXME
     bytes.u16(0),               // quality
@@ -298,7 +301,7 @@ export const avc1 = (config) => {
 }
 
 export const avcC = (config) => {
-  console.log(config);
+  console.log(config.sps);
   const sps = config.codec[0]
   const pps = config.codec[1]
   return [
@@ -402,8 +405,8 @@ export const stsz = (config) => {
     bytes.strToUint8('stsz'),
     new Uint8Array(1),         // version
     new Uint8Array(3),         // flags
-    bytes.u32(0),                  // sample size
-    bytes.u32(0),                  // number of entries
+    bytes.u32(0),              // sample size
+    bytes.u32(0),              // number of entries
   ]
 }
 
@@ -412,7 +415,7 @@ export const stco = (config) => {
     bytes.strToUint8('stco'),
     new Uint8Array(1),         // version
     new Uint8Array(3),         // flags
-    bytes.u32(0),                  // number of entries
+    bytes.u32(0),              // number of entries
   ]
 }
 
@@ -429,8 +432,8 @@ export const mvex = (config) => {
 export const trex = (config) => {
   let result =  [
     bytes.strToUint8('trex'),
-    new Uint8Array(1),         // version
-    new Uint8Array(3),         // flags
+    new Uint8Array([0]),         // version
+    new Uint8Array([0, 0, 0]),         // flags
     bytes.u32(config.id),      // track id
     bytes.u32(1),              // sample description index
     bytes.u32(0),              // sample duration
@@ -439,7 +442,7 @@ export const trex = (config) => {
 
   // If it's a video track, include sample flags
   if (config.type === 27) {
-    result.push(bytes.u32(0x02000000))      // sample flags
+    result.push(new Uint8Array([0x00, 0x01, 0x00, 0x01]))      // sample flags
   }
 
   if (config.type === 15) {
@@ -491,9 +494,9 @@ export const tfhd = (config) => {
 
       if (firstSample) {
         result.push(bytes.u32(1))                         // sample description index present
-        result.push(bytes.u32(firstSample.pts))      // default sample duration
-        result.push(bytes.u32((firstSample.length)))      // default sample size
-        result.push(bytes.u32(0x2000000))                 // default sample flags
+        result.push(bytes.u32(0))      // default sample duration
+        result.push(bytes.u32(0))      // default sample size
+        result.push(bytes.u32(0))                 // default sample flags
       }
   }
 
@@ -520,29 +523,24 @@ export const trun = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  const flags = dataOffsetPresent|sampleDurationPresent|sampleSizePresent|sampleFlagsPresent
+  const flags = dataOffsetPresent|sampleSizePresent|sampleDurationPresent|sampleFlagsPresent
 
   let result = [
     bytes.strToUint8('trun'),
     bytes.u32(flags),                   // trun flags
     bytes.u32(sampleCount),             // sample count
     bytes.s32(config.offset)            // offset
-  ]
+    ]
 
   payload.forEach(g => {
-    // console.log(g);
-
-    result.push(bytes.u32(g.pts))  // duration
-    result.push(bytes.u32(g.length))    // size
+    result.push(bytes.u32(g.pts))     // duration
+    result.push(bytes.u32(g.length))       // size
 
     if (g.isKeyFrame) {
-      result.push(bytes.u32(0x02000000)) // sample is depended on
+      result.push(bytes.u32(0x02000000))
     } else {
-      result.push(bytes.u32(0x01000000)) // samples depends on a keyframe
+      result.push(bytes.u32(0x01000000))
     }
-
-    // result.push(bytes.u32(g.pts))
-
   })
 
   return result
@@ -559,13 +557,12 @@ export const mfhd = (config) => {
 
 export const mdat = (config) => {
   let result = [bytes.strToUint8('mdat')]
+  let payload = config.payload
 
-  config.payload.forEach(accessUnit => {
-
-    let b = new Uint8Array(accessUnit.data)
-    accessUnit.nalusWithoutConfig.forEach(n => {
+  payload.forEach(accessUnit => {
+    accessUnit.allNalus.forEach(n => {
       let b = new Uint8Array(n)
-      result.push(bytes.u32(b.length))
+      result.push(bytes.u32(b.byteLength))
       result.push(b)
     })
   })

@@ -22,19 +22,12 @@ class ElementaryStream {
     const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
     // const streamPackets = transportStream.packets.filter(p => programPIDs.includes(p.header.PID))
 
-    if (streamType === 27) {
+    let pkts  = parsePES(streamPackets)
+    let units = parseAccessUnits(pkts)
 
-      let pkts  = parsePES(streamPackets)
-      let units = parseAccessUnits(pkts)
+    // console.log(units[0].nalus[7].nalu.slice(0, 10));
 
-      units.forEach(au => {
-        es.chunks.push(au)
-      })
-    }
-
-    if (streamType === 15) {
-      parseAudioPackets(es, streamPackets)
-    }
+    units.forEach(au => { es.chunks.push(au) })
 
     return es
   }
@@ -93,8 +86,8 @@ class ElementaryStream {
   get codecBytes() {
     if (this.streamType === 27) {
       let configChunk = this.chunks.filter(c => c.hasConfig)[0]
-      let sps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 7)[0]
-      let pps         = configChunk.nalus.filter(n => (n[0] & 0x1f) === 8)[0]
+      let sps         = configChunk.allNalus.filter(n => (n[0] & 0x1f) === 7)[0]
+      let pps         = configChunk.allNalus.filter(n => (n[0] & 0x1f) === 8)[0]
       // console.log(sps.map(s => s.toString(16)), pps.map(p => p.toString(16)));
       return [sps, pps]
     }
@@ -110,14 +103,24 @@ class ElementaryStream {
 const parsePES = (programPackets) => {
   let result = []
 
-  const itr = bytes.elementaryStreamIterator(programPackets, 0xe0)
+  const itr = bytes.elementaryStreamIterator(programPackets, [0x00, 0x00, 0x01, 0xe0])
   let parse = true
+  let cnt = 0
   while (parse) {
     let p = itr.next()
     if (p === undefined) { parse = false; break }
-    const packet = new PESPacket(p[0], new bytes.BitReader(p.slice(1)))
+
+    let currentProgramPacket = itr.reader.currentPacket()
+    
+    const packet = new PESPacket(0xe0, cnt, new bytes.BitReader(p))
+    if (currentProgramPacket) {
+      packet.header.programPacketHeader = currentProgramPacket.header
+    }
+
     result.push(packet)
+    cnt += 1
   }
+
 
   return result
 }
@@ -125,51 +128,66 @@ const parsePES = (programPackets) => {
 const parseAccessUnits = (pes) => {
   let result = []
 
-  const itr = bytes.elementaryStreamIterator(pes)
+  let delimiter = [0x00, 0x00, 0x00, 0x01]
+  let packetWithAlignment = pes.filter(p => p.header.alignmentIndicator === 1)[0]
+  if (packetWithAlignment) {
+    let pktData = packetWithAlignment.data.slice(0, 4)
+    if (pktData.slice(3) !== 1) {
+      delimiter = [0x00, 0x00, 0x01]
+    }
+  }
+
+  for (var i = 0; i < pes[0].data.length; i += 10) {
+    console.log(pes[0].data.slice(i, i+11));
+  }
+  // console.log(pes[0]);
+
+
+  const itr = bytes.elementaryStreamIterator(pes, delimiter)
 
   let parse = true
   let accessUnit
+  let cnt   = 0
   while(parse) {
-    let x = itr.next()
-    if (x === undefined) { parse = false; break }
+    let nalu = itr.next()
 
-    // console.log('-------');
-    let reader = new bytes.BitReader(x)
+    if (nalu === undefined) { parse = false; break }
+
+    let reader        = new bytes.BitReader(nalu)
     let forbidden_bit = reader.readBit()
     let nal_ref_idc   = reader.readBits(2)
     let nal_unit_type = reader.readBits(5)
 
-    if (nal_unit_type === 9 && forbidden_bit === 0) {
+    let currentPacket = itr.reader.currentPacket()
+
+    if (nal_unit_type === 9) {// && forbidden_bit === 0) {
       if (accessUnit) { result.push(accessUnit) }
-      accessUnit = new AccessUnit()
-      accessUnit.packet = itr.reader.currentPacket().header
-      accessUnit.push(x)
+      accessUnit = new AccessUnit(cnt)
+      accessUnit.push({nalu: nalu, packet: currentPacket.header})
+      cnt += 1
     } else {
-      if (forbidden_bit === 0) {
-        accessUnit.push(x)
-      } else {
-        console.log(accessUnit.lastNalu);
-        accessUnit.lastNalu.push(x)
-        // console.log(nal_unit_type, reader.readBits(8).toString(16));
-        // console.log(accessUnit.nalus[accessUnit.nalus.length-1])
-      }
+      // if (forbidden_bit === 0) {
+        if (currentPacket) {
+          accessUnit.push({nalu: nalu, packet: currentPacket.header})
+        } else {
+          accessUnit.push({nalu: nalu})
+        }
+      // } else {
+        // console.log('0000', nalu.slice(0, 10));
+        // let lastNalu = accessUnit.lastNalu.nalu
+        // accessUnit.appendToLast(nalu)
+      // }
     }
   }
-
-  // console.log(result.filter(r => r.hasConfig)[8].nalus.filter(n => (n[0] & 0x1f) === 7 ))
-  // console.log(result[3].nalus.map(n => n[0] & 0x1f));
-
-  // console.log(result.length);
-
 
   return result
 }
 
 class PESPacket {
 
-  constructor(streamID, reader) {
+  constructor(streamID, cntID, reader) {
     this.header = {}
-
+    this.header.cntID                 = cntID
     this.header.streamID              = streamID
     this.header.length                = reader.readBits(16)
 
@@ -192,13 +210,19 @@ class PESPacket {
 
     if (this.header.ptsDtsFlags === 2) {
       reader.readBits(4)
-      let high = reader.readBits(3)
+      let low = reader.readBits(3)
       reader.readBit()
       let mid = reader.readBits(15)
       reader.readBit()
-      let low = reader.readBits(15)
+      let high = reader.readBits(15)
       reader.readBit()
-      this.header.pts = low + mid + high
+
+      let pts = 0
+      pts = (pts >> 30) | high
+      pts = (pts >> 15) | mid
+      pts = (pts >> 3) | low
+
+      this.header.pts = pts
     }
 
     if (this.header.ptsDtsFlags === 3) {
@@ -210,7 +234,13 @@ class PESPacket {
       reader.readBit()
       let low = reader.readBits(15)
       reader.readBit()
-      this.header.pts = (low + mid + high)
+
+      let pts = 0
+      pts = (pts >> 30) | high
+      pts = (pts >> 15) | mid
+      pts = (pts >> 3) | low
+
+      this.header.pts = pts
 
       reader.readBits(4)
       high = reader.readBits(3)
@@ -219,7 +249,13 @@ class PESPacket {
       reader.readBit()
       low = reader.readBits(15)
       reader.readBit()
-      this.header.dts = (low + mid + high)
+
+      let dts = 0
+      dts = (dts >> 30) | high
+      dts = (dts >> 15) | mid
+      dts = (dts >> 3) | low
+
+      this.header.dts = dts
     }
 
     if (this.escrFlag) {
@@ -233,7 +269,7 @@ class PESPacket {
       let ext = reader.readBits(9)
       reader.readBit()
 
-      this.header.scr    = high + mid + low
+      this.header.scr    = low + mid + high
       this.header.scrExt = ext
     }
 
@@ -291,9 +327,7 @@ class PESPacket {
     }
 
 
-    // let size = reader.data.length - (reader.currentBit / 8)
-    this.data = []//new Uint8Array(size)
-
+    this.data = []
     while (!reader.atEnd()) {
       let bits = reader.readBits(8)
       this.data.push(bits)
@@ -313,12 +347,26 @@ class PESPacket {
 
 class AccessUnit {
 
-  constructor() {
+  constructor(id) {
+    this.id    = id
     this.nalus = []
   }
 
   push(nalu) {
     this.nalus.push(nalu)
+  }
+
+  appendToLast(bytes) {
+    console.log('id', this.id);
+    let last = this.nalus.pop()
+    console.log(last.nalu.slice(0, 10));
+    console.log(last.nalu.constructor.name);
+    // console.log(last.packet);
+    // console.log(last.nalu[0] & 0x1f);
+    // console.log(last.nalu.length);
+    last.nalu.push(...bytes)
+    // console.log(last.nalu.length);
+    this.push(last)
   }
 
   get lastNalu() {
@@ -339,24 +387,34 @@ class AccessUnit {
     return undefined
   }
 
+  get duration() {
+    let pcrBase = unique(this.nalus.filter(n => n.packet != undefined)
+    .filter(p => p.packet.programPacketHeader != undefined)
+    .filter(p => p.packet.programPacketHeader.adaptationField != undefined)
+    .map(p => p.packet.programPacketHeader.adaptationField.pcrBase))[0]
+
+    if (this.dts) { return this.dts }
+    else { return this.pts }
+  }
+
+  get packet() {
+    return this.nalus[0].packet
+  }
+
   get isKeyFrame() {
-    return this.nalus.map(n => n[0] & 0x1f).filter(k => k === 5).length > 0
+    return this.allNalus.map(n => n[0] & 0x1f).filter(k => k === 5).length > 0
   }
 
   get hasConfig() {
-    return this.nalus.map(n => n[0] & 0x1f).filter(k => (k === 7) || (k === 8)).length > 0
+    return this.allNalus.map(n => n[0] & 0x1f).filter(k => (k === 7) || (k === 8)).length > 0
   }
 
-  get nalusWithoutConfig() {
-    if (this.hasConfig) {
-      return this.nalus.filter(n => ((n[0] & 0x1f) !== 7) && ((n[0] & 0x1f) !== 8) )
-    } else {
-      return this.nalus
-    }
+  get allNalus() {
+    return this.nalus.map(n => n.nalu)
   }
 
   get length() {
-    return this.nalusWithoutConfig.reduce((a, c) => a + (c.length+4), 0)
+    return this.allNalus.reduce((a, c) => a + (c.length+4), 0)
   }
 }
 

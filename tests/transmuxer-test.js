@@ -304,7 +304,7 @@ test('that we can build an media fragment', t=> {
   t.end()
 })
 
-test.only('writing a segment', t=> {
+test('writing a segment', t=> {
   const bufferA  = Uint8Array.from(asset2)
   let tsA        = TransportStream.parse(bufferA)
   let muxer     = new Transmuxer()
@@ -312,6 +312,28 @@ test.only('writing a segment', t=> {
   const payload = muxer.buildMediaSegment(tsA)
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
-  //
+  // //
+  t.end()
+})
+
+test('binary pts helper thing', t=> {
+
+  let high = 28215
+  let mid  = 22222
+  let low  = 2
+
+  let pts = 0
+  pts = (pts >> 30) | high
+  pts = (pts >> 15) | mid
+  pts = (pts >> 3) | low
+
+  // pts |= mid
+  // pts = pts << 15
+  // pts |= high
+
+
+  console.log(pts.toString(2));
+  console.log(pts);
+
   t.end()
 })

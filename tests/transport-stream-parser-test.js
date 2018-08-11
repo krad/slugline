@@ -3,9 +3,12 @@ const fs    = require('fs')
 import TransportStream from '../src/parsers/container/ts/transport-stream'
 import ElementaryStream from '../src/parsers/container/ts/elementary-stream'
 import base64ArrayBuffer from '../src/parsers/container/ts/base64'
+import * as bytes from '../src/helpers/byte-helpers'
 
-// const ts = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
+const tsB = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+
 
 test('we can parse ts files', t=> {
 
@@ -146,6 +149,112 @@ test('that we can parse timestamps from pcr info', t=> {
   }, 0)
 
   console.log(x);
+
+  t.end()
+})
+
+test.only('that we can parse a stream correctly', t=> {
+
+  const bufferA  = Uint8Array.from(ts)
+  let tsA        = TransportStream.parse(bufferA)
+  let es         = ElementaryStream.parse(tsA, 27, 1)
+
+  let au = es.chunks[0]
+  t.ok(au)
+
+  // let sps = au.nalus[1]
+  // let pps = au.nalus[2]
+  // let idr = au.nalus[5]
+  //
+  //
+  es.chunks.forEach(au => {
+    let n = au.nalus[0]
+    let r = new bytes.BitReader(n.nalu)
+    r.readBit()
+    r.readBits(2)
+    r.readBits(5)
+    console.log(r.readBits(3));
+  })
+
+
+  // console.log(au.duration);
+  // console.log(au);
+  // let blah = au.nalus[0]
+  // let sps  = au.nalus[1]
+  // let pps  = au.nalus[2]
+  // let sei  = au.nalus[5]
+  // let idrA = au.nalus[6]
+  // let idrB = au.nalus[7]
+  //
+  // let x = new bytes.BitReader(blah.nalu)
+  // console.log(x.readBit());
+  // console.log(x.readBits(2));
+  // console.log(x.readBits(5));
+  // console.log(x.readBits(3));
+  //
+  // let a = new bytes.BitReader(idrA.nalu)
+  // let b = new bytes.BitReader(idrB.nalu)
+  // console.log('-----');
+  // console.log('id', au.id);
+  // console.log('forbidden:', a.readBit());
+  // console.log('ref_idc:', a.readBits(2));
+  // console.log('type:', a.readBits(5));
+  // console.log(idrA.nalu.slice(0, 10));
+  // console.log(idrA.nalu.length);
+  //
+  // console.log('-----');
+  // console.log('id', au.id);
+  // console.log('forbidden:', b.readBit());
+  // console.log('ref_idc:', b.readBits(2));
+  // console.log('type:', b.readBits(5));
+  // console.log(idrB.nalu.slice(0, 10));
+  // console.log(idrB.nalu.length);
+  //
+  //
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(blah.nalu))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(sps.nalu))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(pps.nalu))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(sei.nalu))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrA.nalu))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrB.nalu))
+  //
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrA.nalu))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrA.nalu))
+
+
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrA.nalu))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrB.nalu))
+  //
+
+  // fs.appendFileSync('/tmp/ss.h264', new Buffer(other.nalu))
+  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
+  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
+
+
+  // let rbsp = []
+  // for (var i = 0; i < other.nalu.length; i++) {
+  //   // console.log(b.readBits(24));
+  //   // if (i+2 < other.nalu.length && b.readBits(24) === 0x000003) {
+  //   //   b.rewind(24)
+  //   //   rbsp.push(b.readBits(8))
+  //   //   rbsp.push(b.readBit(8))
+  //   //   i += 2
+  //   //   console.log(b.readBit(8));
+  //   // } else {
+  //   //   rbsp.push(b.readBit(8))
+  //   // }
+  // }
+  // console.log("RBSP:", rbsp.length, "NALU:", other.nalu.length);
+  // for (var i = 0; i <50*10; i+=10) {
+  //   console.log(other.nalu.slice(i, i+10));
+  // }
 
   t.end()
 })
