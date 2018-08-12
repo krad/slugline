@@ -160,7 +160,7 @@ export const parseSPS = (input) => {
 
   sps.direct_8x8_inference_flag = reader.readBit()
 
-  sps.frame_cropping_flag     = reader.readBit()
+  sps.frame_cropping_flag       = reader.readBit()
   sps.frame_crop_top_offset     = 0
   sps.frame_crop_bottom_offset  = 0
   sps.frame_crop_left_offset    = 0
@@ -271,6 +271,10 @@ export class BitReader {
     return result
   }
 
+  rewind(n) {
+    this.currentBit -= n
+  }
+
   atEnd() {
     if (this.currentBit >= this.data.length*8) { return true }
     return false
@@ -298,7 +302,11 @@ export const packetStreamGenerator = (packetGenerator) => {
         if (currentPacket.constructor.name === 'Array') {
           return new BitReader(new Uint8Array(currentPacket))
         } else {
-          return new BitReader(new Uint8Array(currentPacket.data))
+          let data = currentPacket.data
+          if (currentPacket.data.constructor.name != 'Uint8Array') {
+            data = new Uint8Array(data)
+          }
+          return new BitReader(data)
         }
       }
     },
@@ -352,7 +360,7 @@ export const packetStreamBitReader = (packetStreamGenerator) => {
 
     rewind: (n) => {
       if (reader) {
-        reader.currentBit -= 8
+        reader.currentBit -= n
       }
     },
 

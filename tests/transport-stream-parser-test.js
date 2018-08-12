@@ -1,7 +1,8 @@
 const test  = require('tape')
 const fs    = require('fs')
 import TransportStream from '../src/parsers/container/ts/transport-stream'
-import ElementaryStream from '../src/parsers/container/ts/elementary-stream'
+import TransportStreamParser from '../src/parsers/container/ts/parser'
+import ElementaryStream , {PESPacket} from '../src/parsers/container/ts/elementary-stream'
 import base64ArrayBuffer from '../src/parsers/container/ts/base64'
 import * as bytes from '../src/helpers/byte-helpers'
 
@@ -153,112 +154,125 @@ test('that we can parse timestamps from pcr info', t=> {
   t.end()
 })
 
-test.only('that we can parse a stream correctly', t=> {
+test('that we can parse a rbsp (stripping emulating bytes)', t=> {
 
-  const bufferA  = Uint8Array.from(ts)
-  let tsA        = TransportStream.parse(bufferA)
-  let es         = ElementaryStream.parse(tsA, 27, 1)
+  const sps = [103, 66, 192, 30, 182, 129, 161, 255, 147, 1, 16,
+                 0,  0, 3,
+                 0, 16, 0, 0, 3,
+                 3, 206, 40, 0, 117, 48, 3, 169, 230, 162, 0, 248, 177, 117, 0 ]
 
-  let au = es.chunks[0]
-  t.ok(au)
+  let result = buildRBSP(sps)
 
-  // let sps = au.nalus[1]
-  // let pps = au.nalus[2]
-  // let idr = au.nalus[5]
-  //
-  //
-  es.chunks.forEach(au => {
-    let n = au.nalus[0]
-    let r = new bytes.BitReader(n.nalu)
-    r.readBit()
-    r.readBits(2)
-    r.readBits(5)
-    console.log(r.readBits(3));
-  })
+  let expected = [103, 66, 192, 30, 182, 129, 161, 255, 147,
+                  1, 16, 0, 0, 0, 16, 0, 0, 3, 206, 40, 0, 117, 48, 3, 169, 230, 162, 0, 248, 177, 117, 0]
 
+  t.deepEquals(expected, result, 'correctly stripped the rbsp')
 
-  // console.log(au.duration);
-  // console.log(au);
-  // let blah = au.nalus[0]
-  // let sps  = au.nalus[1]
-  // let pps  = au.nalus[2]
-  // let sei  = au.nalus[5]
-  // let idrA = au.nalus[6]
-  // let idrB = au.nalus[7]
-  //
-  // let x = new bytes.BitReader(blah.nalu)
-  // console.log(x.readBit());
-  // console.log(x.readBits(2));
-  // console.log(x.readBits(5));
-  // console.log(x.readBits(3));
-  //
-  // let a = new bytes.BitReader(idrA.nalu)
-  // let b = new bytes.BitReader(idrB.nalu)
-  // console.log('-----');
-  // console.log('id', au.id);
-  // console.log('forbidden:', a.readBit());
-  // console.log('ref_idc:', a.readBits(2));
-  // console.log('type:', a.readBits(5));
-  // console.log(idrA.nalu.slice(0, 10));
-  // console.log(idrA.nalu.length);
-  //
-  // console.log('-----');
-  // console.log('id', au.id);
-  // console.log('forbidden:', b.readBit());
-  // console.log('ref_idc:', b.readBits(2));
-  // console.log('type:', b.readBits(5));
-  // console.log(idrB.nalu.slice(0, 10));
-  // console.log(idrB.nalu.length);
-  //
-  //
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(blah.nalu))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(sps.nalu))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(pps.nalu))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(sei.nalu))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrA.nalu))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrB.nalu))
-  //
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrA.nalu))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrA.nalu))
-
-
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrA.nalu))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
-  // fs.appendFileSync('/tmp/sss.h264', new Buffer(idrB.nalu))
-  //
-
-  // fs.appendFileSync('/tmp/ss.h264', new Buffer(other.nalu))
-  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
-  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
-
-
-  // let rbsp = []
-  // for (var i = 0; i < other.nalu.length; i++) {
-  //   // console.log(b.readBits(24));
-  //   // if (i+2 < other.nalu.length && b.readBits(24) === 0x000003) {
-  //   //   b.rewind(24)
-  //   //   rbsp.push(b.readBits(8))
-  //   //   rbsp.push(b.readBit(8))
-  //   //   i += 2
-  //   //   console.log(b.readBit(8));
-  //   // } else {
-  //   //   rbsp.push(b.readBit(8))
-  //   // }
-  // }
-  // console.log("RBSP:", rbsp.length, "NALU:", other.nalu.length);
-  // for (var i = 0; i <50*10; i+=10) {
-  //   console.log(other.nalu.slice(i, i+10));
-  // }
+  console.log(bytes.parseSPS(result));
 
   t.end()
 })
 
+test('that we can parse a stream correctly', t=> {
+
+  const bufferA       = Uint8Array.from(tsB)
+  let transportStream = TransportStream.parse(bufferA)
+  const pmt           = transportStream.packets.filter(p => p.constructor.name === 'PMT')[0]
+  const track         = pmt.tracks.filter(t => t.streamType === 27)[0]
+  const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
+
+
+  let itr = bytes.elementaryStreamIterator(streamPackets, [0, 0, 1, 0xe0], true)
+  let cnt = 0
+  let pkts = []
+  while(1) {
+    let next = itr.next()
+    if (next) {
+
+      let b = new bytes.BitReader(next.slice(4))
+      let p = new PESPacket(0xe0, cnt, b)
+      pkts.push(p)
+      cnt += 1
+
+    } else {
+      break
+    }
+  }
+
+
+  itr = bytes.elementaryStreamIterator(pkts, [0, 0, 1])
+  console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  let sps = itr.next()
+  let pps = itr.next()
+  console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  let idr = itr.next()
+  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(sps))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(pps))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(idr))
+
+
+  // let last
+  // while (1) {
+  //   let next = itr.next()
+  //   if (next !== undefined) {
+  //
+  //       console.log(next[0] & 0x1f, next.slice(0, 10).map(x => x.toString(16)));
+  //
+  //     fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  //     fs.appendFileSync('/tmp/sss.h264', new Buffer(next))
+  //
+  //   } else {
+  //     break
+  //   }
+  // }
+
+
+  t.end()
+})
+
+class NALU {
+  constructor(payload) {
+    this.payload       = payload
+    this.rbsp          = buildRBSP(payload)
+    const reader       = new bytes.BitReader(payload)
+    this.forbidden_bit = reader.readBit()
+    this.nal_ref_idc   = reader.readBits(2)
+    this.nal_unit_type = reader.readBits(5)
+  }
+}
+
+
+const buildRBSP = (payload) => {
+  let result   = []
+  const reader = new bytes.BitReader(payload)
+  while (!reader.atEnd()) {
+    let byte = reader.readBits(8)
+    result.push(byte)
+
+    if (bytes.equal(result.slice(-3), [0, 0, 3])) {
+      result = result.slice(0, -3)
+      reader.rewind(24)
+      result.push(reader.readBits(8))
+      result.push(reader.readBits(8))
+      reader.readBits(8) /// emulation byte
+      result.push(reader.readBits(8))
+    }
+
+  }
+  return result
+}
 
 const unique = (arr) => {
   return arr.filter((val, idx, self) => {
