@@ -305,7 +305,7 @@ test('that we can build an media fragment', t=> {
 })
 
 test.only('writing a segment', t=> {
-  const bufferA  = Uint8Array.from(assetA)
+  const bufferA  = Uint8Array.from(asset2)
   let tsA        = TransportStream.parse(bufferA)
   let muxer     = new Transmuxer()
 
