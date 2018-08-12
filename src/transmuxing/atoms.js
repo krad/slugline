@@ -546,7 +546,7 @@ export const trun = (config) => {
 
     duration = (g.pts - lastPTS)
     lastPTS = g.pts
-    console.log(duration);
+    // console.log(duration);
     // if (g.dts) {
     //   result.push(bytes.u32(g.dts - g.pts))     // duration
     // } else {

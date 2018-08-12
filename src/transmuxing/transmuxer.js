@@ -52,6 +52,7 @@ class Transmuxer {
                                      offset: this.currentOffset,
                                      decode: this.decode})
 
+          currentSequence.reduce((a, c, d) => console.log(c, d), 0)
           this.decode += currentSequence.reduce((acc, curr) => acc + (curr.pts), 0)
 
         }
