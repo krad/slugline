@@ -2,7 +2,8 @@ const test  = require('tape')
 const fs    = require('fs')
 import TransportStream from '../src/parsers/container/ts/transport-stream'
 import TransportStreamParser from '../src/parsers/container/ts/parser'
-import ElementaryStream , {PESPacket} from '../src/parsers/container/ts/elementary-stream'
+import ElementaryStream from '../src/parsers/container/ts/elementary-stream'
+import PESPacket from '../src/parsers/container/ts/pes-packet'
 import base64ArrayBuffer from '../src/parsers/container/ts/base64'
 import * as bytes from '../src/helpers/byte-helpers'
 
@@ -175,7 +176,7 @@ test('that we can parse a rbsp (stripping emulating bytes)', t=> {
 
 test('that we can parse a stream correctly', t=> {
 
-  const bufferA       = Uint8Array.from(tsB)
+  const bufferA       = Uint8Array.from(ts)
   let transportStream = TransportStream.parse(bufferA)
   const pmt           = transportStream.packets.filter(p => p.constructor.name === 'PMT')[0]
   const track         = pmt.tracks.filter(t => t.streamType === 27)[0]
@@ -190,7 +191,7 @@ test('that we can parse a stream correctly', t=> {
     if (next) {
 
       let b = new bytes.BitReader(next.slice(4))
-      let p = new PESPacket(0xe0, cnt, b)
+      let p = new PESPacket(0xe0, b, cnt)
       pkts.push(p)
       cnt += 1
 
@@ -204,9 +205,16 @@ test('that we can parse a stream correctly', t=> {
   console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
   let sps = itr.next()
   let pps = itr.next()
-  console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
-  console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  let a = itr.next()
+  let b = itr.next()
+  let c = itr.next()
   let idr = itr.next()
+  let idr2 = itr.next()
+
+  console.log(idr.slice(0, 10));
+  console.log(idr2.slice(0, 10), idr2[0] & 0x1f);
+
+  // let idr = itr.next()
   // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
   // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
   // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
@@ -220,7 +228,16 @@ test('that we can parse a stream correctly', t=> {
   fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
   fs.appendFileSync('/tmp/sss.h264', new Buffer(pps))
   fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(a))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(b))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(c))
+
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
   fs.appendFileSync('/tmp/sss.h264', new Buffer(idr))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(idr2))
 
 
   // let last
@@ -242,37 +259,6 @@ test('that we can parse a stream correctly', t=> {
   t.end()
 })
 
-class NALU {
-  constructor(payload) {
-    this.payload       = payload
-    this.rbsp          = buildRBSP(payload)
-    const reader       = new bytes.BitReader(payload)
-    this.forbidden_bit = reader.readBit()
-    this.nal_ref_idc   = reader.readBits(2)
-    this.nal_unit_type = reader.readBits(5)
-  }
-}
-
-
-const buildRBSP = (payload) => {
-  let result   = []
-  const reader = new bytes.BitReader(payload)
-  while (!reader.atEnd()) {
-    let byte = reader.readBits(8)
-    result.push(byte)
-
-    if (bytes.equal(result.slice(-3), [0, 0, 3])) {
-      result = result.slice(0, -3)
-      reader.rewind(24)
-      result.push(reader.readBits(8))
-      result.push(reader.readBits(8))
-      reader.readBits(8) /// emulation byte
-      result.push(reader.readBits(8))
-    }
-
-  }
-  return result
-}
 
 const unique = (arr) => {
   return arr.filter((val, idx, self) => {

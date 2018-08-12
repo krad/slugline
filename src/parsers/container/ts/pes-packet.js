@@ -160,4 +160,4 @@ export class PESPacket {
 
 }
 
-export PESPacket
+export default PESPacket

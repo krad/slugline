@@ -1,4 +1,5 @@
 import * as bytes from '../../../helpers/byte-helpers'
+import PESPacket from './pes-packet'
 class ElementaryStream {
 
   /**
@@ -36,7 +37,7 @@ class ElementaryStream {
       if (next) {
           let b = new bytes.BitReader(next.slice(4))
           let p = new PESPacket(delimiter, b, cnt)
-          es.chunks.push
+          es.packets.push(p)
           cnt += 1
       } else {
         break
