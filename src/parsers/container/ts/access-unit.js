@@ -33,6 +33,8 @@ class AccessUnit {
       }
 
     }
+
+    result.units.push(accessUnit)
     return result
   }
 
@@ -46,12 +48,12 @@ class AccessUnit {
   }
 
   get dts() {
-    if (this.packet) { return this.packet.dts }
+    if (this.packet) { return (this.packet.dts)}
     return undefined
   }
 
   get pts() {
-    if (this.packet) { return this.packet.pts }
+    if (this.packet) { return (this.packet.pts)}
     return undefined
   }
 

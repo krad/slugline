@@ -326,18 +326,21 @@ test('binary pts helper thing', t=> {
   let mid  = 22222
   let low  = 2
 
+  let z = 0
   let pts = 0
-  pts = (pts >> 30) | high
-  pts = (pts >> 15) | mid
-  pts = (pts >> 3) | low
+  z = (z << 14) | mid
+  z = (z << 14) | high
 
-  // pts |= mid
-  // pts = pts << 15
-  // pts |= high
+  pts = (pts << 3) | low
+  pts = (pts << 15) | mid
+  pts = ((pts << 15) | high) >>> 0
 
+  console.log(low.toString(2))
+  console.log(' ', mid.toString(2))
+  console.log('                ', high.toString(2))
 
-  console.log(pts.toString(2));
-  console.log(pts);
+  console.log(pts.toString(2))
+  console.log(pts)
 
   t.end()
 })

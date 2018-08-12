@@ -22,21 +22,27 @@ class ElementaryStream {
     const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
 
     let delimiter
-    if (streamType === 27) {
-      delimiter = 0xe0
-    }
-
-    if (streamType === 15) {
-      delimiter = 0xc0
-    }
+    if (streamType === 27) { delimiter = 0xe0 }
+    if (streamType === 15) { delimiter = 0xc0 }
 
     let itr = bytes.elementaryStreamIterator(streamPackets, [0, 0, 1, delimiter], true)
     let cnt = 0
+    let pcrBase
     while(1) {
       let next = itr.next()
       if (next) {
           let b = new bytes.BitReader(next.slice(4))
+          let pkt = itr.reader.currentPacket()
+          if (pkt && pkt.header) {
+            if (pkt.header.adaptationField) {
+              if (pkt.header.adaptationField.pcrBase) {
+                pcrBase = pkt.header.adaptationField.pcrBase
+              }
+            }
+          }
+
           let p = new PESPacket(delimiter, b, cnt)
+          p.header.pcrBase = pcrBase
           es.packets.push(p)
           cnt += 1
       } else {

@@ -33,9 +33,9 @@ export class PESPacket {
       reader.readBit()
 
       let pts = 0
-      pts = (pts >> 30) | high
-      pts = (pts >> 15) | mid
-      pts = (pts >> 3) | low
+      pts = (pts << 3) | low
+      pts = (pts << 15) | mid
+      pts = ((pts << 15) | high) >>> 0
 
       this.header.pts = pts
     }
@@ -51,10 +51,9 @@ export class PESPacket {
       reader.readBit()
 
       let pts = 0
-      pts = (pts >> 30) | high
-      pts = (pts >> 15) | mid
-      pts = (pts >> 3) | low
-
+      pts = (pts << 3) | low
+      pts = (pts << 15) | mid
+      pts = ((pts << 15) | high) >>> 0
       this.header.pts = pts
 
       reader.readBits(4)
@@ -66,10 +65,9 @@ export class PESPacket {
       reader.readBit()
 
       let dts = 0
-      dts = (dts >> 30) | high
-      dts = (dts >> 15) | mid
-      dts = (dts >> 3) | low
-
+      dts = (dts << 3) | low
+      dts = (dts << 15) | mid
+      dts = ((dts << 15) | high) >>> 0
       this.header.dts = dts
     }
 

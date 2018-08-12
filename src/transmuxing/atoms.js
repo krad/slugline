@@ -32,7 +32,7 @@ export const moov = (config) => {
 }
 
 export const mvhd = (config) => {
-  let timescale = 30000
+  let timescale = 90000
   // let sps      = config[0].spsParsed
   // if (sps.vui) {
   //   if (sps.vui.timing_info_present_flag) {
@@ -129,7 +129,7 @@ export const mdia = (config) => {
 }
 
 export const mdhd = (config) => {
-  let timescale = 30000
+  let timescale = 90000
   // let sps      = config.spsParsed
   // if (sps.vui) {
   //   if (sps.vui.timing_info_present_flag) {
@@ -501,7 +501,7 @@ export const tfhd = (config) => {
       result.push(bytes.u32(config.trackID))  // track id
 
       result.push(bytes.u32(1))                   // sample description index present
-      result.push(bytes.u32(firstSample.pts))     // default sample duration
+      result.push(bytes.u32(3000))     // default sample duration
       result.push(bytes.u32(firstSample.length))  // default sample size
       result.push(bytes.u32(0x2000000))           // default sample flags
   }
@@ -539,9 +539,19 @@ export const trun = (config) => {
     // bytes.u32(0),                       // first_sample_flags
     ]
 
+  let duration = 0
+  let lastPTS = 0
   payload.forEach(g => {
     result.push(bytes.u32(g.length))       // size
-    result.push(bytes.u32(g.pts))     // duration
+
+    duration = (g.pts - lastPTS)
+    lastPTS = g.pts
+    console.log(duration);
+    // if (g.dts) {
+    //   result.push(bytes.u32(g.dts - g.pts))     // duration
+    // } else {
+      result.push(bytes.u32(duration))     // duration
+    // }
   })
 
   return result
