@@ -1,6 +1,7 @@
 import * as atoms from './atoms'
 import * as bytes from '../helpers/byte-helpers'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
+import AccessUnit from '../parsers/container/ts/access-unit'
 
 class Transmuxer {
 
@@ -10,50 +11,63 @@ class Transmuxer {
     this.decode               = 0
   }
 
+  setCurrentStream(ts) {
+    this.currentStream = ts
+    const pes          = ElementaryStream.parse(ts, 27, 1)
+    const videoStruct  = AccessUnit.parse(pes)
+
+    this.videoStruct      = AccessUnit.parse(pes)
+    this.videoStruct.id   = 1
+    this.videoStruct.type = 27
+
+  }
+
   buildInitializationSegment() {
+
+    const config = [this.videoStruct]
+
     let result = []
     result.push(atoms.ftyp())
-    result.push(atoms.moov(this.currentStream.tracksConfig))
+    result.push(atoms.moov(config))
     result = result.map(a => atoms.build(a))
     return bytes.concatenate(Uint8Array, ...result)
   }
 
   buildSequences(streamType) {
     let result = []
-    // let result    = []
-    // let track     = ts.tracks.filter(t => t.streamType == streamType)[0]
-    // let currentSequence
-    // track.chunks.forEach(chunk => {
-    //
-    //   if (chunk.isKeyFrame) {
-    //     if (currentSequence) {
-    //       let x = atoms.moof({payload: currentSequence})
-    //       let y = atoms.build(x)
-    //       this.currentOffset = y.length + (8*4)
-    //
-    //       result.push({currentMediaSequence: this.currentMediaSequence++,
-    //                                 payload: currentSequence,
-    //                                 trackID: track.trackID,
-    //                              streamType: streamType,
-    //                                  offset: this.currentOffset,
-    //                                  decode: this.decode})
-    //
-    //       this.decode += currentSequence.reduce((acc, curr) => acc + (curr.pts), 0)
-    //
-    //     }
-    //     currentSequence = [chunk]
-    //   } else {
-    //     if (currentSequence) {
-    //       currentSequence.push(chunk)
-    //     }
-    //   }
-    // })
+    let currentSequence
+
+    this.videoStruct.units.forEach(chunk => {
+
+      if (chunk.isKeyFrame) {
+        if (currentSequence) {
+          let x = atoms.moof({payload: currentSequence})
+          let y = atoms.build(x)
+          this.currentOffset = y.length + (8*4)
+
+          result.push({currentMediaSequence: this.currentMediaSequence++,
+                                    payload: currentSequence,
+                                    trackID: 1,
+                                 streamType: streamType,
+                                     offset: this.currentOffset,
+                                     decode: this.decode})
+
+          this.decode += currentSequence.reduce((acc, curr) => acc + (curr.pts), 0)
+
+        }
+        currentSequence = [chunk]
+      } else {
+        if (currentSequence) {
+          currentSequence.push(chunk)
+        }
+      }
+    })
 
     return result
   }
 
-  buildMediaSegment(ts) {
-    const sequences = this.buildSequences(ts, 27)
+  buildMediaSegment() {
+    const sequences = this.buildSequences(27)
     // console.log(sequences);
     let result = []
     sequences.forEach(seq => {

@@ -32,6 +32,13 @@ export const moov = (config) => {
 }
 
 export const mvhd = (config) => {
+  let timescale = 30000
+  // let sps      = config[0].spsParsed
+  // if (sps.vui) {
+  //   if (sps.vui.timing_info_present_flag) {
+  //     timescale = sps.vui.time_scale
+  //   }
+  // }
 
   const matrix = [0x00, 0x01, 0x00, 0x00,
                   0x00, 0x00, 0x00,
@@ -41,24 +48,24 @@ export const mvhd = (config) => {
 
   return [
     bytes.strToUint8('mvhd'),
-    new Uint8Array(1),      // version
-    new Uint8Array(3),      // flags
-    bytes.u32(0),           // creation time
-    bytes.u32(0),           // modification time
-    bytes.u32(90000),          // timescale
-    bytes.u32(0),           // duration
-    bytes.u32(0x00010000),  // prefered rate
-    bytes.s16(0x0100),      // prefered volume
-    new Uint8Array(10),     // reserved
-    new Uint8Array(matrix), // matrix struct
-    new Uint8Array(matrix), // FIXME
-    bytes.u32(0),           // preview time
-    bytes.u32(0),           // preview duration
-    bytes.u32(0),           // posterTime
-    bytes.u32(0),           // selectionTime
-    bytes.u32(0),           // selectionDuration
-    bytes.u32(0),           // currentTime
-    bytes.u32(2),           // nextTrackID
+    new Uint8Array([0]),        // version
+    new Uint8Array([0, 0, 0]),  // flags
+    bytes.u32(0),               // creation time
+    bytes.u32(0),               // modification time
+    bytes.u32(timescale),       // timescale
+    bytes.u32(0),               // duration
+    bytes.u32(0x00010000),      // prefered rate
+    bytes.s16(0x0100),          // prefered volume
+    new Uint8Array(10),         // reserved
+    new Uint8Array(matrix),     // matrix struct
+    new Uint8Array(matrix),     // FIXME
+    bytes.u32(0),               // preview time
+    bytes.u32(0),               // preview duration
+    bytes.u32(0),               // posterTime
+    bytes.u32(0),               // selectionTime
+    bytes.u32(0),               // selectionDuration
+    bytes.u32(0),               // currentTime
+    bytes.u32(2),               // nextTrackID
   ]
 }
 
@@ -75,8 +82,8 @@ export const tkhd = (config) => {
   let height = 0
   if (config.type === 27) {
     if (config.sps) {
-      width   = config.sps.width
-      height  = config.sps.height
+      width   = config.spsParsed.width
+      height  = config.spsParsed.height
     }
   }
 
@@ -122,13 +129,21 @@ export const mdia = (config) => {
 }
 
 export const mdhd = (config) => {
+  let timescale = 30000
+  // let sps      = config.spsParsed
+  // if (sps.vui) {
+  //   if (sps.vui.timing_info_present_flag) {
+  //     timescale = sps.vui.time_scale
+  //   }
+  // }
+
   return [
     bytes.strToUint8('mdhd'),
-    new Uint8Array(1),          // version
+    new Uint8Array([0]),        // version
     new Uint8Array([0, 0, 0]),  // flags
     bytes.u32(0),               // creationTime // FIXME
     bytes.u32(0),               // modification time // FIXME
-    bytes.u32(90000),            // timescale
+    bytes.u32(timescale),       // timescale
     bytes.u32(0),               // duration
     bytes.u16(0),               // language // FIXME
     bytes.u16(0),               // quality
@@ -181,7 +196,7 @@ export const minf = (config) => {
 export const vmhd = (config) => {
   return [
     bytes.strToUint8('vmhd'),
-    new Uint8Array(1),                          // version
+    new Uint8Array([0]),                        // version
     new Uint8Array([0, 0, 1]),                  // flags
     bytes.u16(0),                               // graphics mode
     bytes.u16(0),                               // op color
@@ -193,7 +208,7 @@ export const vmhd = (config) => {
 export const smhd = (config) => {
   return [
     bytes.strToUint8('smhd'),
-    new Uint8Array(1),         // version
+    new Uint8Array([0]),       // version
     new Uint8Array([0, 0, 1]), // flags
     bytes.u16(0),              // balance
     bytes.u16(0),              // reserved
@@ -210,7 +225,7 @@ export const dinf = (config) => {
 export const dref = (config) => {
   return [
     bytes.strToUint8('dref'),
-    new Uint8Array(1),         // version
+    new Uint8Array([0]),       // version
     new Uint8Array([0, 0, 0]), // flags
     bytes.u32(1),              // number of entries
     dreference(config)
@@ -220,7 +235,7 @@ export const dref = (config) => {
 export const dreference = (config) => {
   return [
     bytes.strToUint8('url '),
-    new Uint8Array(1),        // version
+    new Uint8Array([0]),      // version
     new Uint8Array([0, 0, 1]) // flags
   ]
 }
@@ -229,10 +244,10 @@ export const stbl = (config) => {
   return [
     bytes.strToUint8('stbl'),
     stsd(config),             // sample description atom
-    // stts(config),             // time to sample atom
-    // stsc(config),             // sample to chunk atom
-    // stsz(config),             // sample size atom
-    // stco(config),             // chunk offset atom
+    stts(config),             // time to sample atom
+    stsc(config),             // sample to chunk atom
+    stsz(config),             // sample size atom
+    stco(config),             // chunk offset atom
   ]
 }
 
@@ -290,7 +305,7 @@ export const avc1 = (config) => {
     bytes.u32(4718592),        // vertical resolution
     bytes.u32(0),              // data size
     bytes.u16(1),              // frame count
-    new Uint8Array([0]),         // compressorName size
+    new Uint8Array([0]),       // compressorName size
     new Uint8Array(31),        // padding
     bytes.s16(16),             // depth
     bytes.s16(-1),             // color table id
@@ -301,9 +316,8 @@ export const avc1 = (config) => {
 }
 
 export const avcC = (config) => {
-  console.log(config.sps);
-  const sps = config.codec[0]
-  const pps = config.codec[1]
+  const sps = config.sps.rbsp
+  const pps = config.pps.rbsp
   return [
     bytes.strToUint8('avcC'),
     new Uint8Array([1]),          // version
@@ -438,16 +452,8 @@ export const trex = (config) => {
     bytes.u32(1),              // sample description index
     bytes.u32(0),              // sample duration
     bytes.u32(0),              // sample size
+    bytes.u32(0),              // sample flags
   ]
-
-  // If it's a video track, include sample flags
-  if (config.type === 27) {
-    result.push(new Uint8Array([0x00, 0x01, 0x00, 0x01]))      // sample flags
-  }
-
-  if (config.type === 15) {
-    result.push(bytes.u32(0))
-  }
 
   return result
 }
@@ -476,6 +482,7 @@ export const traf = (config) => {
 export const tfhd = (config) => {
   let result = [bytes.strToUint8('tfhd')]
 
+
   const defaultBaseIsMOOF                = 0x20000
   const baseDataOffsetPresent            = 0x000001
   const sampleDescriptionIndexPresent    = 0x000002  // sample-description-index-present
@@ -484,20 +491,19 @@ export const tfhd = (config) => {
   const defaultSampleFlagsPresent        = 0x000020  // default-sample-flags-present
   const durationIsEmpty                  = 0x010000  // duration-is-empty
 
-  let flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent|defaultSampleFlagsPresent|defaultSampleDurationPresent
+  let flags =
+  defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleFlagsPresent|defaultSampleSizePresent|defaultSampleDurationPresent
+
+  const firstSample = config.payload[0]
 
   if (config.streamType == 27) {
-      result.push(bytes.u32(flags))        // track fragment flags
-      result.push(bytes.u32(config.trackID)) // track id
+      result.push(bytes.u32(flags))           // track fragment flags
+      result.push(bytes.u32(config.trackID))  // track id
 
-      const firstSample   = config.payload[0]
-
-      if (firstSample) {
-        result.push(bytes.u32(1))                         // sample description index present
-        result.push(bytes.u32(0))      // default sample duration
-        result.push(bytes.u32(0))      // default sample size
-        result.push(bytes.u32(0))                 // default sample flags
-      }
+      result.push(bytes.u32(1))                   // sample description index present
+      result.push(bytes.u32(firstSample.pts))     // default sample duration
+      result.push(bytes.u32(firstSample.length))  // default sample size
+      result.push(bytes.u32(0x2000000))           // default sample flags
   }
 
   return result
@@ -523,24 +529,19 @@ export const trun = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  const flags = dataOffsetPresent|sampleSizePresent|sampleDurationPresent|sampleFlagsPresent
+  const flags = dataOffsetPresent|sampleSizePresent|sampleCompositionTimeOffsetsPresent
 
   let result = [
     bytes.strToUint8('trun'),
     bytes.u32(flags),                   // trun flags
     bytes.u32(sampleCount),             // sample count
-    bytes.s32(config.offset)            // offset
+    bytes.s32(config.offset),           // offset
+    // bytes.u32(0),                       // first_sample_flags
     ]
 
   payload.forEach(g => {
-    result.push(bytes.u32(g.pts))     // duration
     result.push(bytes.u32(g.length))       // size
-
-    if (g.isKeyFrame) {
-      result.push(bytes.u32(0x02000000))
-    } else {
-      result.push(bytes.u32(0x01000000))
-    }
+    result.push(bytes.u32(g.pts))     // duration
   })
 
   return result
@@ -560,8 +561,8 @@ export const mdat = (config) => {
   let payload = config.payload
 
   payload.forEach(accessUnit => {
-    accessUnit.allNalus.forEach(n => {
-      let b = new Uint8Array(n)
+    accessUnit.nalus.forEach(n => {
+      let b = new Uint8Array(n.rbsp)
       result.push(bytes.u32(b.byteLength))
       result.push(b)
     })

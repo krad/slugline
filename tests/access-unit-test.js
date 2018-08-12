@@ -16,7 +16,15 @@ test('that we can build a list of video access units', t=> {
   const result = AccessUnit.parse(videoPES)
   t.ok(result, 'got a result back')
 
-  const au = result[0]
+  t.ok(result.units, 'had a list of access units')
+  t.equals(298, result.units.length, 'looks like the correct amount')
+  t.ok(result.sps, 'sps was present')
+  t.equals('NALU', result.sps.constructor.name, 'was a nalu struct')
+  t.ok(result.pps, 'pps was present')
+  t.equals('NALU', result.pps.constructor.name, 'was a nalu struct')
+  t.ok(result.spsParsed, 'parsed version of the sps was also available')
+
+  const au = result.units[0]
   t.equals('AccessUnit', au.constructor.name, 'first entry was an access unit')
   t.ok(au.packet, 'access unit had associated packet')
   t.ok(au.dts,    'access unit had a dts')

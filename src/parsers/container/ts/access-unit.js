@@ -4,7 +4,7 @@ import NALU from './nalu'
 class AccessUnit {
 
   static parse(pes) {
-    let result = []
+    let result = {units: []}
     let itr    = bytes.elementaryStreamIterator(pes.packets, [0, 0, 1])
     let cnt = 0
     let accessUnit
@@ -14,13 +14,22 @@ class AccessUnit {
 
       const nalu = new NALU(next)
       if (nalu.nal_unit_type === 9) {
-        if (accessUnit) { result.push(accessUnit) }
+        if (accessUnit) { result.units.push(accessUnit) }
         accessUnit = new AccessUnit(cnt)
         accessUnit.packet = itr.reader.currentPacket().header
         cnt += 1
         accessUnit.push(nalu)
       } else {
         if (accessUnit) { accessUnit.push(nalu) }
+      }
+
+      if (nalu.nal_unit_type === 7) {
+        result.sps = nalu
+        result.spsParsed = bytes.parseSPS(nalu.rbsp)
+      }
+
+      if (nalu.nal_unit_type === 8) {
+        result.pps = nalu
       }
 
     }
@@ -52,6 +61,10 @@ class AccessUnit {
 
   get hasConfig() {
     return this.nalus.filter(n => (n.nal_unit_type === 7) || (n.nal_unit_type === 8)).length > 0
+  }
+
+  get length() {
+    return (this.nalus.reduce((a, c) => a + c.length, 0) + (this.nalus.length * 4))
   }
 
 }
