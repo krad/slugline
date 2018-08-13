@@ -304,6 +304,25 @@ test('that we can build an media fragment', t=> {
   t.end()
 })
 
+test('that we can build a structure than can be used to arrange mp4 atoms', t => {
+  const bufferA = Uint8Array.from(assetA)
+  let ts        = TransportStream.parse(bufferA)
+
+
+  ts.tracks.forEach(track => {
+    if (track.streamType === 27) {
+
+    }
+
+    if (track.streamType === 15) {
+      console.log('audio track');
+    }
+  })
+
+
+  t.end()
+})
+
 test('writing a segment', t=> {
   const bufferA  = Uint8Array.from(assetA)
   let tsA        = TransportStream.parse(bufferA)

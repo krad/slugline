@@ -3,7 +3,7 @@ import * as bytes from '../../../helpers/byte-helpers'
 class ADTS {
 
   static parse(pes) {
-    let result = {units: []}
+    let result = {units: [], streamType: 15}
     let r = bytes.streamReader(pes.packets)
     while (1) {
       let next = r.readBits(12)

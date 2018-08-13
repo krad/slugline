@@ -1,5 +1,7 @@
 import TransportStreamParser from './parser'
 import ElementaryStream from './elementary-stream'
+import AccessUnit from './access-unit'
+import ADTS from './adts'
 import { createCodecsString } from '../mpeg-parser'
 import * as bytes from '../../../helpers/byte-helpers'
 
@@ -19,13 +21,6 @@ class TransportStream {
     this.packets = []
   }
 
-  get trackPackets() {
-    const pmt = this.packets.filter(p => p.constructor.name == 'PMT')[0]
-    return pmt.tracks.map((t, idx) => {
-      return ElementaryStream.parse(this, t.streamType, idx+1)
-    })
-  }
-
   get codecs() {
     return this.trackPackets.map(p => p.codec)
   }
@@ -38,16 +33,23 @@ class TransportStream {
     return this.packets.filter(p => p.constructor.name == 'PMT')[0]
   }
 
-  get tracks() {
+  get trackPackets() {
     return this.PMT.tracks.map((t, idx) => {
       return ElementaryStream.parse(this, t.streamType, idx+1)
+    })
+  }
+
+  get tracks() {
+    return this.trackPackets.map(stream => {
+      if (stream.streamType === 27) { return AccessUnit.parse(stream) }
+      if (stream.streamType === 15) { return ADTS.parse(stream) }
     })
   }
 
   get tracksConfig() {
     return this.tracks.map((t,idx) => {
 
-      // let result = {type: t.streamType, codec: t.codecBytes, id: idx+1}
+      let result = {type: t.streamType, codec: t.codecBytes, id: idx+1}
       //
       // if (t.streamType === 27) {
       //   result.sps = bytes.parseSPS(t.codecBytes[0])

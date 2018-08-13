@@ -4,7 +4,7 @@ import NALU from './nalu'
 class AccessUnit {
 
   static parse(pes) {
-    let result = {units: []}
+    let result = {units: [], streamType: 27}
     let itr    = bytes.elementaryStreamIterator(pes.packets, [0, 0, 1])
     let cnt = 0
     let accessUnit
@@ -70,5 +70,33 @@ class AccessUnit {
   }
 
 }
+
+
+export const keyframeIterator = (accessUnits) => {
+
+  let currentIndex = 0
+
+  return {
+    next: () => {
+      let result
+      while (1) {
+        let next = accessUnits[currentIndex]
+        if (next === undefined) { break }
+        if (result) {
+          if (next.isKeyFrame) {
+            return result
+          } else {
+            result.push(next)
+          }
+        } else {
+          result = [next]
+        }
+        currentIndex++
+      }
+      return result
+    }
+  }
+}
+
 
 export default AccessUnit

@@ -19,9 +19,7 @@ export const ftyp = () => {
 
 export const moov = (config) => {
   let result = [bytes.strToUint8('moov')]
-  // let tracks = config.map(c => trak(c))
-
-  let tracks = [trak(config[0])]
+  let tracks = config.map(c => trak(c))
 
   return [
     bytes.strToUint8('moov'),
@@ -33,12 +31,6 @@ export const moov = (config) => {
 
 export const mvhd = (config) => {
   let timescale = 90000
-  // let sps      = config[0].spsParsed
-  // if (sps.vui) {
-  //   if (sps.vui.timing_info_present_flag) {
-  //     timescale = sps.vui.time_scale
-  //   }
-  // }
 
   const matrix = [0x00, 0x01, 0x00, 0x00,
                   0x00, 0x00, 0x00,
@@ -153,12 +145,12 @@ export const mdhd = (config) => {
 export const hdlr = (config) => {
   let componentName = 'krad - slugline\0'
   let componentSubtype
-  if (config.type === 27) {
+  if (config.streamType === 27) {
     componentName     = 'krad - slugline - video\0'
     componentSubtype  = 'vide'
   }
 
-  if (config.type === 15) {
+  if (config.streamType === 15) {
     componentName = 'krad - slugline - audio\0'
     componentSubtype = 'soun'
   }

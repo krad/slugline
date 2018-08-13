@@ -1,5 +1,6 @@
 import * as bytes from '../../../helpers/byte-helpers'
 import PESPacket from './pes-packet'
+import AccessUnit from './access-unit'
 class ElementaryStream {
 
   /**
@@ -19,9 +20,12 @@ class ElementaryStream {
     if (!pmt)   { throw 'PMT not present in transport stream' }
     if (!track) { throw 'Track for stream type not found' }
 
-    const streamPackets = transportStream.packets
+    let streamPackets = transportStream.packets
     .filter(p => p.header.PID === track.elementaryPID)
-    .filter(p => p.header.PUSI === 1)
+
+    if (streamType === 15) {
+      streamPackets = streamPackets.filter(p => p.header.PUSI === 1)
+    }
 
     let delimiter
     if (streamType === 27) { delimiter = 0xe0 }
@@ -98,15 +102,12 @@ class ElementaryStream {
 
   get codecBytes() {
     if (this.streamType === 27) {
-      let configChunk = this.chunks.filter(c => c.hasConfig)[0]
-      let sps         = configChunk.allNalus.filter(n => (n[0] & 0x1f) === 7)[0]
-      let pps         = configChunk.allNalus.filter(n => (n[0] & 0x1f) === 8)[0]
-      // console.log(sps.map(s => s.toString(16)), pps.map(p => p.toString(16)));
-      return [sps, pps]
+      let result = AccessUnit.parse(this.packets)
+      return [resul.sps.rbsp, result.pps.rbsp]
     }
 
     if (this.streamType === 15) {
-      return this.chunks[1]
+      return this.packets[1]
     }
   }
 
