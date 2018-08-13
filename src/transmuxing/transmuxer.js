@@ -52,8 +52,21 @@ class Transmuxer {
                                      offset: this.currentOffset,
                                      decode: this.decode})
 
-          currentSequence.reduce((a, c, d) => console.log(c, d), 0)
-          this.decode += currentSequence.reduce((acc, curr) => acc + (curr.pts), 0)
+          let previousPTS = 0
+          let durations = []
+          currentSequence.forEach(au => {
+            const duration = Math.floor(au.pts - previousPTS)
+
+            previousPTS    = au.pts
+            if (duration > 3005) {
+              durations.push(3000)
+            } else {
+              durations.push(duration)
+            }
+
+          })
+
+          this.decode += durations.reduce((a, c) => a + c, 0)
 
         }
         currentSequence = [chunk]

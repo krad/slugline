@@ -19,7 +19,9 @@ class ElementaryStream {
     if (!pmt)   { throw 'PMT not present in transport stream' }
     if (!track) { throw 'Track for stream type not found' }
 
-    const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
+    const streamPackets = transportStream.packets
+    .filter(p => p.header.PID === track.elementaryPID)
+    .filter(p => p.header.PUSI === 1)
 
     let delimiter
     if (streamType === 27) { delimiter = 0xe0 }
@@ -27,23 +29,13 @@ class ElementaryStream {
 
     let itr = bytes.elementaryStreamIterator(streamPackets, [0, 0, 1, delimiter], true)
     let cnt = 0
-    let pcrBase
+    let pesPacket
     while(1) {
       let next = itr.next()
       if (next) {
           let b = new bytes.BitReader(next.slice(4))
-          let pkt = itr.reader.currentPacket()
-          if (pkt && pkt.header) {
-            if (pkt.header.adaptationField) {
-              if (pkt.header.adaptationField.pcrBase) {
-                pcrBase = pkt.header.adaptationField.pcrBase
-              }
-            }
-          }
-
-          let p = new PESPacket(delimiter, b, cnt)
-          p.header.pcrBase = pcrBase
-          es.packets.push(p)
+          pesPacket = new PESPacket(delimiter, b, cnt)
+          es.packets.push(pesPacket)
           cnt += 1
       } else {
         break

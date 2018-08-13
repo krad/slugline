@@ -544,14 +544,12 @@ export const trun = (config) => {
   payload.forEach(g => {
     result.push(bytes.u32(g.length))       // size
 
-    duration = (g.pts - lastPTS)
-    lastPTS = g.pts
-    // console.log(duration);
-    // if (g.dts) {
-    //   result.push(bytes.u32(g.dts - g.pts))     // duration
-    // } else {
-      result.push(bytes.u32(duration))     // duration
-    // }
+    let pts = g.pts
+    duration = (pts - lastPTS)
+    lastPTS = pts
+
+
+    result.push(bytes.u32(duration))     // duration
   })
 
   return result

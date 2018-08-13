@@ -11,7 +11,6 @@ import * as bytes from '../src/helpers/byte-helpers'
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
 const tsB = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
 
-
 test('we can parse ts files', t=> {
 
   let byteArray = new Uint8Array(ts)
@@ -111,20 +110,6 @@ test('parsing config from a transport stream', t=> {
   t.end()
 })
 
-test('parsing audio packets from a transport stream', t=> {
-  let byteArray = new Uint8Array(ts)
-  const stream  = TransportStream.parse(byteArray)
-
-  let es = ElementaryStream.parse(stream, 15)
-  t.ok(es, 'got an elementary stream')
-  t.equals(es.chunks.length, 161, 'got correct amount of audio chunks')
-
-  let sampleFreq = unique(es.chunks.map(c => c.samplingFreq))
-  t.equals(sampleFreq.length, 1, 'all chunks had the same sampling frequency')
-
-  t.end()
-})
-
 test('that we can parse timestamps from pcr info', t=> {
 
   let byteArray = new Uint8Array(ts)
@@ -200,7 +185,6 @@ test('that we can parse a stream correctly', t=> {
     }
   }
 
-
   itr = bytes.elementaryStreamIterator(pkts, [0, 0, 1])
   console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
   let sps = itr.next()
@@ -210,18 +194,6 @@ test('that we can parse a stream correctly', t=> {
   let c = itr.next()
   let idr = itr.next()
   let idr2 = itr.next()
-
-  console.log(idr.slice(0, 10));
-  console.log(idr2.slice(0, 10), idr2[0] & 0x1f);
-
-  // let idr = itr.next()
-  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
-  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
-  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
-  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
-  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
-  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
-  // console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
 
   fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
   fs.appendFileSync('/tmp/sss.h264', new Buffer(sps))
@@ -238,23 +210,6 @@ test('that we can parse a stream correctly', t=> {
   fs.appendFileSync('/tmp/sss.h264', new Buffer(idr))
   fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
   fs.appendFileSync('/tmp/sss.h264', new Buffer(idr2))
-
-
-  // let last
-  // while (1) {
-  //   let next = itr.next()
-  //   if (next !== undefined) {
-  //
-  //       console.log(next[0] & 0x1f, next.slice(0, 10).map(x => x.toString(16)));
-  //
-  //     fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
-  //     fs.appendFileSync('/tmp/sss.h264', new Buffer(next))
-  //
-  //   } else {
-  //     break
-  //   }
-  // }
-
 
   t.end()
 })
