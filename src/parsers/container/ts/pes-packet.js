@@ -1,10 +1,13 @@
 export class PESPacket {
 
-  constructor(streamID, reader, cntID) {
+  constructor(reader, cntID) {
+    this.data = []
+
     this.header = {}
     this.header.cntID                 = cntID
-    this.header.streamID              = streamID
-    this.header.length                = reader.readBits(16)
+    this.header.startCode             = reader.readBits(24)
+    this.header.streamID              = reader.readBits(8)
+    this.header.packetLength          = reader.readBits(16)
 
     this.header.markerBits             = reader.readBits(2)   // 10
     this.header.scramblingControl      = reader.readBits(2)
@@ -32,57 +35,44 @@ export class PESPacket {
       let high = reader.readBits(15)
       reader.readBit()
 
-      let pts = 0
-      pts = (pts << 3) | low
-      pts = (pts << 15) | mid
-      pts = ((pts << 15) | high) >>> 0
-
-      this.header.pts = pts
+      this.header.pts = buildTimestamp(low, mid, high)
     }
 
     if (this.header.ptsDtsFlags === 3) {
       reader.readBits(4)
 
-      let high = reader.readBits(3)
+      let low = reader.readBits(3)
       reader.readBit()
       let mid = reader.readBits(15)
       reader.readBit()
-      let low = reader.readBits(15)
+      let high = reader.readBits(15)
       reader.readBit()
 
-      let pts = 0
-      pts = (pts << 3) | low
-      pts = (pts << 15) | mid
-      pts = ((pts << 15) | high) >>> 0
-      this.header.pts = pts
+      this.header.pts = buildTimestamp(low, mid, high)
 
       reader.readBits(4)
-      high = reader.readBits(3)
+      low = reader.readBits(3)
       reader.readBit()
       mid = reader.readBits(15)
       reader.readBit()
-      low = reader.readBits(15)
+      high = reader.readBits(15)
       reader.readBit()
 
-      let dts = 0
-      dts = (dts << 3) | low
-      dts = (dts << 15) | mid
-      dts = ((dts << 15) | high) >>> 0
-      this.header.dts = dts
+      this.header.dts = buildTimestamp(low, mid, high)
     }
 
     if (this.escrFlag) {
       reader.readBits(2)
-      let high = reader.readBits(3)
+      let low = reader.readBits(3)
       reader.readBit()
       let mid = reader.readBits(15)
       reader.readBit()
-      let low = reader.readBits(15)
+      let high = reader.readBits(15)
       reader.readBit()
       let ext = reader.readBits(9)
       reader.readBit()
 
-      this.header.scr    = low + mid + high
+      this.header.scr    = buildTimestamp(low, mid, high)
       this.header.scrExt = ext
     }
 
@@ -132,18 +122,19 @@ export class PESPacket {
 
     const bitAfterHeaderParsing = reader.currentBit
     const parsedBytes           = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
+
     if (parsedBytes !== this.header.pesHeaderDataLength) {
       console.log('!!!! Failed to parse full PES packet. !!!!')
       console.log(this)
       console.log('parsed bytes:', parsedBytes)
       console.log('parsed header length:', this.header.pesHeaderDataLength)
+      console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     }
 
-
-    this.data = []
-    while (!reader.atEnd()) {
+    while (1) {
       let bits = reader.readBits(8)
-      this.data.push(bits)
+      this.push(bits)
+      if (reader.atEnd()) { break }
     }
 
   }
@@ -156,6 +147,14 @@ export class PESPacket {
     return this.data.length
   }
 
+}
+
+const buildTimestamp = (low, mid, high) => {
+  let ts = 0
+  ts = (ts << 3) | low
+  ts = (ts << 15) | mid
+  ts = (ts << 15) | high >>> 0
+  return ts
 }
 
 export default PESPacket

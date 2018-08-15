@@ -4,7 +4,7 @@ import NALU from './nalu'
 class AccessUnit {
 
   static parse(pes) {
-    let result = {units: [], streamType: 27}
+    let result = {units: [], streamType: 27, duration: 0, trackID: pes.trackID}
     let itr    = bytes.elementaryStreamIterator(pes.packets, [0, 0, 1])
     let cnt = 0
     let accessUnit
@@ -14,11 +14,25 @@ class AccessUnit {
 
       const nalu = new NALU(next)
       if (nalu.nal_unit_type === 9) {
-        if (accessUnit) { result.units.push(accessUnit) }
-        accessUnit = new AccessUnit(cnt)
-        accessUnit.packet = itr.reader.currentPacket().header
+
+        let nextAccessUnit = new AccessUnit(cnt)
+        nextAccessUnit.packet = itr.reader.currentPacket().header
         cnt += 1
-        accessUnit.push(nalu)
+        nextAccessUnit.push(nalu)
+
+        if (accessUnit) {
+          if (accessUnit.dts) {
+            let duration = (nextAccessUnit.pts - nextAccessUnit.dts) - (accessUnit.pts - accessUnit.dts)
+            accessUnit.duration = duration
+          } else {
+            accessUnit.duration = nextAccessUnit.pts - accessUnit.pts
+          }
+
+          result.units.push(accessUnit)
+        }
+
+        accessUnit = nextAccessUnit
+
       } else {
         if (accessUnit) { accessUnit.push(nalu) }
       }

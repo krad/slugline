@@ -23,24 +23,20 @@ class ElementaryStream {
     let streamPackets = transportStream.packets
     .filter(p => p.header.PID === track.elementaryPID)
 
-    if (streamType === 15) {
-      streamPackets = streamPackets.filter(p => p.header.PUSI === 1)
-    }
-
     let delimiter
     if (streamType === 27) { delimiter = 0xe0 }
     if (streamType === 15) { delimiter = 0xc0 }
 
     let itr = bytes.elementaryStreamIterator(streamPackets, [0, 0, 1, delimiter], true)
     let cnt = 0
-    let pesPacket
     while(1) {
       let next = itr.next()
       if (next) {
-          let b = new bytes.BitReader(next.slice(4))
-          pesPacket = new PESPacket(delimiter, b, cnt)
-          es.packets.push(pesPacket)
-          cnt += 1
+        let buffer = new Uint8Array(next)
+        let reader = new bytes.BitReader(buffer)
+        let pesPacket = new PESPacket(reader, cnt)
+        es.packets.push(pesPacket)
+        cnt += 1
       } else {
         break
       }

@@ -1,120 +1,113 @@
 import * as atoms from './atoms'
 import * as bytes from '../helpers/byte-helpers'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
+import { keyframeIterator } from '../parsers/container/ts/access-unit'
 
 class Transmuxer {
 
   constructor() {
     this.currentOffset        = 0
     this.currentMediaSequence = 1
-    this.decode               = 0
+    this.videoDecode          = 0
+    this.audioDecode          = 0
   }
 
   setCurrentStream(ts) {
     this.currentStream = ts
+    this.streamTypes   = ts.tracks.map(track => track.streamType)
+    if (this.hasVideo) {
+      this.videoTrack = this.currentStream.tracks.filter(track => track.streamType === 27)[0]
+      this.videoIterator = keyframeIterator(this.videoTrack.units)
+    }
+
+    if (this.hasAudio) {
+      this.audioTrack = this.currentStream.tracks.filter(track => track.streamType === 15)[0]
+    }
   }
 
-  buildInitializationSegment() {
+  hasAudio() {
+    return this.streamTypes.includes(15)
+  }
+
+  hasVideo() {
+    return this.streamTypes.includes(27)
+  }
+
+  nextMoof() {
+    let result = {currentMediaSequence: this.currentMediaSequence++, tracks: []}
+
+    let videoConfig  = Object.assign({}, this.videoTrack)
+    delete videoConfig.units
+    videoConfig.samples    = this.videoIterator.next()
+    if (videoConfig.samples === undefined) { return undefined }
+    result.tracks.push(videoConfig)
+
+    let first = videoConfig.samples[0]
+    let last  = videoConfig.samples.slice(-1)[0]
+
+    let audioSamplesForChunk = []
+    this.audioTrack.units.forEach(sample => {
+      if (sample.packet.pts > first.packet.pts && sample.packet.pts < last.packet.pts) {
+        audioSamplesForChunk.push(sample)
+      }
+    })
+
+
+    let audioConfig     = Object.assign({}, this.audioTrack)
+    audioConfig.samples = audioSamplesForChunk
+    let firstSample = audioConfig.samples[0]
+    if (firstSample) {
+      audioConfig.sampleRate     = firstSample.header.samplingRate
+      audioConfig.channelConfig  = firstSample.header.channelConfig
+      audioConfig.profile        = firstSample.header.profileMinusOne+1
+      delete audioConfig.units
+      result.tracks.push(audioConfig)
+    } else {
+      result.tracks.push({samples:[], trackID: 2, streamType: 15})
+    }
+
+    let x = atoms.moof(result)
+    let y = atoms.build(x)
+    this.currentOffset += y.length + (8*4)
+
+    result.tracks[0].offset = this.currentOffset
+    this.currentOffset += audioConfig.samples.reduce((a, c) => a + c.length, 0)
+    result.tracks[1].offset = this.currentOffset
+
+    result.tracks[0].decode = this.videoDecode
+    result.tracks[1].decode = this.audioDecode
+
+    this.videoDecode = videoConfig.samples.reduce((a, c) => a + c.duration, 0)
+    this.audioDecode = audioConfig.samples.reduce((a, c) => a + c.duration, 0)
+
+    return result
+  }
+
+  build() {
+    let result = []
+    while(1) {
+      let moof = this.nextMoof()
+      if (moof === undefined) { break }
+      result.push(moof)
+    }
+    return result
+  }
+
+
+  buildInitializationSegment(moof) {
     let result = []
     result.push(atoms.ftyp())
-    result.push(atoms.moov(this.currentStream.tracks))
+    result.push(atoms.moov(moof))
     result = result.map(a => atoms.build(a))
     return bytes.concatenate(Uint8Array, ...result)
   }
 
-  buildSequences(streamType) {
+  buildMediaSegment(moofs) {
     let result = []
 
-    this.currentStream.tracks.forEach(track => {
-      if (track.streamType === 27) {
-        console.log(this.parseVideoTrack(track))
-      }
-
-      if (track.streamType === 15) {
-        parseAudioTrack(track)
-      }
-    })
-
-    // this.videoStruct.units.forEach(chunk => {
-    //
-    //   if (chunk.isKeyFrame) {
-    //     if (currentSequence) {
-    //       let x = atoms.moof({payload: currentSequence})
-    //       let y = atoms.build(x)
-    //       this.currentOffset = y.length + (8*4)
-    //
-    //       result.push({currentMediaSequence: this.currentMediaSequence++,
-    //                                 payload: currentSequence,
-    //                                 trackID: 1,
-    //                              streamType: streamType,
-    //                                  offset: this.currentOffset,
-    //                                  decode: this.decode})
-    //
-    //       let previousPTS = 0
-    //       let durations = []
-    //       currentSequence.forEach(au => {
-    //         const duration = Math.floor(au.pts - previousPTS)
-    //
-    //         previousPTS    = au.pts
-    //         if (duration > 3005) {
-    //           durations.push(3000)
-    //         } else {
-    //           durations.push(duration)
-    //         }
-    //
-    //       })
-    //
-    //       this.decode += durations.reduce((a, c) => a + c, 0)
-    //
-    //     }
-    //     currentSequence = [chunk]
-    //   } else {
-    //     if (currentSequence) {
-    //       currentSequence.push(chunk)
-    //     }
-    //   }
-    // })
-
-    return result
-  }
-
-  parseVideoTrack(videoTrack) {
-    let result = []
-    let currentMoof
-    videoTrack.units.forEach(au => {
-      if (au.isKeyFrame) {
-        if (currentMoof) {
-
-          let x = atoms.moof({payload: currentMoof})
-          let y = atoms.build(x)
-          this.currentOffset = y.length + (8*4)
-
-          result.push({currentMediaSequence: this.currentMediaSequence++,
-                                    payload: currentMoof,
-                                    trackID: 1,
-                                 streamType: 27,
-                                     offset: this.currentOffset,
-                                     decode: this.decode})
-
-
-        } else {
-          currentMoof = [au]
-        }
-      } else {
-        if (currentMoof) {
-          currentMoof.push(au)
-        }
-      }
-    })
-    return result
-  }
-
-  buildMediaSegment() {
-    const sequences = this.buildSequences()
-    let result = []
-    sequences.forEach(seq => {
-      result.push(atoms.moof(seq))
-      result.push(atoms.mdat(seq))
+    moofs.forEach(moof => {
+      result.push(atoms.moof(moof))
+      result.push(atoms.mdat(moof))
     })
     result = result.map(a => atoms.build(a))
     return bytes.concatenate(Uint8Array, ...result)

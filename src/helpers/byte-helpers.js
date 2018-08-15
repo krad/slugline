@@ -317,16 +317,19 @@ export const packetStreamGenerator = (packetGenerator) => {
 }
 
 export const packetStreamBitReader = (packetStreamGenerator) => {
-  let reader = packetStreamGenerator.next()
+  let reader      = packetStreamGenerator.next()
+  let currentBit  = 0
   return {
 
     readBit: () => {
       if (reader) {
         if (reader.currentBit < (reader.length * 8)) {
+          currentBit += 1
           return reader.readBit()
         } else {
           reader = packetStreamGenerator.next()
           if (reader) {
+            currentBit += 1
             return reader.readBit()
           }
         }
@@ -336,21 +339,19 @@ export const packetStreamBitReader = (packetStreamGenerator) => {
     readBits: (n) => {
       if (reader) {
         if (reader.currentBit < (reader.length * 8)) {
+          currentBit += n
           return reader.readBits(n)
         } else {
           reader = packetStreamGenerator.next()
           if (reader) {
+            currentBit += n
             return reader.readBits(n)
           }
         }
       }
     },
 
-    currentBit: () => {
-      if (reader) {
-        return reader.currentBit
-      }
-    },
+    currentBit: currentBit,
 
     currentPacket: () => {
       if (packetStreamGenerator) {

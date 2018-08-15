@@ -19,7 +19,7 @@ export const ftyp = () => {
 
 export const moov = (config) => {
   let result = [bytes.strToUint8('moov')]
-  let tracks = config.map(c => trak(c))
+  let tracks = config.tracks.map(c => trak(c))
 
   return [
     bytes.strToUint8('moov'),
@@ -72,7 +72,7 @@ export const trak = (config) => {
 export const tkhd = (config) => {
   let width  = 0
   let height = 0
-  if (config.type === 27) {
+  if (config.streamType === 27) {
     if (config.sps) {
       width   = config.spsParsed.width
       height  = config.spsParsed.height
@@ -85,7 +85,7 @@ export const tkhd = (config) => {
     new Uint8Array([0x00, 0x00, 0x01]),  // flags
     bytes.u32(0),                        // creation time // FIXME
     bytes.u32(0),                        // modification time // FIXME
-    bytes.u32(config.id),                // track id
+    bytes.u32(config.trackID),           // track id
     bytes.u32(0),                        // reserved
     bytes.u32(0),                        // duration
     bytes.u64(0),                        // reserved
@@ -122,12 +122,11 @@ export const mdia = (config) => {
 
 export const mdhd = (config) => {
   let timescale = 90000
-  // let sps      = config.spsParsed
-  // if (sps.vui) {
-  //   if (sps.vui.timing_info_present_flag) {
-  //     timescale = sps.vui.time_scale
-  //   }
-  // }
+
+  if (config.streamType === 15) {
+    timescale = config.sampleRate
+  }
+
 
   return [
     bytes.strToUint8('mdhd'),
@@ -171,11 +170,11 @@ export const hdlr = (config) => {
 export const minf = (config) => {
   let result = [bytes.strToUint8('minf')]
 
-  if (config.type === 27) {
+  if (config.streamType === 27) {
     result.push(vmhd(config)) // video media information atom
   }
 
-  if (config.type === 15) {
+  if (config.streamType === 15) {
     result.push(smhd(config)) // sound media information atom
   }
 
@@ -251,11 +250,11 @@ export const stsd = (config) => {
     bytes.u32(1),              // number of entries
   ]
 
-  if (config.type === 27) {
+  if (config.streamType === 27) {
     result.push(avc1(config))
   }
 
-  if (config.type === 15) {
+  if (config.streamType === 15) {
     result.push(mp4a(config))
   }
 
@@ -355,16 +354,18 @@ export const pasp = (config) => {
 }
 
 export const mp4a = (config) => {
+  let sampleRate = config.sampleRate << 16
+
   return [
     bytes.strToUint8('mp4a'),
-    new Uint8Array(6),        // reserved
-    bytes.u16(1),             // data ref index
-    bytes.u64(0),             // reserved
-    bytes.u16(2),             // channels
-    bytes.u16(16),            // sample size
-    bytes.u16(0),             // predefined
-    bytes.u16(0),             // reserved
-    bytes.u32(44100),         // sample rate
+    new Uint8Array(6),               // reserved
+    bytes.u16(1),                    // data ref index
+    bytes.u64(0),                    // reserved
+    bytes.u16(config.channelConfig), // channels
+    bytes.u16(16),                   // sample size
+    bytes.u16(0),                    // predefined
+    bytes.u16(0),                    // reserved
+    bytes.u32(sampleRate),           // sample rate
     esds(config)
   ]
 }
@@ -426,8 +427,7 @@ export const stco = (config) => {
 }
 
 export const mvex = (config) => {
-  // const trexs = config.map(c => trex(c))
-  const trexs = [trex(config[0])]
+  const trexs = config.tracks.map(c => trex(c))
 
   return [
     bytes.strToUint8('mvex'),
@@ -438,9 +438,9 @@ export const mvex = (config) => {
 export const trex = (config) => {
   let result =  [
     bytes.strToUint8('trex'),
-    new Uint8Array([0]),         // version
-    new Uint8Array([0, 0, 0]),         // flags
-    bytes.u32(config.id),      // track id
+    new Uint8Array([0]),       // version
+    new Uint8Array([0, 0, 0]), // flags
+    bytes.u32(config.trackID), // track id
     bytes.u32(1),              // sample description index
     bytes.u32(0),              // sample duration
     bytes.u32(0),              // sample size
@@ -455,10 +455,12 @@ export const trex = (config) => {
 //////////////////////////////////////////////////////////////////
 
 export const moof = (config) => {
+  let tracks = config.tracks.map(c => traf(c))
+
   return [
     bytes.strToUint8('moof'),
     mfhd(config),
-    traf(config),
+    ...tracks,
   ]
 }
 
@@ -483,19 +485,35 @@ export const tfhd = (config) => {
   const defaultSampleFlagsPresent        = 0x000020  // default-sample-flags-present
   const durationIsEmpty                  = 0x010000  // duration-is-empty
 
-  let flags =
-  defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleFlagsPresent|defaultSampleSizePresent|defaultSampleDurationPresent
+  let flags
+  if (config.streamType === 27) {
+    flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleFlagsPresent|defaultSampleSizePresent|defaultSampleDurationPresent
+  }
 
-  const firstSample = config.payload[0]
+  if (config.streamType === 15) {
+    flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent|defaultSampleDurationPresent
+  }
 
-  if (config.streamType == 27) {
-      result.push(bytes.u32(flags))           // track fragment flags
-      result.push(bytes.u32(config.trackID))  // track id
+  result.push(bytes.u32(flags))           // track fragment flags
+  result.push(bytes.u32(config.trackID))  // track id
+  result.push(bytes.u32(1))                   // sample description index present
 
-      result.push(bytes.u32(1))                   // sample description index present
-      result.push(bytes.u32(3000))     // default sample duration
+  const firstSample = config.samples[0]
+
+  if (config.streamType === 27) {
+      result.push(bytes.u32(firstSample.duration))     // default sample duration
       result.push(bytes.u32(firstSample.length))  // default sample size
       result.push(bytes.u32(0x2000000))           // default sample flags
+  }
+
+  if (config.streamType === 15) {
+    if (firstSample) {
+      result.push(bytes.u32(1024))                // default sample duration
+      result.push(bytes.u32(firstSample.length))  // default sample size
+    } else {
+      result.push(bytes.u32(0))
+      result.push(bytes.u32(0))
+    }
   }
 
   return result
@@ -511,7 +529,17 @@ export const tfdt = (config) => {
 }
 
 export const trun = (config) => {
-  let payload     = config.payload || []
+  if (config.streamType === 27) {
+    return videoTRUN(config)
+  } else if (config.streamType === 15) {
+    return audioTRUN(config)
+  } else {
+    return []
+  }
+}
+
+const videoTRUN = (config) => {
+  let payload     = config.samples || []
   let sampleCount = payload.length
 
   const dataOffsetPresent                   = 0x0001
@@ -521,31 +549,57 @@ export const trun = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  const flags = dataOffsetPresent|sampleSizePresent|sampleCompositionTimeOffsetsPresent
+  let flags = dataOffsetPresent|sampleSizePresent|sampleDurationPresent|sampleFlagsPresent
 
   let result = [
     bytes.strToUint8('trun'),
     bytes.u32(flags),                   // trun flags
     bytes.u32(sampleCount),             // sample count
     bytes.s32(config.offset),           // offset
-    // bytes.u32(0),                       // first_sample_flags
-    ]
+  ]
 
-  let duration = 0
-  let lastPTS = 0
   payload.forEach(g => {
+    result.push(bytes.u32(g.duration))     // duration
     result.push(bytes.u32(g.length))       // size
 
-    let pts = g.pts
-    duration = (pts - lastPTS)
-    lastPTS = pts
-
-
-    result.push(bytes.u32(duration))     // duration
+    if (g.isKeyFrame) {
+      result.push(bytes.u32(0x2000000))
+    } else {
+      result.push(bytes.u32(0x1000000))
+    }
   })
 
   return result
 }
+
+const audioTRUN = (config) => {
+  let payload     = config.samples || []
+  let sampleCount = payload.length
+
+  const dataOffsetPresent                   = 0x0001
+  const firstSampleFlagsPresent             = 0x0004
+  const sampleDurationPresent               = 0x0100
+  const sampleSizePresent                   = 0x0200
+  const sampleFlagsPresent                  = 0x0400
+  const sampleCompositionTimeOffsetsPresent = 0x0800
+
+  let flags = dataOffsetPresent|sampleSizePresent|sampleDurationPresent
+
+  let result = [
+    bytes.strToUint8('trun'),
+    bytes.u32(flags),                   // trun flags
+    bytes.u32(sampleCount),             // sample count
+    bytes.s32(config.offset),           // offset
+  ]
+
+  payload.forEach(g => {
+    result.push(bytes.u32(g.duration))
+    result.push(bytes.u32(g.length))       // size
+  })
+
+  return result
+}
+
 
 export const mfhd = (config) => {
   return [
@@ -558,14 +612,27 @@ export const mfhd = (config) => {
 
 export const mdat = (config) => {
   let result = [bytes.strToUint8('mdat')]
-  let payload = config.payload
 
-  payload.forEach(accessUnit => {
-    accessUnit.nalus.forEach(n => {
-      let b = new Uint8Array(n.rbsp)
-      result.push(bytes.u32(b.byteLength))
-      result.push(b)
-    })
+  config.tracks.forEach(track => {
+
+    if (track.streamType === 27) {
+      track.samples.forEach(au => {
+        au.nalus.forEach(nalu => {
+          let b = new Uint8Array(nalu.rbsp)
+          result.push(bytes.u32(b.byteLength))
+          result.push(b)
+        })
+      })
+    }
+
+    if (track.streamType === 15) {
+      track.samples.forEach(s => {
+        let b = new Uint8Array(s.payload)
+        // result.push(bytes.u32(b.byteLength))
+        result.push(b)
+      })
+    }
+
   })
   return result
 }

@@ -308,30 +308,46 @@ test('that we can build a structure than can be used to arrange mp4 atoms', t =>
   const bufferA = Uint8Array.from(assetA)
   let ts        = TransportStream.parse(bufferA)
 
+  let muxer = new Transmuxer()
+  muxer.setCurrentStream(ts)
+  t.equals(true, muxer.hasAudio(), 'flagged as having audio')
+  t.equals(true, muxer.hasVideo(), 'flagged as having video')
 
-  ts.tracks.forEach(track => {
-    if (track.streamType === 27) {
+  let moof = muxer.nextMoof()
+  t.ok(moof)
+  t.equals(moof.currentMediaSequence, 1, 'got the first mediaSequence')
+  t.equals(2,             moof.tracks.length, 'has two tracks')
 
-    }
+  t.equals(1,         moof.tracks[0].trackID, 'first track had correct id')
+  t.equals(27,     moof.tracks[0].streamType, 'streamType was video')
+  t.equals(24, moof.tracks[0].samples.length, 'had correct amount of samples')
+  t.ok(moof.tracks[0].sps, 'had sps data')
+  t.ok(moof.tracks[0].pps, 'had pps data')
+  t.ok(moof.tracks[0].spsParsed, 'had parsedSPS data')
 
-    if (track.streamType === 15) {
-      console.log('audio track');
-    }
-  })
+  t.equals(2,           moof.tracks[1].trackID, 'second track had correct id')
+  t.equals(15,       moof.tracks[1].streamType, 'streamType was audio')
+  t.equals(22050,    moof.tracks[1].sampleRate, 'track had a sample rate')
+  t.equals(2,     moof.tracks[1].channelConfig, 'track had a channelConfig')
+  t.equals(2,           moof.tracks[1].profile, 'track had a profile (not the minus one version)')
 
+  moof = muxer.nextMoof()
+  t.ok(moof, 'got the next moof')
+  t.equals(moof.currentMediaSequence, 2, 'got the next mediaSequence')
 
   t.end()
 })
 
-test('writing a segment', t=> {
-  const bufferA  = Uint8Array.from(assetA)
+test.only('writing a segment', t=> {
+  const bufferA  = Uint8Array.from(asset2)
   let tsA        = TransportStream.parse(bufferA)
   let muxer     = new Transmuxer()
 
   muxer.setCurrentStream(tsA)
+  let res = muxer.build()
 
-  const init    = muxer.buildInitializationSegment()
-  const payload = muxer.buildMediaSegment()
+  const init    = muxer.buildInitializationSegment(res[0])
+  const payload = muxer.buildMediaSegment(res)
 
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))

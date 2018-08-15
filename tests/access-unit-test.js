@@ -7,6 +7,7 @@ import AccessUnit, { keyframeIterator } from '../src/parsers/container/ts/access
 import * as bytes from '../src/helpers/byte-helpers'
 
 const segment = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
+// const ts2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
 
 test('that we can build a list of video access units', t=> {
   let byteArray   = new Uint8Array(segment)
@@ -38,7 +39,7 @@ test('that we can build a list of video access units', t=> {
 })
 
 
-test.only('that we can chunk access units by idrs', t=> {
+test('that we can chunk access units by idrs', t=> {
 
   let byteArray   = new Uint8Array(segment)
   const ts        = TransportStream.parse(byteArray)
