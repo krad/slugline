@@ -132,9 +132,9 @@ export class PESPacket {
     }
 
     while (1) {
+      if (reader.atEnd()) { break }
       let bits = reader.readBits(8)
       this.push(bits)
-      if (reader.atEnd()) { break }
     }
 
   }

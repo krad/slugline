@@ -22,7 +22,7 @@ class AccessUnit {
 
         if (accessUnit) {
           if (accessUnit.dts) {
-            let duration = (nextAccessUnit.pts - nextAccessUnit.dts) - (accessUnit.pts - accessUnit.dts)
+            let duration = nextAccessUnit.dts - accessUnit.dts
             accessUnit.duration = duration
           } else {
             accessUnit.duration = nextAccessUnit.pts - accessUnit.pts

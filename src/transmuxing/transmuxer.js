@@ -38,47 +38,47 @@ class Transmuxer {
 
     let videoConfig  = Object.assign({}, this.videoTrack)
     delete videoConfig.units
-    videoConfig.samples    = this.videoIterator.next()
-    if (videoConfig.samples === undefined) { return undefined }
+    const videoSamples = this.videoIterator.next()
+    if (videoSamples === undefined) { return undefined }
+    videoConfig.samples = videoSamples
     result.tracks.push(videoConfig)
 
-    let first = videoConfig.samples[0]
-    let last  = videoConfig.samples.slice(-1)[0]
-
-    let audioSamplesForChunk = []
-    this.audioTrack.units.forEach(sample => {
-      if (sample.packet.pts > first.packet.pts && sample.packet.pts < last.packet.pts) {
-        audioSamplesForChunk.push(sample)
-      }
-    })
-
-
-    let audioConfig     = Object.assign({}, this.audioTrack)
-    audioConfig.samples = audioSamplesForChunk
-    let firstSample = audioConfig.samples[0]
-    if (firstSample) {
-      audioConfig.sampleRate     = firstSample.header.samplingRate
-      audioConfig.channelConfig  = firstSample.header.channelConfig
-      audioConfig.profile        = firstSample.header.profileMinusOne+1
-      delete audioConfig.units
-      result.tracks.push(audioConfig)
-    } else {
-      result.tracks.push({samples:[], trackID: 2, streamType: 15})
-    }
-
+    // let first = videoConfig.samples[0]
+    // let last  = videoConfig.samples.slice(-1)[0]
+    // let audioSamplesForChunk = []
+    // this.audioTrack.units.forEach(sample => {
+    //   if (sample.packet.pts > first.packet.pts && sample.packet.pts < last.packet.pts) {
+    //     audioSamplesForChunk.push(sample)
+    //   }
+    // })
+    //
+    //
+    // let audioConfig     = Object.assign({}, this.audioTrack)
+    // audioConfig.samples = audioSamplesForChunk
+    // let firstSample = audioConfig.samples[0]
+    // if (firstSample) {
+    //   audioConfig.sampleRate     = firstSample.header.samplingRate
+    //   audioConfig.channelConfig  = firstSample.header.channelConfig
+    //   audioConfig.profile        = firstSample.header.profileMinusOne+1
+    //   delete audioConfig.units
+    //   result.tracks.push(audioConfig)
+    // } else {
+    //   result.tracks.push({samples:[], trackID: 2, streamType: 15})
+    // }
+    //
     let x = atoms.moof(result)
     let y = atoms.build(x)
-    this.currentOffset += y.length + (8*4)
+    this.currentOffset = y.length + (8)
 
     result.tracks[0].offset = this.currentOffset
-    this.currentOffset += audioConfig.samples.reduce((a, c) => a + c.length, 0)
-    result.tracks[1].offset = this.currentOffset
+    // this.currentOffset += audioConfig.samples.reduce((a, c) => a + c.length, 0)
+    // result.tracks[1].offset = this.currentOffset
 
     result.tracks[0].decode = this.videoDecode
-    result.tracks[1].decode = this.audioDecode
+    // result.tracks[1].decode = this.audioDecode
 
-    this.videoDecode = videoConfig.samples.reduce((a, c) => a + c.duration, 0)
-    this.audioDecode = audioConfig.samples.reduce((a, c) => a + c.duration, 0)
+    this.videoDecode += videoConfig.samples.reduce((a, c) => a + c.duration, 0)
+    // this.audioDecode = audioConfig.samples.reduce((a, c) => a + c.duration, 0)
 
     return result
   }
@@ -106,6 +106,7 @@ class Transmuxer {
     let result = []
 
     moofs.forEach(moof => {
+      // console.log(moof.tracks[0].samples);
       result.push(atoms.moof(moof))
       result.push(atoms.mdat(moof))
     })

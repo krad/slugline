@@ -496,20 +496,20 @@ export const tfhd = (config) => {
 
   result.push(bytes.u32(flags))           // track fragment flags
   result.push(bytes.u32(config.trackID))  // track id
-  result.push(bytes.u32(1))                   // sample description index present
+  result.push(bytes.u32(0))               // sample description index present
 
   const firstSample = config.samples[0]
 
   if (config.streamType === 27) {
-      result.push(bytes.u32(firstSample.duration))     // default sample duration
-      result.push(bytes.u32(firstSample.length))  // default sample size
-      result.push(bytes.u32(0x2000000))           // default sample flags
+      result.push(bytes.u32(firstSample.duration))  // default sample duration
+      result.push(bytes.u32(firstSample.length))    // default sample size
+      result.push(bytes.u32(0x2000000))             // default sample flags
   }
 
   if (config.streamType === 15) {
     if (firstSample) {
-      result.push(bytes.u32(1024))                // default sample duration
-      result.push(bytes.u32(firstSample.length))  // default sample size
+      result.push(bytes.u32(firstSample.duration)) // default sample duration
+      result.push(bytes.u32(firstSample.length))   // default sample size
     } else {
       result.push(bytes.u32(0))
       result.push(bytes.u32(0))
@@ -549,7 +549,7 @@ const videoTRUN = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  let flags = dataOffsetPresent|sampleSizePresent|sampleDurationPresent|sampleFlagsPresent
+  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleCompositionTimeOffsetsPresent
 
   let result = [
     bytes.strToUint8('trun'),
@@ -559,7 +559,6 @@ const videoTRUN = (config) => {
   ]
 
   payload.forEach(g => {
-    result.push(bytes.u32(g.duration))     // duration
     result.push(bytes.u32(g.length))       // size
 
     if (g.isKeyFrame) {
@@ -567,6 +566,9 @@ const videoTRUN = (config) => {
     } else {
       result.push(bytes.u32(0x1000000))
     }
+
+    result.push(bytes.u32(g.duration))     // duration
+
   })
 
   return result
@@ -614,7 +616,6 @@ export const mdat = (config) => {
   let result = [bytes.strToUint8('mdat')]
 
   config.tracks.forEach(track => {
-
     if (track.streamType === 27) {
       track.samples.forEach(au => {
         au.nalus.forEach(nalu => {
