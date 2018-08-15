@@ -628,7 +628,7 @@ export const mdat = (config) => {
     if (track.streamType === 15) {
       track.samples.forEach(s => {
         let b = new Uint8Array(s.payload)
-        // result.push(bytes.u32(b.byteLength))
+        result.push(bytes.u32(b.byteLength))
         result.push(b)
       })
     }
