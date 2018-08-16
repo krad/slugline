@@ -156,7 +156,7 @@ export const hdlr = (config) => {
 
   return [
     bytes.strToUint8('hdlr'),
-    new Uint8Array(1),                  // version
+    new Uint8Array([0]),                  // version
     new Uint8Array([0, 0, 0]),          // flags
     bytes.u32(0),                       // componentType
     bytes.strToUint8(componentSubtype), // componentSubtype
@@ -236,6 +236,7 @@ export const stbl = (config) => {
     bytes.strToUint8('stbl'),
     stsd(config),             // sample description atom
     stts(config),             // time to sample atom
+    // ctts(config),
     stsc(config),             // sample to chunk atom
     stsz(config),             // sample size atom
     stco(config),             // chunk offset atom
@@ -266,7 +267,16 @@ export const stts = (config) => {
     bytes.strToUint8('stts'),
     new Uint8Array(1),         // version
     new Uint8Array([0, 0, 0]), // flags
-    bytes.u32(0),              // number of entries
+    bytes.u32(0),
+  ]
+}
+
+export const ctts = (config) => {
+  return [
+    bytes.strToUint8('ctts'),
+    new Uint8Array([0]),        /// version
+    new Uint8Array([0, 0, 0]),  /// Flags
+    bytes.u32(0),        /// empty entry count
   ]
 }
 
@@ -371,6 +381,7 @@ export const mp4a = (config) => {
 }
 
 export const esds = (config) => {
+  let asc = AudioSpecificConfig(config)
   return [
     bytes.strToUint8('esds'),
     new Uint8Array([0]),                      // version
@@ -391,11 +402,29 @@ export const esds = (config) => {
     new Uint8Array([0x05]),                   // decoder specific info tag
     new Uint8Array([0x80, 0x80, 0x80]),       // 0x80 = start & 0xfe = end
     new Uint8Array([0x02]),                   // desc length
-    new Uint8Array([0x12, 0x10]),             // audio specific config
+    new Uint8Array(asc),             // audio specific config
     new Uint8Array([0x06, 0x80, 0x80, 0x80]), // es ext desc tag
     new Uint8Array([0x01]),                   // sl config len
     new Uint8Array([0x02]),                   // slmp4const
   ]
+}
+
+const AudioSpecificConfig = (config) => {
+  console.log(config);
+  let header = config.samples[0].header
+  console.log(header);
+
+  console.log(config.profile);
+  console.log(header.samplingFreq);
+  console.log(header.channelConfig);
+
+  let buf = new Uint8Array(2)
+  let view = new DataView(buf.buffer)
+  view.setUint16(0, (config.profile << 11)|(header.samplingFreq<<7)|(header.channelConfig<<3))
+
+  console.log(view.getUint16(0));
+
+  return buf
 }
 
 export const stsc = (config) => {
@@ -496,7 +525,14 @@ export const tfhd = (config) => {
 
   result.push(bytes.u32(flags))           // track fragment flags
   result.push(bytes.u32(config.trackID))  // track id
-  result.push(bytes.u32(0))               // sample description index present
+
+  if (config.streamType === 27) {
+    result.push(bytes.u32(1))               // sample description index present
+  }
+
+  if (config.streamType === 15) {
+    result.push(bytes.u32(1))               // sample description index present
+  }
 
   const firstSample = config.samples[0]
 
@@ -549,7 +585,7 @@ const videoTRUN = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleCompositionTimeOffsetsPresent
+  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent
 
   let result = [
     bytes.strToUint8('trun'),
@@ -559,16 +595,13 @@ const videoTRUN = (config) => {
   ]
 
   payload.forEach(g => {
+    result.push(bytes.u32(g.duration))     // duration
     result.push(bytes.u32(g.length))       // size
 
-    if (g.isKeyFrame) {
-      result.push(bytes.u32(0x2000000))
-    } else {
-      result.push(bytes.u32(0x1000000))
-    }
+    if (g.isKeyFrame) { result.push(bytes.u32(0x2000000)) }
+    else { result.push(bytes.u32(0x1000000)) }
 
-    result.push(bytes.u32(g.duration))     // duration
-
+    // result.push(bytes.u32(g.cts))     // sample composition offset
   })
 
   return result
@@ -585,7 +618,7 @@ const audioTRUN = (config) => {
   const sampleFlagsPresent                  = 0x0400
   const sampleCompositionTimeOffsetsPresent = 0x0800
 
-  let flags = dataOffsetPresent|sampleSizePresent|sampleDurationPresent
+  let flags = dataOffsetPresent|sampleSizePresent
 
   let result = [
     bytes.strToUint8('trun'),
@@ -595,7 +628,7 @@ const audioTRUN = (config) => {
   ]
 
   payload.forEach(g => {
-    result.push(bytes.u32(g.duration))
+    // result.push(bytes.u32(g.duration))
     result.push(bytes.u32(g.length))       // size
   })
 
@@ -628,9 +661,7 @@ export const mdat = (config) => {
 
     if (track.streamType === 15) {
       track.samples.forEach(s => {
-        let b = new Uint8Array(s.payload)
-        result.push(bytes.u32(b.byteLength))
-        result.push(b)
+        result.push(new Uint8Array(s.payload))
       })
     }
 

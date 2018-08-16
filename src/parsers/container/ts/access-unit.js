@@ -22,8 +22,11 @@ class AccessUnit {
 
         if (accessUnit) {
           if (accessUnit.dts) {
-            let duration = nextAccessUnit.dts - accessUnit.dts
-            accessUnit.duration = duration
+            // console.log('-------------------------');
+            // console.log(nextAccessUnit.pts, nextAccessUnit.dts);
+            // console.log(accessUnit.pts, accessUnit.dts);
+
+            result.bFramesPresent = true /// NOP Sort afterwards
           } else {
             accessUnit.duration = nextAccessUnit.pts - accessUnit.pts
           }
@@ -49,6 +52,30 @@ class AccessUnit {
     }
 
     result.units.push(accessUnit)
+
+
+    if (result.bFramesPresent) {
+      let lastAccessUnit
+      result.units = result.units.sort((a, b) => a.dts - b.dts)
+      result.units.forEach(au => {
+        if (lastAccessUnit) {
+          lastAccessUnit.duration = au.dts - lastAccessUnit.dts
+        }
+        lastAccessUnit = au
+      })
+
+
+      result.units = result.units.sort((a, b) => a.dts - b.dts)
+      let first = result.units[0]
+      let last  = result.units.slice(-1)[0]
+      let mp4SampleDuration = Math.round((last.dts - first.dts) / (result.units.length - 1));
+
+      result.units.forEach(au => {
+        au.cts = Math.max(0, mp4SampleDuration * Math.round((au.pts - au.dts) / mp4SampleDuration));
+      })
+    }
+
+
     return result
   }
 

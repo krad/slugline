@@ -67,8 +67,9 @@ class ADTS {
   }
 
   get duration() {
-    const numberOfFrames = this.header.numberOfFramesMinusOne + 1
-    return (1000 / this.header.samplingRate) * (1024 * numberOfFrames)
+    return 1024
+    // const numberOfFrames = this.header.numberOfFramesMinusOne + 1
+    // return (1000 / this.header.samplingRate) * (1024 * numberOfFrames)
   }
 }
 
