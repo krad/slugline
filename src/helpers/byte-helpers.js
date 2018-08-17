@@ -355,7 +355,9 @@ export const packetStreamBitReader = (packetStreamGenerator) => {
       }
     },
 
-    currentBit: currentBit,
+    currentBit: () => {
+      return currentBit
+    },
 
     currentPacket: () => {
       if (packetStreamGenerator) {

@@ -19,7 +19,7 @@ class NALU {
   }
 }
 
-const buildRBSP = (payload) => {
+export const buildRBSP = (payload) => {
   let result   = []
   const reader = new bytes.BitReader(payload)
   while (!reader.atEnd()) {

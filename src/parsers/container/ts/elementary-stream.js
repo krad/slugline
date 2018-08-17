@@ -1,6 +1,7 @@
 import * as bytes from '../../../helpers/byte-helpers'
 import PESPacket from './pes-packet'
 import AccessUnit from './access-unit'
+import ADTS from './adts'
 class ElementaryStream {
 
   /**
@@ -81,7 +82,7 @@ class ElementaryStream {
     // Q	16
     if (this.streamType === 15) {
       const c = this.codecBytes
-      return ['mp4a', 40, c.profileMinusOne+1].join('.')
+      return ['mp4a', 40, c.header.profileMinusOne+1].join('.')
     }
 
     return undefined
@@ -89,12 +90,15 @@ class ElementaryStream {
 
   get codecBytes() {
     if (this.streamType === 27) {
-      let result = AccessUnit.parse(this.packets)
-      return [resul.sps.rbsp, result.pps.rbsp]
+      let result = AccessUnit.parse(this)
+      let sps   = result.sps
+      let pps   = result.pps
+
+      return [sps.rbsp, pps.rbsp]
     }
 
     if (this.streamType === 15) {
-      return this.packets[1]
+      return ADTS.parse(this).units[0]
     }
   }
 

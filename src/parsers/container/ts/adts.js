@@ -6,25 +6,34 @@ class ADTS {
     let result = {units: [], streamType: 15, duration: 0, trackID: pes.trackID}
     let r = bytes.streamReader(pes.packets)
     let last
+    let cnt = 0
     while (1) {
       let next = r.readBits(12)
       if (next === undefined) { break }
       if (next === 0xfff) {
         let pkt = new ADTS(r)
         let pes = r.currentPacket()
+        if (pes === undefined) {
+          console.log(pkt);
+        }
         if (pes) { pkt.packet = pes.header }
 
         last = result.units.slice(-1)[0]
         if (last) {
           if (pkt.header.samplingFreq === last.header.samplingFreq) {
+            pkt.id = cnt
             result.units.push(pkt)
+            cnt += 1
           }
         } else {
+          pkt.id = cnt
           result.units.push(pkt)
+          cnt += 1
         }
 
       }
     }
+
     return result
   }
 
@@ -57,7 +66,9 @@ class ADTS {
 
     let cnt = 0
     while (cnt < bytesToRead) {
-      this.payload.push(bitReader.readBits(8))
+      let bits = bitReader.readBits(8)
+      if (bits === undefined) { break }
+      this.payload.push(bits)
       cnt += 1
     }
   }
@@ -68,8 +79,6 @@ class ADTS {
 
   get duration() {
     return 1024
-    // const numberOfFrames = this.header.numberOfFramesMinusOne + 1
-    // return (1000 / this.header.samplingRate) * (1024 * numberOfFrames)
   }
 }
 

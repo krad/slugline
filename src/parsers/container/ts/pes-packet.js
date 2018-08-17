@@ -25,7 +25,13 @@ export class PESPacket {
     this.header.pesExtFlag             = reader.readBit()
     this.header.pesHeaderDataLength    = reader.readBits(8)
 
-    const bitAfterHeaderLengthCheck = reader.currentBit
+    let bitAfterHeaderLengthCheck
+    if (reader.currentBit.constructor.name === 'Function') {
+      bitAfterHeaderLengthCheck = reader.currentBit()
+    } else {
+      bitAfterHeaderLengthCheck = reader.currentBit
+    }
+
 
     if (this.header.ptsDtsFlags === 2) {
       reader.readBits(4)
@@ -121,8 +127,14 @@ export class PESPacket {
       reader.readBits(8)
     }
 
-    const bitAfterHeaderParsing = reader.currentBit
-    const parsedBytes           = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
+    let bitAfterHeaderParsing
+    if (reader.currentBit.constructor.name === 'Function') {
+      bitAfterHeaderParsing = reader.currentBit()
+    } else {
+      bitAfterHeaderParsing = reader.currentBit
+    }
+
+    const parsedBytes = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
 
     if (parsedBytes !== this.header.pesHeaderDataLength) {
       this.failed = true
@@ -134,8 +146,9 @@ export class PESPacket {
     }
 
     if (this.header.packetLength) {
-      while (this.data.length <= (this.header.packetLength - (this.header.pesHeaderDataLength+3))) {
-        this.push(reader.readBits(8))
+      while (this.data.length < (this.header.packetLength - (this.header.pesHeaderDataLength+3))) {
+        let bits = reader.readBits(8)
+        this.push(bits)
       }
     } else {
       while (1) {

@@ -50,6 +50,7 @@ class AccessUnit {
     result.units.push(accessUnit)
 
 
+    //// FIXME: B-Frames still render all messed up
     if (result.bFramesPresent) {
         let lastAccessUnit
 
@@ -61,14 +62,6 @@ class AccessUnit {
         lastAccessUnit.duration  = result.units[0].duration
 
         result.units = result.units.sort((a, b) => a.pts - b.pts)
-
-        // result.units.forEach(au => {
-        //   if (au.frameType === 'I') {
-        //     console.log('--------------');
-        //   }
-        //   console.log(au.frameType);
-        // })
-
     }
 
 
@@ -128,11 +121,6 @@ class AccessUnit {
   }
 
 }
-
-export const calculateCTS = (units) => {
-
-}
-
 
 export const keyframeIterator = (accessUnits) => {
 

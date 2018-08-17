@@ -83,13 +83,13 @@ test('that we can do exponential golomb encoding/decoding', t=> {
   t.end()
 })
 
-test('that we can parse a sps', t=> {
+test.skip('that we can parse a sps', t=> {
 
   const buffer = Uint8Array.from(assetA)
   let ts       = TransportStream.parse(buffer)
 
-  t.ok(ts.tracksConfig[0].sps, 'elementary stream had a parsed sps')
-  const sps = ts.tracksConfig[0].sps
+  t.ok(ts.tracksConfig[0].parsedSPS, 'elementary stream had a parsed sps')
+  const sps = ts.tracksConfig[0].parsedSPS
 
   t.equals(77, sps.profileIDC,                 'got profileIDC')
   t.equals(0, sps.constraint_set0_flag,        'got constraint_set0_flag')
@@ -107,7 +107,7 @@ test('that we can parse a sps', t=> {
   t.end()
 })
 
-test('that we can create an init segment from a ts file', t=> {
+test.skip('that we can create an init segment from a ts file', t=> {
 
   const buffer = Uint8Array.from(assetA)
   let ts = TransportStream.parse(buffer)
@@ -250,62 +250,7 @@ test('that we can create an init segment from a ts file', t=> {
   t.end()
 })
 
-test('that we can build an media fragment', t=> {
-  const bufferA  = Uint8Array.from(assetA)
-  const bufferB  = Uint8Array.from(assetB)
-
-  let tsA        = TransportStream.parse(bufferA)
-  let tsB        = TransportStream.parse(bufferB)
-
-  let muxer      = new Transmuxer()
-  t.equals(muxer.decodeCount,          0, 'decode count started at zero')
-  t.equals(muxer.currentOffset,        0, 'current offset started at zero')
-  t.equals(muxer.currentMediaSequence, 1, 'current media sequence started at one')
-
-  let sequences = muxer.buildSequences(tsA, 27)
-  t.ok(sequences, 'got a result back')
-  t.equals(sequences.length, 12, 'got correct amount of sequences')
-
-  const seq1 = sequences[0]
-  t.equals(1, seq1.trackID, 'sequence had a track id')
-  t.equals(27, seq1.streamType, 'sequence had a streamType')
-  t.equals(seq1.currentMediaSequence, 1, 'media sequence was 1 for first sequence')
-  t.ok(seq1.offset, 'had a starting offset')
-
-  const seq2 = sequences[1]
-  t.equals(1, seq2.trackID, 'sequence had a track id')
-  t.equals(27, seq2.streamType, 'sequence had a streamType')
-  t.equals(seq2.currentMediaSequence, 2, 'media sequence was 2 for second sequence')
-  t.ok(seq2.offset, 'had a starting offset')
-
-  t.ok(seq1.offset < seq2.offset, 'offset is increasing')
-
-  t.ok(seq1.payload, 'sequence 1 had a payload')
-  t.equals(seq1.payload.length, 43, 'had correct amount of entries in the payload')
-
-  t.ok(seq2.payload, 'sequence 2 had a payload')
-  t.equals(seq2.payload.length, 47, 'had correct amount of entries in the payload')
-
-  const frameA = seq1.payload[0]
-  t.ok(frameA.nalu,     'first frame had a nalu payload')
-  t.ok(frameA.pcrBase,  'first frame had a pcrBase')
-  t.equals(5, frameA.nalu[0] & 0x1f, 'first frame was an IDR')
-
-  const frameB = seq2.payload[0]
-  t.ok(frameB.nalu,     'second frame had a nalu payload')
-  t.ok(frameB.pcrBase,  'second frame had a pcrBase')
-  t.equals(5, frameB.nalu[0] & 0x1f, 'second frame was an IDR')
-
-  /////////////////////////
-  // Build and actual payload now
-  muxer         = new Transmuxer()
-  const payload = muxer.buildMediaSegment(tsA)
-  fs.appendFileSync(mediaSegmentOut, new Buffer(payload))
-
-  t.end()
-})
-
-test('that we can build a structure than can be used to arrange mp4 atoms', t => {
+test.skip('that we can build a structure than can be used to arrange mp4 atoms', t => {
   const bufferA = Uint8Array.from(assetA)
   let ts        = TransportStream.parse(bufferA)
 
@@ -339,7 +284,7 @@ test('that we can build a structure than can be used to arrange mp4 atoms', t =>
   t.end()
 })
 
-test.only('writing a segment', t=> {
+test.skip('writing a segment', t=> {
   const bufferA  = Uint8Array.from(asset2)
   let tsA        = TransportStream.parse(bufferA)
   let muxer     = new Transmuxer()
@@ -362,11 +307,7 @@ test('binary pts helper thing', t=> {
   let mid  = 22222
   let low  = 2
 
-  let z = 0
   let pts = 0
-  z = (z << 14) | mid
-  z = (z << 14) | high
-
   pts = (pts << 3) | low
   pts = (pts << 15) | mid
   pts = ((pts << 15) | high) >>> 0

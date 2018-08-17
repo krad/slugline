@@ -39,7 +39,7 @@ test('that we can build a list of video access units', t=> {
 })
 
 
-test('that we can chunk access units by idrs', t=> {
+test.skip('that we can chunk access units by idrs', t=> {
 
   let byteArray   = new Uint8Array(segment)
   const ts        = TransportStream.parse(byteArray)
