@@ -13,9 +13,7 @@ class ADTS {
       if (next === 0xfff) {
         let pkt = new ADTS(r)
         let pes = r.currentPacket()
-        if (pes === undefined) {
-          console.log(pkt);
-        }
+        if (pes === undefined) { continue }
         if (pes) { pkt.packet = pes.header }
 
         last = result.units.slice(-1)[0]
@@ -24,13 +22,14 @@ class ADTS {
             pkt.id = cnt
             result.units.push(pkt)
             cnt += 1
+          } else {
+            console.log('wtf bad packets');
           }
         } else {
           pkt.id = cnt
           result.units.push(pkt)
           cnt += 1
         }
-
       }
     }
 
