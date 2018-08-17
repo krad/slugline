@@ -22,10 +22,6 @@ class AccessUnit {
 
         if (accessUnit) {
           if (accessUnit.dts) {
-            // console.log('-------------------------');
-            // console.log(nextAccessUnit.pts, nextAccessUnit.dts);
-            // console.log(accessUnit.pts, accessUnit.dts);
-
             result.bFramesPresent = true /// NOP Sort afterwards
           } else {
             accessUnit.duration = nextAccessUnit.pts - accessUnit.pts
@@ -55,24 +51,24 @@ class AccessUnit {
 
 
     if (result.bFramesPresent) {
-      let lastAccessUnit
-      result.units = result.units.sort((a, b) => a.dts - b.dts)
-      result.units.forEach(au => {
-        if (lastAccessUnit) {
-          lastAccessUnit.duration = au.dts - lastAccessUnit.dts
-        }
-        lastAccessUnit = au
-      })
+        let lastAccessUnit
 
+        result.units.sort((a, b) => a.dts - b.dts)
+        result.units.forEach(au => {
+          if (lastAccessUnit) { lastAccessUnit.duration = au.dts - lastAccessUnit.dts }
+          lastAccessUnit = au
+        })
+        lastAccessUnit.duration  = result.units[0].duration
 
-      result.units = result.units.sort((a, b) => a.dts - b.dts)
-      let first = result.units[0]
-      let last  = result.units.slice(-1)[0]
-      let mp4SampleDuration = Math.round((last.dts - first.dts) / (result.units.length - 1));
+        result.units = result.units.sort((a, b) => a.pts - b.pts)
 
-      result.units.forEach(au => {
-        au.cts = Math.max(0, mp4SampleDuration * Math.round((au.pts - au.dts) / mp4SampleDuration));
-      })
+        // result.units.forEach(au => {
+        //   if (au.frameType === 'I') {
+        //     console.log('--------------');
+        //   }
+        //   console.log(au.frameType);
+        // })
+
     }
 
 
@@ -109,6 +105,31 @@ class AccessUnit {
   get length() {
     return (this.nalus.reduce((a, c) => a + c.length, 0) + (this.nalus.length * 4))
   }
+
+  get frameType() {
+    let nalu = this.nalus.filter(n => n.nal_unit_type === 1 || n.nal_unit_type === 5)[0]
+    let r = new bytes.BitReader(nalu.payload)
+    r.readBits(8)
+    r.readExpGolomb()
+    const sliceType = r.readExpGolomb()
+    switch (sliceType) {
+      case 0:  return 'P'
+      case 1:  return 'B'
+      case 2:  return 'I'
+      case 3:  return 'SP'
+      case 4:  return 'SI'
+      case 5:  return 'P'
+      case 6:  return 'B'
+      case 7:  return 'I'
+      case 8:  return 'SP'
+      case 9:  return 'SI'
+      default: return 'UNKNOWN'
+    }
+  }
+
+}
+
+export const calculateCTS = (units) => {
 
 }
 

@@ -157,3 +157,12 @@ test('that we can chunk access units by idrs', t=> {
 
   t.end()
 })
+
+test('that we can calculate composition offsets from a group of access units', t=> {
+
+  const units = [{dts: 0},  {dts: 10}, {dts: 20}, {dts: 30},  {dts: 40},  {dts: 50},
+                 {dts: 60}, {dts: 70}, {dts: 80}, {dts: 90}, {dts: 100}, {dts: 110},
+                 {dts:120}, {dts: 130}]
+
+  t.end()
+})

@@ -13,6 +13,7 @@ const assetA = fs.readFileSync(tsURL1)
 const assetB = fs.readFileSync(tsURL2)
 
 const asset2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+const asset3 = fs.readFileSync('./tests/fixtures/master_Layer0_01196.ts')
 
 const initSegmentOut  = '/tmp/ftyp.mp4'
 const mediaSegmentOut = '/tmp/moof.mp4'
@@ -339,7 +340,7 @@ test('that we can build a structure than can be used to arrange mp4 atoms', t =>
 })
 
 test.only('writing a segment', t=> {
-  const bufferA  = Uint8Array.from(assetA)
+  const bufferA  = Uint8Array.from(asset2)
   let tsA        = TransportStream.parse(bufferA)
   let muxer     = new Transmuxer()
 

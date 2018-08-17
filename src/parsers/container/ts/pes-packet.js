@@ -8,6 +8,7 @@ export class PESPacket {
     this.header.startCode             = reader.readBits(24)
     this.header.streamID              = reader.readBits(8)
     this.header.packetLength          = reader.readBits(16)
+    const bitAfterPacketLengthCheck   = reader.currentBit
 
     this.header.markerBits             = reader.readBits(2)   // 10
     this.header.scramblingControl      = reader.readBits(2)
@@ -35,7 +36,7 @@ export class PESPacket {
       let high = reader.readBits(15)
       reader.readBit()
 
-      this.header.pts = buildTimestamp(low, mid, high)
+      this.header.pts  = buildTimestamp(low, mid, high)
     }
 
     if (this.header.ptsDtsFlags === 3) {
@@ -124,6 +125,7 @@ export class PESPacket {
     const parsedBytes           = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
 
     if (parsedBytes !== this.header.pesHeaderDataLength) {
+      this.failed = true
       console.log('!!!! Failed to parse full PES packet. !!!!')
       console.log(this)
       console.log('parsed bytes:', parsedBytes)
@@ -131,12 +133,23 @@ export class PESPacket {
       console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     }
 
-    while (1) {
-      if (reader.atEnd()) { break }
-      let bits = reader.readBits(8)
-      this.push(bits)
+    if (this.header.packetLength) {
+      while (this.data.length <= (this.header.packetLength - (this.header.pesHeaderDataLength+3))) {
+        this.push(reader.readBits(8))
+      }
+    } else {
+      while (1) {
+        if (reader.atEnd()) { break }
+        let bits = reader.readBits(8)
+        this.push(bits)
+      }
     }
 
+  }
+
+  checkComplete() {
+    console.log('----', this.data.length);
+    this.complete = this.data.length >= this.header.packetLength
   }
 
   push(bytes) {

@@ -54,36 +54,46 @@ class Transmuxer {
 
 
     let audioConfig     = Object.assign({}, this.audioTrack)
-    audioConfig.samples = audioSamplesForChunk
-    let firstSample = audioConfig.samples[0]
-    if (firstSample) {
-      audioConfig.sampleRate     = firstSample.header.samplingRate
-      audioConfig.channelConfig  = firstSample.header.channelConfig
-      audioConfig.profile        = firstSample.header.profileMinusOne+1
-      delete audioConfig.units
-      result.tracks.push(audioConfig)
-    } else {
-      result.tracks.push({samples:[], trackID: 2, streamType: 15})
+    if (audioSamplesForChunk.length > 0) {
+      audioConfig.samples = audioSamplesForChunk
+      let firstSample = audioConfig.samples[0]
+      if (firstSample) {
+        audioConfig.sampleRate     = firstSample.header.samplingRate
+        audioConfig.channelConfig  = firstSample.header.channelConfig
+        audioConfig.profile        = firstSample.header.profileMinusOne+1
+        delete audioConfig.units
+        result.tracks.push(audioConfig)
+      } else {
+        result.tracks.push({samples:[], trackID: 2, streamType: 15})
+      }
     }
 
+    /// Build the moof so we know where it ends and the mdat should begin
     let x = atoms.moof(result)
     let y = atoms.build(x)
     this.currentOffset = y.length + (8)
 
-    console.log('--------------');
 
     result.tracks[0].offset = this.currentOffset
-    console.log(this.currentOffset);
-    this.currentOffset += videoConfig.samples.reduce((a, c) => a + c.length, 0)
-    // this.currentOffset += audioConfig.samples.reduce((a, c) => a + c.length, 0)
-    result.tracks[1].offset = this.currentOffset
-    console.log(this.currentOffset);
+
+    if (audioSamplesForChunk.length > 0) {
+      // bump the offset so the audio track knows where to start
+      this.currentOffset += videoConfig.samples.reduce((a, c) => a + c.length, 0)
+      result.tracks[1].offset = this.currentOffset
+    }
 
     result.tracks[0].decode = this.videoDecode
-    result.tracks[1].decode = this.audioDecode
 
+    if (audioSamplesForChunk.length > 0) {
+      result.tracks[1].decode = this.audioDecode
+    }
+
+    /// Bump the decode time for both tracks so the next moof knows where to start
     this.videoDecode += videoConfig.samples.reduce((a, c) => a + c.duration, 0)
-    this.audioDecode += audioConfig.samples.reduce((a, c) => a + c.duration, 0)
+
+    if (audioSamplesForChunk.length > 0) {
+      this.audioDecode += audioConfig.samples.reduce((a, c) => a + c.duration, 0)
+    }
 
     return result
   }

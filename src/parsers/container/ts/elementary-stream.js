@@ -27,19 +27,10 @@ class ElementaryStream {
     if (streamType === 27) { delimiter = 0xe0 }
     if (streamType === 15) { delimiter = 0xc0 }
 
-    let itr = bytes.elementaryStreamIterator(streamPackets, [0, 0, 1, delimiter], true)
-    let cnt = 0
-    while(1) {
-      let next = itr.next()
-      if (next) {
-        let buffer = new Uint8Array(next)
-        let reader = new bytes.BitReader(buffer)
-        let pesPacket = new PESPacket(reader, cnt)
-        es.packets.push(pesPacket)
-        cnt += 1
-      } else {
-        break
-      }
+    if (packetsHaveLength(streamPackets, delimiter)) {
+      es.packets = parsePacketsByHeaders(streamPackets, delimiter)
+    } else {
+      es.packets = parsePacketsByChunks(streamPackets, delimiter)
     }
 
     return es
@@ -109,5 +100,60 @@ class ElementaryStream {
 
 }
 
+const packetsHaveLength = (packets, delimiter) => {
+  let itr = bytes.elementaryStreamIterator(packets, [0, 0, 1, delimiter], true)
+  let next = itr.next()
+  if (next) {
+    let buffer    = new Uint8Array(next)
+    let reader    = new bytes.BitReader(buffer)
+    let pesPacket = new PESPacket(reader, 0)
+    if (pesPacket.header.packetLength) {
+      return true
+    }
+  }
+  return false
+}
+
+const parsePacketsByHeaders = (packets, delimiter) => {
+  let results = []
+
+  let reader = bytes.streamReader(packets)
+  let cnt = 0
+  while (1) {
+    let next = reader.readBits(24)
+    if (next === 0x000001) {
+      let packetType = reader.readBits(8)
+      if (packetType === 0xc0) {
+        reader.rewind(32)
+        let pesPacket = new PESPacket(reader, cnt)
+        results.push(pesPacket)
+        cnt += 1
+      }
+
+    }
+    if (next === undefined) { break }
+  }
+
+  return results
+}
+
+const parsePacketsByChunks = (packets, delimiter) => {
+  let results = []
+  let itr    = bytes.elementaryStreamIterator(packets, [0, 0, 1, delimiter], true)
+  let cnt    = 0
+  while(1) {
+    let next = itr.next()
+    if (next) {
+      let buffer    = new Uint8Array(next)
+      let reader    = new bytes.BitReader(buffer)
+      let pesPacket = new PESPacket(reader, cnt)
+      results.push(pesPacket)
+      cnt += 1
+    } else {
+      break
+    }
+  }
+  return results
+}
 
 export default ElementaryStream

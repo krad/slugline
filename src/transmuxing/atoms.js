@@ -410,19 +410,10 @@ export const esds = (config) => {
 }
 
 const AudioSpecificConfig = (config) => {
-  console.log(config);
   let header = config.samples[0].header
-  console.log(header);
-
-  console.log(config.profile);
-  console.log(header.samplingFreq);
-  console.log(header.channelConfig);
-
-  let buf = new Uint8Array(2)
-  let view = new DataView(buf.buffer)
+  let buf    = new Uint8Array(2)
+  let view   = new DataView(buf.buffer)
   view.setUint16(0, (config.profile << 11)|(header.samplingFreq<<7)|(header.channelConfig<<3))
-
-  console.log(view.getUint16(0));
 
   return buf
 }
@@ -578,30 +569,32 @@ const videoTRUN = (config) => {
   let payload     = config.samples || []
   let sampleCount = payload.length
 
-  const dataOffsetPresent                   = 0x0001
-  const firstSampleFlagsPresent             = 0x0004
-  const sampleDurationPresent               = 0x0100
-  const sampleSizePresent                   = 0x0200
-  const sampleFlagsPresent                  = 0x0400
-  const sampleCompositionTimeOffsetsPresent = 0x0800
+  const dataOffsetPresent                   = 0x000001
+  const firstSampleFlagsPresent             = 0x000004
+  const sampleDurationPresent               = 0x000100
+  const sampleSizePresent                   = 0x000200
+  const sampleFlagsPresent                  = 0x000400
+  const sampleCompositionTimeOffsetsPresent = 0x000800
 
-  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent
+  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleCompositionTimeOffsetsPresent
 
   let result = [
     bytes.strToUint8('trun'),
-    bytes.u32(flags),                   // trun flags
+    new Uint8Array([1]),
+    bytes.u24(flags), /// flags
+    // bytes.u32(flags),                   // trun flags
     bytes.u32(sampleCount),             // sample count
     bytes.s32(config.offset),           // offset
   ]
 
   payload.forEach(g => {
-    result.push(bytes.u32(g.duration))     // duration
+    // result.push(bytes.u32(g.duration))     // duration
     result.push(bytes.u32(g.length))       // size
 
     if (g.isKeyFrame) { result.push(bytes.u32(0x2000000)) }
     else { result.push(bytes.u32(0x1000000)) }
 
-    // result.push(bytes.u32(g.cts))     // sample composition offset
+    result.push(bytes.s32(g.ctsOffset))     // sample composition offset
   })
 
   return result

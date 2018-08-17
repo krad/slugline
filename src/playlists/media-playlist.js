@@ -220,11 +220,12 @@ class MediaPlaylist extends Playlist {
         firstSegment.fetch().then(s => {
           this.segmentsType   = 'ts'
           const ts            = TransportStream.parse(s)
+          console.log(ts);
           this.codecs         = ts.trackPackets.map(tp => tp.codec)
           this.codecsString   = ts.codecsString
           resolve(this.codecs)
         }).catch(err => {
-          console.log('failed to fetch first segment');
+          console.log('failed to fetch first segment', err);
           reject(err)
         })
 
