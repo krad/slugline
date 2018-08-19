@@ -16,7 +16,7 @@ class ElementaryStream {
     es.trackID  = trackID
 
     const pmt   = transportStream.packets.filter(p => p.constructor.name === 'PMT')[0]
-    const track = pmt.tracks.filter(t => t.streamType === streamType)[0]
+    const track = pmt.programs[0].tracks.filter(t => t.streamType === streamType)[0]
 
     if (!pmt)   { throw 'PMT not present in transport stream' }
     if (!track) { throw 'Track for stream type not found' }
@@ -64,22 +64,6 @@ class ElementaryStream {
       return ['avc1', params].join('.')
     }
 
-    // A	12	syncword 0xFFF, all bits must be 1
-    // B	1	MPEG Version: 0 for MPEG-4, 1 for MPEG-2
-    // C	2	Layer: always 0
-    // D	1	protection absent, Warning, set to 1 if there is no CRC and 0 if there is CRC
-    // E	2	profile, the MPEG-4 Audio Object Type minus 1
-    // F	4	MPEG-4 Sampling Frequency Index (15 is forbidden)
-    // G	1	private bit, guaranteed never to be used by MPEG, set to 0 when encoding, ignore when decoding
-    // H	3	MPEG-4 Channel Configuration (in the case of 0, the channel configuration is sent via an inband PCE)
-    // I	1	originality, set to 0 when encoding, ignore when decoding
-    // J	1	home, set to 0 when encoding, ignore when decoding
-    // K	1	copyrighted id bit, the next bit of a centrally registered copyright identifier, set to 0 when encoding, ignore when decoding
-    // L	1	copyright id start, signals that this frame's copyright id bit is the first bit of the copyright id, set to 0 when encoding, ignore when decoding
-    // M	13	frame length, this value must include 7 or 9 bytes of header length: FrameLength = (ProtectionAbsent == 1 ? 7 : 9) + size(AACFrame)
-    // O	11	Buffer fullness
-    // P	2	Number of AAC frames (RDBs) in ADTS frame minus 1, for maximum compatibility always use 1 AAC frame per ADTS frame
-    // Q	16
     if (this.streamType === 15) {
       const c = this.codecBytes
       return ['mp4a', 40, c.header.profileMinusOne+1].join('.')
@@ -120,23 +104,72 @@ const packetsHaveLength = (packets, delimiter) => {
 
 const parsePacketsByHeaders = (packets, delimiter) => {
   let results = []
-
   let reader = bytes.streamReader(packets)
   let cnt = 0
-  while (1) {
-    let next = reader.readBits(24)
-    if (next === 0x000001) {
-      let packetType = reader.readBits(8)
-      if (packetType === 0xc0) {
-        reader.rewind(32)
-        let pesPacket = new PESPacket(reader, cnt)
-        results.push(pesPacket)
-        cnt += 1
-      }
 
+  while (1) {
+    let bits = reader.readBits(24)
+    if (bits === undefined) { break }
+    if (bits === 0x000001) {
+      reader.rewind(24)
+      let pesPacket = new PESPacket(reader, cnt)
+      results.push(pesPacket)
+      cnt++
     }
-    if (next === undefined) { break }
   }
+
+  console.log(reader.readBits(24))
+
+  // let itr = bytes.elementaryStreamIterator(packets, [0, 0, 1], true)
+  // let pesPacket
+  // while (1) {
+  //   let next = itr.next()
+  //   if (next) {
+  //     if (pesPacket) {
+  //
+  //       console.log('---', pesPacket.header.cntID, pesPacket.header.packetLength, pesPacket.data.length);
+  //
+  //       let buffer = new Uint8Array(next)
+  //       let reader = new bytes.BitReader(buffer)
+  //       while (!pesPacket.isFull) {
+  //         let byte = reader.readBits(8)
+  //         if (byte === undefined) { break }
+  //         if (reader.atEnd()) { break }
+  //         pesPacket.push(byte)
+  //       }
+  //
+  //       console.log('+++', pesPacket.header.cntID, pesPacket.header.packetLength, pesPacket.data.length);
+  //
+  //       if (pesPacket.isFull) {
+  //         results.push(pesPacket)
+  //         pesPacket = undefined
+  //         cnt++
+  //       }
+  //
+  //     } else {
+  //
+  //       if (next[3] === delimiter) {
+  //         let buffer = new Uint8Array(next)
+  //         let reader = new bytes.BitReader(buffer)
+  //
+  //         // console.log(next.slice(0, 15));
+  //         // console.log(itr.reader.currentPacket().header.adaptationField);
+  //         pesPacket  = new PESPacket(reader, cnt)
+  //         if (pesPacket.isFull) {
+  //           results.push(pesPacket)
+  //           pesPacket = undefined
+  //           cnt++
+  //         }
+  //       } else {
+  //         console.log('no delimiter?');
+  //       }
+  //     }
+  //
+  //   } else {
+  //     break
+  //   }
+  // }
+
 
   return results
 }

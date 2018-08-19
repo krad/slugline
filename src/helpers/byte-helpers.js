@@ -240,17 +240,17 @@ export class BitReader {
   constructor(input) {
     this.data       = input
     this.length     = input.byteLength
-    this.currentBit = 0
+    this.cb         = 0
   }
 
   currentBit() {
-    return this.currentBit
+    return this.cb
   }
 
   readBit() {
-    let index   = Math.floor(this.currentBit / 8)
-    let offset  = this.currentBit % 8 + 1
-    this.currentBit += 1
+    let index   = Math.floor(this.cb / 8)
+    let offset  = this.cb % 8 + 1
+    this.cb += 1
     return (this.data[index] >> (8 - offset)) & 0x01
   }
 
@@ -276,11 +276,11 @@ export class BitReader {
   }
 
   rewind(n) {
-    this.currentBit -= n
+    this.cb -= n
   }
 
   atEnd() {
-    if (this.currentBit >= this.data.length*8) { return true }
+    if (this.cb >= this.data.length*8) { return true }
     return false
   }
 
@@ -322,18 +322,15 @@ export const packetStreamGenerator = (packetGenerator) => {
 
 export const packetStreamBitReader = (packetStreamGenerator) => {
   let reader      = packetStreamGenerator.next()
-  let currentBit  = 0
   return {
 
     readBit: () => {
       if (reader) {
-        if (reader.currentBit < (reader.length * 8)) {
-          currentBit += 1
+        if (reader.currentBit() < (reader.length * 8)) {
           return reader.readBit()
         } else {
           reader = packetStreamGenerator.next()
           if (reader) {
-            currentBit += 1
             return reader.readBit()
           }
         }
@@ -342,13 +339,11 @@ export const packetStreamBitReader = (packetStreamGenerator) => {
 
     readBits: (n) => {
       if (reader) {
-        if (reader.currentBit < (reader.length * 8)) {
-          currentBit += n
+        if (reader.currentBit() < (reader.length * 8)) {
           return reader.readBits(n)
         } else {
           reader = packetStreamGenerator.next()
           if (reader) {
-            currentBit += n
             return reader.readBits(n)
           }
         }
@@ -356,7 +351,7 @@ export const packetStreamBitReader = (packetStreamGenerator) => {
     },
 
     currentBit: () => {
-      return currentBit
+      return reader.currentBit()
     },
 
     currentPacket: () => {
@@ -367,7 +362,7 @@ export const packetStreamBitReader = (packetStreamGenerator) => {
 
     rewind: (n) => {
       if (reader) {
-        reader.currentBit -= n
+        reader.cb -= n
       }
     },
 

@@ -55,13 +55,32 @@ class AccessUnit {
         let lastAccessUnit
 
         result.units.sort((a, b) => a.dts - b.dts)
+        let dt = 0
         result.units.forEach(au => {
-          if (lastAccessUnit) { lastAccessUnit.duration = au.dts - lastAccessUnit.dts }
+          if (lastAccessUnit) {
+            lastAccessUnit.duration = (au.dts - lastAccessUnit.dts)
+          }
           lastAccessUnit = au
-        })
-        lastAccessUnit.duration  = result.units[0].duration
 
-        result.units = result.units.sort((a, b) => a.pts - b.pts)
+          au.dt = dt
+          dt += au.dts
+
+        })
+        lastAccessUnit.duration  = result.units.slice(-1)[0].duration
+
+        result.units.sort((a, b) => a.pts - b.pts)
+        let ct = 0
+        let last
+        console.log('-----');
+        result.units.forEach(au => {
+          if (last) {
+            au.ctsOffset = ct
+            ct += (au.dts - last.dts)
+          }
+          last = au
+        })
+
+        // result.units.sort((a, b) => a.id - b.id)
     }
 
 
@@ -97,6 +116,14 @@ class AccessUnit {
 
   get length() {
     return (this.nalus.reduce((a, c) => a + c.length, 0) + (this.nalus.length * 4))
+  }
+
+  get nalusWithoutConfig() {
+    return this.nalus.filter(n => n.nal_unit_type !== 7 && n.nal_unit_type !== 8)
+  }
+
+  get lengthWithoutConfig() {
+    return this.nalusWithoutConfig.reduce((a, c) => a + c.length, 0) + (this.nalusWithoutConfig.length * 4)
   }
 
   get frameType() {

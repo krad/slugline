@@ -47,13 +47,22 @@ class Transmuxer {
     let last  = videoConfig.samples.slice(-1)[0]
     let audioSamplesForChunk = []
     this.audioTrack.units.forEach(sample => {
-      if (sample.packet.pts >= first.packet.pts && sample.packet.pts <= last.packet.pts) {
+      if (sample.packet.pts >= first.packet.pts && sample.packet.pts <= last.packet.pts+6000) {
         audioSamplesForChunk.push(sample)
       }
     })
 
-    console.log(audioSamplesForChunk.map(s => [s.id, s.packet.pts]));
+    // console.log(audioSamplesForChunk.slice(-1)[0].header);
 
+    // this.audioTrack.units.forEach(s => {
+    //   // console.log(s.payload.slice(0, 10), s.payload.slice(-10, -1))
+    //   console.log(s.payload.slice(-20, -1));
+    // })
+    //
+    // // console.log(first.packet.pts, last.packet.pts);
+    console.log(audioSamplesForChunk.map(s => [s.id, s.packet.pts]));
+    // console.log(last.packet.pts - first.packet.pts);
+    // console.log(first.packet.pts, last.packet.pts);
 
     let audioConfig     = Object.assign({}, this.audioTrack)
     if (audioSamplesForChunk.length > 0) {
@@ -77,23 +86,14 @@ class Transmuxer {
 
 
     result.tracks[0].offset = this.currentOffset
+    result.tracks[0].decode = this.videoDecode
+    this.videoDecode += videoConfig.samples.reduce((a, c) => a + c.duration, 0)
 
     if (audioSamplesForChunk.length > 0) {
       // bump the offset so the audio track knows where to start
       this.currentOffset += videoConfig.samples.reduce((a, c) => a + c.length, 0)
       result.tracks[1].offset = this.currentOffset
-    }
-
-    result.tracks[0].decode = this.videoDecode
-
-    if (audioSamplesForChunk.length > 0) {
       result.tracks[1].decode = this.audioDecode
-    }
-
-    /// Bump the decode time for both tracks so the next moof knows where to start
-    this.videoDecode += videoConfig.samples.reduce((a, c) => a + c.duration, 0)
-
-    if (audioSamplesForChunk.length > 0) {
       this.audioDecode += audioConfig.samples.reduce((a, c) => a + c.duration, 0)
     }
 

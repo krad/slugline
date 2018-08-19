@@ -8,7 +8,8 @@ export class PESPacket {
     this.header.startCode             = reader.readBits(24)
     this.header.streamID              = reader.readBits(8)
     this.header.packetLength          = reader.readBits(16)
-    const bitAfterPacketLengthCheck   = reader.currentBit
+    const bitAfterPacketLengthCheck   = reader.currentBit()
+
 
     this.header.markerBits             = reader.readBits(2)   // 10
     this.header.scramblingControl      = reader.readBits(2)
@@ -25,13 +26,7 @@ export class PESPacket {
     this.header.pesExtFlag             = reader.readBit()
     this.header.pesHeaderDataLength    = reader.readBits(8)
 
-    let bitAfterHeaderLengthCheck
-    if (reader.currentBit.constructor.name === 'Function') {
-      bitAfterHeaderLengthCheck = reader.currentBit()
-    } else {
-      bitAfterHeaderLengthCheck = reader.currentBit
-    }
-
+    const bitAfterHeaderLengthCheck = reader.currentBit()
 
     if (this.header.ptsDtsFlags === 2) {
       reader.readBits(4)
@@ -127,12 +122,7 @@ export class PESPacket {
       reader.readBits(8)
     }
 
-    let bitAfterHeaderParsing
-    if (reader.currentBit.constructor.name === 'Function') {
-      bitAfterHeaderParsing = reader.currentBit()
-    } else {
-      bitAfterHeaderParsing = reader.currentBit
-    }
+    const bitAfterHeaderParsing = reader.currentBit()
 
     const parsedBytes = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
 
@@ -145,23 +135,16 @@ export class PESPacket {
       console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     }
 
-    if (this.header.packetLength) {
-      while (this.data.length < (this.header.packetLength - (this.header.pesHeaderDataLength+3))) {
-        let bits = reader.readBits(8)
-        this.push(bits)
-      }
-    } else {
-      while (1) {
-        if (reader.atEnd()) { break }
-        let bits = reader.readBits(8)
-        this.push(bits)
-      }
+    while (1) {
+      if (reader.atEnd()) { break }
+      if (this.header.packetLength) { if (this.isFull) { break } }
+      let byte = reader.readBits(8)
+      if (byte === undefined) { break }
+      this.push(byte)
     }
-
   }
 
   checkComplete() {
-    console.log('----', this.data.length);
     this.complete = this.data.length >= this.header.packetLength
   }
 
@@ -173,13 +156,22 @@ export class PESPacket {
     return this.data.length
   }
 
+  get isFull() {
+    if (this.data.length === (this.header.packetLength - (this.header.pesHeaderDataLength))) {
+      return true
+    } else {
+      return false
+    }
+  }
+
 }
 
 const buildTimestamp = (low, mid, high) => {
   let ts = 0
   ts = (ts << 3) | low
   ts = (ts << 15) | mid
-  ts = (ts << 15) | high >>> 0
+  ts = (ts << 15) | high //>>> 0
+  ts = ts >>> 0
   return ts
 }
 

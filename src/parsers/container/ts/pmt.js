@@ -14,7 +14,7 @@ import { Packet } from './packet'
 class PMT extends Packet {
   constructor(header, bitReader) {
     super(header, bitReader)
-    this.tracks = []
+    this.programs = []
 
     this.ptrField = bitReader.readBits(8)
     if (this.ptrField) { bitReader.readBits(this.ptrField * 8) }
@@ -27,9 +27,8 @@ class PMT extends Packet {
     bitReader.readBits(2)   // section length unused bits
     let sectionLength = bitReader.readBits(10)
 
-    let programs = []
-    let stopBit = bitReader.currentBit + (sectionLength * 8)
-    while (bitReader.currentBit < stopBit) {
+    let stopBit = bitReader.currentBit() + (sectionLength * 8)
+    while (bitReader.currentBit() < stopBit) {
       let program                   = {tracks: []}
       program.id                    = bitReader.readBits(16)
       bitReader.readBits(2)
@@ -49,15 +48,15 @@ class PMT extends Packet {
         descriptor.tag        = bitReader.readBits(8)
         let descriptorLength  = bitReader.readBits(8)
 
-        let descStopBit = bitReader.currentBit + (descriptorLength * 8)
-        while (bitReader.currentBit < descStopBit) {
+        let descStopBit = bitReader.currentBit() + (descriptorLength * 8)
+        while (bitReader.currentBit() < descStopBit) {
           descriptor.data.push(bitReader.readBits(8))
         }
         program.descriptor = descriptor
       }
 
       let esStopBit = stopBit - (32) // 32 bits for the CRC at the end
-      while (bitReader.currentBit < esStopBit) {
+      while (bitReader.currentBit() < esStopBit) {
         let track                         = {}
         track.streamType = bitReader.readBits(8)
         bitReader.readBits(3)
@@ -67,8 +66,8 @@ class PMT extends Packet {
         let esInfoLength = bitReader.readBits(10)
 
         let esInfo = []
-        let esStopBit = bitReader.currentBit + (esInfoLength * 8)
-        while (bitReader.currentBit < esStopBit) {
+        let esStopBit = bitReader.currentBit() + (esInfoLength * 8)
+        while (bitReader.currentBit() < esStopBit) {
           esInfo.push(bitReader.readBits(8))
         }
 
@@ -79,7 +78,7 @@ class PMT extends Packet {
       }
 
       let crc = bitReader.readBits(32)
-      programs.push(program)
+      this.programs.push(program)
     }
   }
 }

@@ -4,9 +4,9 @@ class ADTS {
 
   static parse(pes) {
     let result = {units: [], streamType: 15, duration: 0, trackID: pes.trackID}
-    let r = bytes.streamReader(pes.packets)
-    let last
+    let r   = bytes.streamReader(pes.packets)
     let cnt = 0
+    let last
     while (1) {
       let next = r.readBits(12)
       if (next === undefined) { break }
@@ -20,6 +20,7 @@ class ADTS {
         if (last) {
           if (pkt.header.samplingFreq === last.header.samplingFreq) {
             pkt.id = cnt
+            // console.log(pkt.payload.length, pkt.header.frameLength);
             result.units.push(pkt)
             cnt += 1
           } else {
@@ -30,12 +31,30 @@ class ADTS {
           result.units.push(pkt)
           cnt += 1
         }
+      } else {
+        // console.log('MISS');
       }
     }
 
     return result
   }
 
+  // A	12	syncword 0xFFF, all bits must be 1
+  // B	1	MPEG Version: 0 for MPEG-4, 1 for MPEG-2
+  // C	2	Layer: always 0
+  // D	1	protection absent, Warning, set to 1 if there is no CRC and 0 if there is CRC
+  // E	2	profile, the MPEG-4 Audio Object Type minus 1
+  // F	4	MPEG-4 Sampling Frequency Index (15 is forbidden)
+  // G	1	private bit, guaranteed never to be used by MPEG, set to 0 when encoding, ignore when decoding
+  // H	3	MPEG-4 Channel Configuration (in the case of 0, the channel configuration is sent via an inband PCE)
+  // I	1	originality, set to 0 when encoding, ignore when decoding
+  // J	1	home, set to 0 when encoding, ignore when decoding
+  // K	1	copyrighted id bit, the next bit of a centrally registered copyright identifier, set to 0 when encoding, ignore when decoding
+  // L	1	copyright id start, signals that this frame's copyright id bit is the first bit of the copyright id, set to 0 when encoding, ignore when decoding
+  // M	13	frame length, this value must include 7 or 9 bytes of header length: FrameLength = (ProtectionAbsent == 1 ? 7 : 9) + size(AACFrame)
+  // O	11	Buffer fullness
+  // P	2	Number of AAC frames (RDBs) in ADTS frame minus 1, for maximum compatibility always use 1 AAC frame per ADTS frame
+  // Q	16
   constructor(bitReader) {
     this.header = {}
     this.header.version                   = bitReader.readBit()
@@ -64,12 +83,22 @@ class ADTS {
     this.payload      = []
 
     let cnt = 0
+    // console.log(this.header);
     while (cnt < bytesToRead) {
       let bits = bitReader.readBits(8)
       if (bits === undefined) { break }
       this.payload.push(bits)
       cnt += 1
     }
+
+    // for (var i = 0; i < this.payload.length; i++) {
+    //   let x = this.payload.slice(i, i+3)
+    //   // console.log(x);
+    //   if (bytes.equal([0, 0, 1], x)) {
+    //     console.log(this.payload.slice(i, i+10));
+    //   }
+    // }
+
   }
 
   get length() {
@@ -77,7 +106,7 @@ class ADTS {
   }
 
   get duration() {
-    return 1024
+    return (this.header.numberOfFramesMinusOne+1) * 1024
   }
 }
 

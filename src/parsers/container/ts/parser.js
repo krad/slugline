@@ -23,15 +23,15 @@ class TransportStreamParser {
       return pat
     } else if (header.PID === this.pmtPID) {
       const pmt       = new PMT(header, bitReader)
-      this.tracks     = pmt.tracks
-      this.trackPIDs  = pmt.tracks.map(t => t.elementaryPID)
+      if (pmt.programs.length <= 0) { throw 'Program Map Table had no programs listed' }
+      this.tracks     = pmt.programs[0].tracks
+      this.trackPIDs  = this.tracks.map(t => t.elementaryPID)
       return pmt
     } else if (this.trackPIDs.includes(header.PID)) {
       const track       = this.tracks.filter(t => t.elementaryPID === header.PID)[0]
       const mediaPacket = new MediaPacket(header, bitReader, track.streamType)
       return mediaPacket
     } else {
-      /// This should not have happened
       console.log('!!! ERROR PARSING PROGRAM PACKETS !!!');
     }
   }

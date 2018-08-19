@@ -57,7 +57,7 @@ export const mvhd = (config) => {
     bytes.u32(0),               // selectionTime
     bytes.u32(0),               // selectionDuration
     bytes.u32(0),               // currentTime
-    bytes.u32(2),               // nextTrackID
+    bytes.u32(config.tracks.length), // nextTrackID
   ]
 }
 
@@ -236,7 +236,6 @@ export const stbl = (config) => {
     bytes.strToUint8('stbl'),
     stsd(config),             // sample description atom
     stts(config),             // time to sample atom
-    // ctts(config),
     stsc(config),             // sample to chunk atom
     stsz(config),             // sample size atom
     stco(config),             // chunk offset atom
@@ -268,15 +267,6 @@ export const stts = (config) => {
     new Uint8Array(1),         // version
     new Uint8Array([0, 0, 0]), // flags
     bytes.u32(0),
-  ]
-}
-
-export const ctts = (config) => {
-  return [
-    bytes.strToUint8('ctts'),
-    new Uint8Array([0]),        /// version
-    new Uint8Array([0, 0, 0]),  /// Flags
-    bytes.u32(0),        /// empty entry count
   ]
 }
 
@@ -402,7 +392,7 @@ export const esds = (config) => {
     new Uint8Array([0x05]),                   // decoder specific info tag
     new Uint8Array([0x80, 0x80, 0x80]),       // 0x80 = start & 0xfe = end
     new Uint8Array([0x02]),                   // desc length
-    new Uint8Array(asc),             // audio specific config
+    new Uint8Array(asc),                      // audio specific config
     new Uint8Array([0x06, 0x80, 0x80, 0x80]), // es ext desc tag
     new Uint8Array([0x01]),                   // sl config len
     new Uint8Array([0x02]),                   // slmp4const
@@ -412,9 +402,12 @@ export const esds = (config) => {
 const AudioSpecificConfig = (config) => {
   let header = config.samples[0].header
   let buf    = new Uint8Array(2)
-  let view   = new DataView(buf.buffer)
-  view.setUint16(0, (config.profile << 11)|(header.samplingFreq<<7)|(header.channelConfig<<3))
 
+  buf[0] = config.profile << 3 | (header.samplingFreq >> 1 & 0x3)
+  buf[1] = (header.samplingFreq & 0x1) << 7 | (header.channelConfig & 0xf) << 3
+
+  // let view   = new DataView(buf.buffer)
+  // view.setUint16(0, (config.profile << 11)|(header.samplingFreq<<7)|(header.channelConfig<<3))
   return buf
 }
 
@@ -507,11 +500,15 @@ export const tfhd = (config) => {
 
   let flags
   if (config.streamType === 27) {
-    flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleFlagsPresent|defaultSampleSizePresent|defaultSampleDurationPresent
+    if (config.bFramesPresent) {
+      flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleFlagsPresent|defaultSampleSizePresent
+    } else {
+      flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleFlagsPresent|defaultSampleSizePresent|defaultSampleDurationPresent
+    }
   }
 
   if (config.streamType === 15) {
-    flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent|defaultSampleDurationPresent
+    flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent
   }
 
   result.push(bytes.u32(flags))           // track fragment flags
@@ -528,15 +525,18 @@ export const tfhd = (config) => {
   const firstSample = config.samples[0]
 
   if (config.streamType === 27) {
+    if (!config.bFramesPresent) {
       result.push(bytes.u32(firstSample.duration))  // default sample duration
+    }
       result.push(bytes.u32(firstSample.length))    // default sample size
       result.push(bytes.u32(0x2000000))             // default sample flags
   }
 
   if (config.streamType === 15) {
     if (firstSample) {
-      result.push(bytes.u32(firstSample.duration)) // default sample duration
+      // result.push(bytes.u32(firstSample.duration)) // default sample duration
       result.push(bytes.u32(firstSample.length))   // default sample size
+      // result.push(bytes.u32(0x1000000))             // default sample flags
     } else {
       result.push(bytes.u32(0))
       result.push(bytes.u32(0))
@@ -576,25 +576,35 @@ const videoTRUN = (config) => {
   const sampleFlagsPresent                  = 0x000400
   const sampleCompositionTimeOffsetsPresent = 0x000800
 
-  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleCompositionTimeOffsetsPresent
+  let flags
+  if (config.bFramesPresent) {
+    flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleCompositionTimeOffsetsPresent
+  } else {
+    flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent
+  }
+
 
   let result = [
     bytes.strToUint8('trun'),
     new Uint8Array([1]),
     bytes.u24(flags), /// flags
-    // bytes.u32(flags),                   // trun flags
     bytes.u32(sampleCount),             // sample count
     bytes.s32(config.offset),           // offset
   ]
 
+  let c = 0
   payload.forEach(g => {
-    // result.push(bytes.u32(g.duration))     // duration
+    if (!config.bFramesPresent) {
+      result.push(bytes.u32(g.duration))     // duration
+    }
     result.push(bytes.u32(g.length))       // size
 
     if (g.isKeyFrame) { result.push(bytes.u32(0x2000000)) }
     else { result.push(bytes.u32(0x1000000)) }
 
-    result.push(bytes.s32(g.ctsOffset))     // sample composition offset
+    if (config.bFramesPresent) {
+      result.push(bytes.s32(g.ctsOffset))     // sample composition offset
+    }
   })
 
   return result
@@ -604,24 +614,25 @@ const audioTRUN = (config) => {
   let payload     = config.samples || []
   let sampleCount = payload.length
 
-  const dataOffsetPresent                   = 0x0001
-  const firstSampleFlagsPresent             = 0x0004
-  const sampleDurationPresent               = 0x0100
-  const sampleSizePresent                   = 0x0200
-  const sampleFlagsPresent                  = 0x0400
-  const sampleCompositionTimeOffsetsPresent = 0x0800
+  const dataOffsetPresent                   = 0x000001
+  const firstSampleFlagsPresent             = 0x000004
+  const sampleDurationPresent               = 0x000100
+  const sampleSizePresent                   = 0x000200
+  const sampleFlagsPresent                  = 0x000400
+  const sampleCompositionTimeOffsetsPresent = 0x000800
 
-  let flags = dataOffsetPresent|sampleSizePresent
+  let flags = dataOffsetPresent|sampleSizePresent|sampleDurationPresent
 
   let result = [
     bytes.strToUint8('trun'),
-    bytes.u32(flags),                   // trun flags
-    bytes.u32(sampleCount),             // sample count
-    bytes.s32(config.offset),           // offset
+    new Uint8Array([0]),
+    bytes.u24(flags),           /// flags
+    bytes.u32(sampleCount),     // sample count
+    bytes.s32(config.offset),   // offset
   ]
 
   payload.forEach(g => {
-    // result.push(bytes.u32(g.duration))
+    result.push(bytes.u32(g.duration))
     result.push(bytes.u32(g.length))       // size
   })
 

@@ -34,7 +34,7 @@ class TransportStream {
   }
 
   get trackPackets() {
-    return this.PMT.tracks.map((t, idx) => {
+    return this.PMT.programs[0].tracks.map((t, idx) => {
       return ElementaryStream.parse(this, t.streamType, idx+1)
     })
   }
@@ -45,19 +45,6 @@ class TransportStream {
       if (stream.streamType === 15) { return ADTS.parse(stream) }
     })
   }
-
-  // get tracksConfig() {
-  //   return this.tracks.map((t,idx) => {
-  //
-  //     let result = {type: t.streamType, codec: t.codecBytes, id: idx+1}
-  //     //
-  //     // if (t.streamType === 27) {
-  //     //   result.sps = bytes.parseSPS(t.codecBytes[0])
-  //     // }
-  //
-  //     return result
-  //   })
-  // }
 
 }
 
