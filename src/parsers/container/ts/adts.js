@@ -24,7 +24,7 @@ class ADTS {
             result.units.push(pkt)
             cnt += 1
           } else {
-            console.log('wtf bad packets');
+            console.log('wtf bad packets', pkt.header);
           }
         } else {
           pkt.id = cnt

@@ -107,18 +107,43 @@ const parsePacketsByHeaders = (packets, delimiter) => {
   let reader = bytes.streamReader(packets)
   let cnt = 0
 
+  let sync = new Uint8Array([0, 0, 0])
+  let pesPacket
   while (1) {
-    let bits = reader.readBits(24)
-    if (bits === undefined) { break }
-    if (bits === 0x000001) {
-      reader.rewind(24)
-      let pesPacket = new PESPacket(reader, cnt)
-      results.push(pesPacket)
-      cnt++
+    let byte = reader.readBits(8)
+    sync[2] = sync[1]
+    sync[1] = sync[0]
+    sync[0] = byte
+
+    if (byte === undefined) { break }
+    if (sync[2] === 0x00 && sync[1] === 0x00 && sync[0] === 0x01) {
+      
+      let next = reader.readBits(8)
+      if (next === delimiter) {
+        reader.rewind(32)
+
+        pesPacket = new PESPacket(reader, cnt)
+        if (pesPacket.isFull) {
+          results.push(pesPacket)
+          cnt++
+          pesPacket = undefined
+        }
+
+      } else {
+        reader.rewind(8)
+      }
+
+    } else {
+      if (pesPacket) {
+        pesPacket.push(byte)
+        if (pesPacket.isFull) {
+          results.push(pesPacket)
+          cnt++
+          pesPacket = undefined
+        }
+      }
     }
   }
-
-  console.log(reader.readBits(24))
 
   // let itr = bytes.elementaryStreamIterator(packets, [0, 0, 1], true)
   // let pesPacket

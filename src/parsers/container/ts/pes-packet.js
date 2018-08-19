@@ -157,7 +157,7 @@ export class PESPacket {
   }
 
   get isFull() {
-    if (this.data.length === (this.header.packetLength - (this.header.pesHeaderDataLength))) {
+    if (this.data.length >= (this.header.packetLength - (this.header.pesHeaderDataLength+16))) {
       return true
     } else {
       return false
@@ -170,8 +170,8 @@ const buildTimestamp = (low, mid, high) => {
   let ts = 0
   ts = (ts << 3) | low
   ts = (ts << 15) | mid
-  ts = (ts << 15) | high //>>> 0
-  ts = ts >>> 0
+  ts = (ts << 15) | high >>> 0
+  // ts = ts >>> 0
   return ts
 }
 

@@ -64,23 +64,21 @@ class AccessUnit {
 
           au.dt = dt
           dt += au.dts
-
         })
         lastAccessUnit.duration  = result.units.slice(-1)[0].duration
 
         result.units.sort((a, b) => a.pts - b.pts)
         let ct = 0
         let last
-        console.log('-----');
         result.units.forEach(au => {
           if (last) {
             au.ctsOffset = ct
-            ct += (au.dts - last.dts)
+            ct += (au.pts - last.dts)
           }
           last = au
         })
 
-        // result.units.sort((a, b) => a.id - b.id)
+        result.units.sort((a, b) => a.id - b.id)
     }
 
 
