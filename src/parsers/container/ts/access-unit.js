@@ -49,7 +49,6 @@ class AccessUnit {
 
     result.units.push(accessUnit)
 
-
     if (result.bFramesPresent) {
         let lastAccessUnit
 

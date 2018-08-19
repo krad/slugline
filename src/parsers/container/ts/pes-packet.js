@@ -145,10 +145,6 @@ export class PESPacket {
     }
   }
 
-  checkComplete() {
-    this.complete = this.data.length >= this.header.packetLength
-  }
-
   push(bytes) {
     this.data.push(bytes)
   }
@@ -158,7 +154,7 @@ export class PESPacket {
   }
 
   get isFull() {
-    if (this.data.length >= (this.header.packetLength - (this.header.pesHeaderDataLength+24))) {
+    if (this.data.length > (this.header.packetLength - (this.header.pesHeaderDataLength+32))) {
       return true
     } else {
       return false

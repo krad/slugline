@@ -47,8 +47,8 @@ class ADTS {
             pkt.id = cnt++
             result.units.push(pkt)
           } else {
-            r.rewind(12)
-            console.log('bad packet', pkt.header);
+            // r.rewind(12)
+            // console.log('bad packet', pkt.header);
           }
         } else {
           pkt.readInPacket(r)

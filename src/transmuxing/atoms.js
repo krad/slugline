@@ -585,7 +585,7 @@ const videoTRUN = (config) => {
 
   let result = [
     bytes.strToUint8('trun'),
-    new Uint8Array([1]),
+    new Uint8Array([0]),
     bytes.u24(flags), /// flags
     bytes.u32(sampleCount),             // sample count
     bytes.s32(config.offset),           // offset
@@ -599,10 +599,10 @@ const videoTRUN = (config) => {
     result.push(bytes.u32(g.length))       // size
 
     if (g.isKeyFrame) { result.push(bytes.u32(0x2000000)) }
-    else { result.push(bytes.u32(0x1000000)) }
+    else { result.push(bytes.u32(0x1010000)) }
 
     if (config.bFramesPresent) {
-      result.push(bytes.s32((g.pts - g.dts)))     // sample composition offset
+      result.push(bytes.u32((g.pts - g.dts)))     // sample composition offset
     }
   })
 
