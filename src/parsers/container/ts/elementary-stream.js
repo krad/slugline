@@ -27,6 +27,8 @@ class ElementaryStream {
     let delimiter
     if (streamType === 27) { delimiter = 0xe0 }
     if (streamType === 15) { delimiter = 0xc0 }
+    if (streamType === 21) { return es }
+    console.log(streamType);
 
     if (packetsHaveLength(streamPackets, delimiter)) {
       es.packets = parsePacketsByHeaders(streamPackets, delimiter)
@@ -104,38 +106,34 @@ const packetsHaveLength = (packets, delimiter) => {
 
 const parsePacketsByHeaders = (packets, delimiter) => {
   let results = []
-  let reader = bytes.streamReader(packets)
-  let cnt = 0
+  let reader  = bytes.streamReader(packets)
+  let cnt     = 0
 
-  let sync = new Uint8Array([0, 0, 0])
+  let itr = bytes.elementaryStreamIterator(packets, [0, 0, 1], true)
   let pesPacket
   while (1) {
-    let byte = reader.readBits(8)
-    sync[2] = sync[1]
-    sync[1] = sync[0]
-    sync[0] = byte
+    let next = itr.next()
+    if (next === undefined) { break }
 
-    if (byte === undefined) { break }
-    if (sync[2] === 0x00 && sync[1] === 0x00 && sync[0] === 0x01) {
-      
-      let next = reader.readBits(8)
-      if (next === delimiter) {
-        reader.rewind(32)
+    let r = new bytes.BitReader(next)
 
-        pesPacket = new PESPacket(reader, cnt)
-        if (pesPacket.isFull) {
-          results.push(pesPacket)
-          cnt++
-          pesPacket = undefined
-        }
+    if (pesPacket) {
+      while(!pesPacket.isFull) {
+        let b = r.readBits(8)
+        if (b === undefined) { break }
+        if (r.atEnd()) { break }
+        pesPacket.push(b)
+      }
 
-      } else {
-        reader.rewind(8)
+      if (pesPacket.isFull) {
+        results.push(pesPacket)
+        cnt++
+        pesPacket = undefined
       }
 
     } else {
-      if (pesPacket) {
-        pesPacket.push(byte)
+      if (next[3] === delimiter) {
+        pesPacket = new PESPacket(r, cnt)
         if (pesPacket.isFull) {
           results.push(pesPacket)
           cnt++
@@ -143,58 +141,8 @@ const parsePacketsByHeaders = (packets, delimiter) => {
         }
       }
     }
+
   }
-
-  // let itr = bytes.elementaryStreamIterator(packets, [0, 0, 1], true)
-  // let pesPacket
-  // while (1) {
-  //   let next = itr.next()
-  //   if (next) {
-  //     if (pesPacket) {
-  //
-  //       console.log('---', pesPacket.header.cntID, pesPacket.header.packetLength, pesPacket.data.length);
-  //
-  //       let buffer = new Uint8Array(next)
-  //       let reader = new bytes.BitReader(buffer)
-  //       while (!pesPacket.isFull) {
-  //         let byte = reader.readBits(8)
-  //         if (byte === undefined) { break }
-  //         if (reader.atEnd()) { break }
-  //         pesPacket.push(byte)
-  //       }
-  //
-  //       console.log('+++', pesPacket.header.cntID, pesPacket.header.packetLength, pesPacket.data.length);
-  //
-  //       if (pesPacket.isFull) {
-  //         results.push(pesPacket)
-  //         pesPacket = undefined
-  //         cnt++
-  //       }
-  //
-  //     } else {
-  //
-  //       if (next[3] === delimiter) {
-  //         let buffer = new Uint8Array(next)
-  //         let reader = new bytes.BitReader(buffer)
-  //
-  //         // console.log(next.slice(0, 15));
-  //         // console.log(itr.reader.currentPacket().header.adaptationField);
-  //         pesPacket  = new PESPacket(reader, cnt)
-  //         if (pesPacket.isFull) {
-  //           results.push(pesPacket)
-  //           pesPacket = undefined
-  //           cnt++
-  //         }
-  //       } else {
-  //         console.log('no delimiter?');
-  //       }
-  //     }
-  //
-  //   } else {
-  //     break
-  //   }
-  // }
-
 
   return results
 }

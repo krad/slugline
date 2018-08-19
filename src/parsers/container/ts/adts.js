@@ -6,12 +6,36 @@ class ADTS {
     let result = {units: [], streamType: 15, duration: 0, trackID: pes.trackID}
     let r   = bytes.streamReader(pes.packets)
     let cnt = 0
+    let pkt
     let last
+
+    let sync = new Uint8Array(12)
+
+    let missChunk = []
+
     while (1) {
-      let next = r.readBits(12)
-      if (next === undefined) { break }
-      if (next === 0xfff) {
-        let pkt = new ADTS(r)
+      if (r.atEnd()) { break }
+
+      let bit = r.readBit()
+      if (bit === undefined) { break }
+
+      sync[11] = sync[10]
+      sync[10] = sync[9]
+      sync[9] = sync[8]
+      sync[8] = sync[7]
+      sync[7] = sync[6]
+      sync[6] = sync[5]
+      sync[5] = sync[4]
+      sync[4] = sync[3]
+      sync[3] = sync[2]
+      sync[2] = sync[1]
+      sync[1] = sync[0]
+      sync[0] = bit
+
+      if (bytes.equal(sync, [1,1,1,1,1,1,1,1,1,1,1,1])) {
+        r.rewind(12)
+        sync = new Uint8Array(12)
+        pkt  = new ADTS(r)
         let pes = r.currentPacket()
         if (pes === undefined) { continue }
         if (pes) { pkt.packet = pes.header }
@@ -19,20 +43,18 @@ class ADTS {
         last = result.units.slice(-1)[0]
         if (last) {
           if (pkt.header.samplingFreq === last.header.samplingFreq) {
-            pkt.id = cnt
-            // console.log(pkt.payload.length, pkt.header.frameLength);
+            pkt.readInPacket(r)
+            pkt.id = cnt++
             result.units.push(pkt)
-            cnt += 1
           } else {
-            console.log('wtf bad packets', pkt.header);
+            r.rewind(12)
+            console.log('bad packet', pkt.header);
           }
         } else {
-          pkt.id = cnt
+          pkt.readInPacket(r)
+          pkt.id = cnt ++
           result.units.push(pkt)
-          cnt += 1
         }
-      } else {
-        // console.log('MISS');
       }
     }
 
@@ -57,6 +79,7 @@ class ADTS {
   // Q	16
   constructor(bitReader) {
     this.header = {}
+    this.header.sync                      = bitReader.readBits(12)
     this.header.version                   = bitReader.readBit()
     this.header.layer                     = bitReader.readBits(2)
     this.header.protectionAbsent          = bitReader.readBit()
@@ -78,27 +101,26 @@ class ADTS {
       this.header.crc = bitReader.readBits(16)
     }
 
-    const headerSize  = this.header.protectionAbsent === 1 ? 7 : 9
-    const bytesToRead = ((this.header.frameLength) * (this.header.numberOfFramesMinusOne+1)) - headerSize
-    this.payload      = []
+    this.payload        = []
 
+  }
+
+  get headerSize() {
+    return this.header.protectionAbsent === 1 ? 7 : 9
+  }
+
+  get packetLength() {
+    return ((this.header.frameLength) * (this.header.numberOfFramesMinusOne+1)) - (this.headerSize)
+  }
+
+  readInPacket(reader) {
     let cnt = 0
-    // console.log(this.header);
-    while (cnt < bytesToRead) {
-      let bits = bitReader.readBits(8)
+    while (cnt < this.packetLength) {
+      let bits = reader.readBits(8)
       if (bits === undefined) { break }
       this.payload.push(bits)
       cnt += 1
     }
-
-    // for (var i = 0; i < this.payload.length; i++) {
-    //   let x = this.payload.slice(i, i+3)
-    //   // console.log(x);
-    //   if (bytes.equal([0, 0, 1], x)) {
-    //     console.log(this.payload.slice(i, i+10));
-    //   }
-    // }
-
   }
 
   get length() {

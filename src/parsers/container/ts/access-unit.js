@@ -50,7 +50,6 @@ class AccessUnit {
     result.units.push(accessUnit)
 
 
-    //// FIXME: B-Frames still render all messed up
     if (result.bFramesPresent) {
         let lastAccessUnit
 
@@ -66,18 +65,6 @@ class AccessUnit {
           dt += au.dts
         })
         lastAccessUnit.duration  = result.units.slice(-1)[0].duration
-
-        result.units.sort((a, b) => a.pts - b.pts)
-        let ct = 0
-        let last
-        result.units.forEach(au => {
-          if (last) {
-            au.ctsOffset = ct
-            ct += (au.pts - last.dts)
-          }
-          last = au
-        })
-
         result.units.sort((a, b) => a.id - b.id)
     }
 

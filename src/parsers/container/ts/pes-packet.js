@@ -10,8 +10,9 @@ export class PESPacket {
     this.header.packetLength          = reader.readBits(16)
     const bitAfterPacketLengthCheck   = reader.currentBit()
 
-
     this.header.markerBits             = reader.readBits(2)   // 10
+    if (this.header.markerBits !== 2) { return }
+
     this.header.scramblingControl      = reader.readBits(2)
     this.header.priority               = reader.readBit()
     this.header.alignmentIndicator     = reader.readBit()
@@ -157,7 +158,7 @@ export class PESPacket {
   }
 
   get isFull() {
-    if (this.data.length >= (this.header.packetLength - (this.header.pesHeaderDataLength+16))) {
+    if (this.data.length >= (this.header.packetLength - (this.header.pesHeaderDataLength+24))) {
       return true
     } else {
       return false
@@ -170,8 +171,8 @@ const buildTimestamp = (low, mid, high) => {
   let ts = 0
   ts = (ts << 3) | low
   ts = (ts << 15) | mid
-  ts = (ts << 15) | high >>> 0
-  // ts = ts >>> 0
+  ts = (ts << 15) | high //>>> 0
+  ts = ts >>> 0
   return ts
 }
 

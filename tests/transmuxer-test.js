@@ -289,14 +289,15 @@ test.skip('that we can build a structure than can be used to arrange mp4 atoms',
 })
 
 test.only('writing a segment', t=> {
-  const bufferA  = Uint8Array.from(asset3)
+  const bufferA  = Uint8Array.from(asset2)
   let tsA        = TransportStream.parse(bufferA)
-  let es         = ElementaryStream.parse(tsA, 15, 0)
+  // let es         = ElementaryStream.parse(tsA, 15, 0)
   // es.packets.forEach(p => {
   // })
 
-  let dts = ADTS.parse(es)
-  //
+  // let dts = ADTS.parse(es)
+  // console.log(es.packets.length, dts);
+  // //
   // es.packets.forEach(p => {
   // //   // console.log(p.header, p.data.length);
   // //   console.log(p.data.slice(0, 15));
@@ -304,22 +305,22 @@ test.only('writing a segment', t=> {
   // //   // fs.appendFileSync('/tmp/audio.aac', new Buffer([0xfff]))
   //   fs.appendFileSync('/tmp/audio.aac', new Buffer(p.data))
   // })
-  // console.log(dts.units.length);
+  // // console.log(dts.units.length);
   // dts.units.forEach(d => {
-  //   console.log(d.duration);
-  //   // console.log(d.header);
+  //   // console.log(d.duration);
+  //   console.log(d.header);
   // })
 
-  // let muxer     = new Transmuxer()
-  // //
-  // muxer.setCurrentStream(tsA)
-  // let res = muxer.build()
-  // //
-  // const init    = muxer.buildInitializationSegment(res[0])
-  // const payload = muxer.buildMediaSegment(res)
+  let muxer     = new Transmuxer()
   //
-  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
-  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
+  muxer.setCurrentStream(tsA)
+  let res = muxer.build()
+  //
+  const init    = muxer.buildInitializationSegment(res[0])
+  const payload = muxer.buildMediaSegment(res)
+
+  fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
+  fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
 
   t.end()
 })

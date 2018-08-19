@@ -578,11 +578,10 @@ const videoTRUN = (config) => {
 
   let flags
   if (config.bFramesPresent) {
-    flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleCompositionTimeOffsetsPresent
+    flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent|sampleCompositionTimeOffsetsPresent
   } else {
     flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent
   }
-
 
   let result = [
     bytes.strToUint8('trun'),
@@ -594,16 +593,16 @@ const videoTRUN = (config) => {
 
   let c = 0
   payload.forEach(g => {
-    if (!config.bFramesPresent) {
+    // if (!config.bFramesPresent) {
       result.push(bytes.u32(g.duration))     // duration
-    }
+    // }
     result.push(bytes.u32(g.length))       // size
 
     if (g.isKeyFrame) { result.push(bytes.u32(0x2000000)) }
     else { result.push(bytes.u32(0x1000000)) }
 
     if (config.bFramesPresent) {
-      result.push(bytes.s32(g.ctsOffset))     // sample composition offset
+      result.push(bytes.s32((g.pts - g.dts)))     // sample composition offset
     }
   })
 
