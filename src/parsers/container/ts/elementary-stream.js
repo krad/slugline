@@ -125,7 +125,7 @@ const parsePacketsByHeaders = (packets, delimiter) => {
 
   }
 
-  // results = results.filter(p => p.header.streamID === delimiter)
+  results = results.filter(p => p.header.streamID === delimiter)
 
   console.log('---', results.length);
   results.forEach(p => {

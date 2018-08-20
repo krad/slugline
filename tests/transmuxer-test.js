@@ -299,10 +299,11 @@ test.only('writing a segment', t=> {
   // })
 
   let dts = ADTS.parse(es)
-  dts.units.forEach(d => {
-    // console.log(d.id);
-    console.log(d.header)
-  })
+  // console.log(dts);
+  // dts.units.forEach(d => {
+  //   // console.log(d.id);
+  //   // console.log(d.header)
+  // })
 
   // console.log(dts);
   // console.log(es.packets.length, dts);

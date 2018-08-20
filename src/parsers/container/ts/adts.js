@@ -27,7 +27,8 @@ class ADTS {
             adts.id = cnt++
             result.units.push(adts)
           } else {
-            reader.rewind(adts.packetLength)
+            reader.rewind((adts.packetLength+adts.headerSize)*8)
+            reader.readBit()
           }
 
         } else {
@@ -102,7 +103,7 @@ class ADTS {
   }
 
   get isFull() {
-    if (this.payload.length < this.packetLength) {
+    if (this.payload.length !== this.packetLength) {
       return false
     }
     return true
