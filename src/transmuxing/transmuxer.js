@@ -74,7 +74,6 @@ class Transmuxer {
     let y = atoms.build(x)
     this.currentOffset = y.length + (8)
 
-
     result.tracks[0].offset = this.currentOffset
     result.tracks[0].decode = this.videoDecode
     this.videoDecode += videoConfig.samples.reduce((a, c) => a + c.duration, 0)
@@ -103,6 +102,7 @@ class Transmuxer {
 
   buildInitializationSegment(moof) {
     let result = []
+    console.log(moof);
     result.push(atoms.ftyp())
     result.push(atoms.moov(moof))
     result = result.map(a => atoms.build(a))

@@ -138,7 +138,7 @@ export class PESPacket {
 
     while (1) {
       if (reader.atEnd()) { break }
-      if (this.header.packetLength) { if (this.isFull) { break } }
+      if (this.isFull) { break }
       let byte = reader.readBits(8)
       if (byte === undefined) { break }
       this.push(byte)
@@ -154,11 +154,14 @@ export class PESPacket {
   }
 
   get isFull() {
-    if (this.data.length > (this.header.packetLength - (this.header.pesHeaderDataLength+32))) {
-      return true
-    } else {
-      return false
+    if (this.header.packetLength) {
+      if (this.data.length > (this.header.packetLength - (this.header.pesHeaderDataLength+24))) {
+        return true
+      } else {
+        return false
+      }
     }
+    return false
   }
 
 }
