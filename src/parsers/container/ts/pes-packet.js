@@ -134,6 +134,20 @@ export class PESPacket {
       console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     }
 
+    // this.stuffingLength = 0
+    // while (1) {
+    //   if (reader.atEnd()) { break }
+    //   if (this.isFull) { break }
+    //   let byte = reader.readBits(8)
+    //   if (byte === undefined) { break }
+    //   if (byte === 0xff) {
+    //     this.stuffingLength += 1
+    //   } else {
+    //     reader.rewind(8)
+    //     break
+    //   }
+    // }
+
     while (1) {
       if (reader.atEnd()) { break }
       if (this.isFull) { break }
@@ -153,8 +167,10 @@ export class PESPacket {
 
   get isFull() {
     if (this.header.packetLength) {
-      let lng = (this.header.packetLength - (this.header.pesHeaderDataLength+3))
-      if (this.data.length !== lng) {
+      let lng = this.header.packetLength
+      lng -= this.header.pesHeaderDataLength
+      lng -= 3
+      if (this.data.length < lng) {
         return false
       } else {
         return true

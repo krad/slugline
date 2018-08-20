@@ -508,7 +508,7 @@ export const tfhd = (config) => {
   }
 
   if (config.streamType === 15) {
-    flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent
+    flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent|defaultSampleDurationPresent
   }
 
   result.push(bytes.u32(flags))           // track fragment flags
@@ -534,7 +534,7 @@ export const tfhd = (config) => {
 
   if (config.streamType === 15) {
     if (firstSample) {
-      // result.push(bytes.u32(firstSample.duration)) // default sample duration
+      result.push(bytes.u32(firstSample.duration)) // default sample duration
       result.push(bytes.u32(firstSample.length))   // default sample size
       // result.push(bytes.u32(0x1000000))             // default sample flags
     } else {
@@ -620,7 +620,7 @@ const audioTRUN = (config) => {
   const sampleFlagsPresent                  = 0x000400
   const sampleCompositionTimeOffsetsPresent = 0x000800
 
-  let flags = dataOffsetPresent|sampleSizePresent|sampleDurationPresent
+  let flags = dataOffsetPresent|sampleSizePresent//|sampleDurationPresent
 
   let result = [
     bytes.strToUint8('trun'),
@@ -631,7 +631,7 @@ const audioTRUN = (config) => {
   ]
 
   payload.forEach(g => {
-    result.push(bytes.u32(g.duration))
+    // result.push(bytes.u32(g.duration))
     result.push(bytes.u32(g.length))       // size
   })
 

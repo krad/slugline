@@ -107,7 +107,7 @@ const parsePacketsByHeaders = (packets, delimiter) => {
   let results   = []
   let cnt       = 0
   let reader    = bytes.streamReader(packets)
-  let sync      = new Uint8Array([0, 0, 0])
+  let sync      = new Uint8Array([255, 255, 255])
   while(1) {
     if (reader.atEnd()) { break }
     const byte = reader.readBits(8)
@@ -118,19 +118,17 @@ const parsePacketsByHeaders = (packets, delimiter) => {
     sync[0] = byte
 
     if (sync[2] === 0x00 && sync[1] === 0x00 && sync[0] === 0x01) {
-      reader.rewind(24)
-      let pesPacket = new PESPacket(reader, cnt++)
-      results.push(pesPacket)
+      let next = reader.readBits(8)
+      if (next === delimiter) {
+        reader.rewind(32)
+        let pesPacket = new PESPacket(reader, cnt++)
+        results.push(pesPacket)
+      } else {
+        reader.rewind(8)
+      }
     }
 
   }
-
-  results = results.filter(p => p.header.streamID === delimiter)
-
-  console.log('---', results.length);
-  results.forEach(p => {
-    console.log('--', p.header.streamID, p.length, p.header.packetLength)
-  })
 
   return results
 }
