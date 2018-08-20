@@ -106,43 +106,62 @@ const packetsHaveLength = (packets, delimiter) => {
 
 const parsePacketsByHeaders = (packets, delimiter) => {
   let results = []
-  let reader  = bytes.streamReader(packets)
-  let cnt     = 0
-
-  let itr = bytes.elementaryStreamIterator(packets, [0, 0, 1], true)
+  let itr    = bytes.elementaryStreamIterator(packets, [0, 0, 1], true)
+  let cnt    = 0
   let pesPacket
-  while (1) {
+  while(1) {
     let next = itr.next()
-    if (next === undefined) { break }
+    if (next) {
 
-    let r = new bytes.BitReader(next)
-
-    if (pesPacket) {
-      while(!pesPacket.isFull) {
-        let b = r.readBits(8)
-        if (b === undefined) { break }
-        if (r.atEnd()) { break }
-        pesPacket.push(b)
+      if (next[3] === 0) {
+        console.log(next.slice(0, 10));
+        next = next.slice(5)
       }
 
-      if (pesPacket.isFull) {
-        results.push(pesPacket)
-        cnt++
-        pesPacket = undefined
+      let buffer    = new Uint8Array(next)
+      let reader    = new bytes.BitReader(buffer)
+
+      if (pesPacket) {
+        while (!pesPacket.isFull) {
+          if (reader.atEnd())     { break }
+          let byte = reader.readBits(8)
+          pesPacket.push(byte)
+        }
+
+        if (pesPacket.isFull) {
+          results.push(pesPacket)
+          cnt += 1
+          pesPacket = undefined
+        }
+
+      } else {
+
+        pesPacket = new PESPacket(reader, cnt)
+        if (pesPacket.header.packetLength) {
+          if (pesPacket.isFull) {
+            results.push(pesPacket)
+            cnt += 1
+            pesPacket = undefined
+          }
+        } else {
+          results.push(pesPacket)
+          cnt += 1
+          pesPacket = undefined
+        }
+
       }
 
     } else {
-      if (next[3] === delimiter) {
-        pesPacket = new PESPacket(r, cnt)
-        if (pesPacket.isFull) {
-          results.push(pesPacket)
-          cnt++
-          pesPacket = undefined
-        }
-      }
-    }
+      if (pesPacket) { results.push(pesPacket) }
 
+      break
+    }
   }
+
+  results = results.filter(p => p.data.length !== 0)
+  results.forEach(p => {
+    console.log(p.header.streamID, p.length, p.header.packetLength)
+  })
 
   return results
 }

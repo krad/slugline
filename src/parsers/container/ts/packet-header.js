@@ -20,6 +20,7 @@ class PacketHeader {
       case 0b10:
       case 0b11:
         this.adaptationField = new AdaptationField(bitReader)
+        this.length += this.adaptationField.length
       case 0b00:
         break
         // console.log('reserved');
@@ -48,12 +49,13 @@ class AdaptationField {
     if (this.opcrFlag) { this.opcr = bitReader.readBit(48) }
     if (this.splicingPointFlag) { this.spliceCountdown = bitReader.readBits(8) }
     if (this.transportPrivateFlag) {
-      this.transportPrivateDataLength = this.spliceCountdown = bitReader.readBits(8)
-      this.transportPrivateData = bitReader.readBits(this.transportPrivateDataLength * 8)
+      this.transportPrivateDataLength = bitReader.readBits(8)
+      this.transportPrivateData       = bitReader.readBits(this.transportPrivateDataLength * 8)
     }
 
     if (this.adaptationFieldExtFlag) {
       this.adaptionFieldExt = new AdaptationFieldExtension(bitReader)
+      this.length += this.adaptionFieldExt.length
     }
   }
 }
