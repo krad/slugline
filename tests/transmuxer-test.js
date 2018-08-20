@@ -298,7 +298,13 @@ test.only('writing a segment', t=> {
   //   console.log(p.header);
   // })
 
-  // let dts = ADTS.parse(es)
+  let dts = ADTS.parse(es)
+  dts.units.forEach(d => {
+    // console.log(d.id);
+    console.log(d.header)
+  })
+
+  // console.log(dts);
   // console.log(es.packets.length, dts);
   // //
   es.packets.forEach(p => {
@@ -314,17 +320,17 @@ test.only('writing a segment', t=> {
   //   console.log(d.header);
   // })
 
-  // let muxer     = new Transmuxer()
-  // //
-  // muxer.setCurrentStream(tsA)
-  // let res = muxer.build()
-  // console.log(res);
-  // //
-  // const init    = muxer.buildInitializationSegment(res[0])
-  // const payload = muxer.buildMediaSegment(res)
+  let muxer     = new Transmuxer()
   //
-  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
-  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
+  muxer.setCurrentStream(tsA)
+  let res = muxer.build()
+  console.log(res);
+  //
+  const init    = muxer.buildInitializationSegment(res[0])
+  const payload = muxer.buildMediaSegment(res)
+
+  fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
+  fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
 
   t.end()
 })

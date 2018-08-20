@@ -124,9 +124,7 @@ export class PESPacket {
     }
 
     const bitAfterHeaderParsing = reader.currentBit()
-
     const parsedBytes = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
-
     if (parsedBytes !== this.header.pesHeaderDataLength) {
       this.failed = true
       console.log('!!!! Failed to parse full PES packet. !!!!')
@@ -155,10 +153,10 @@ export class PESPacket {
 
   get isFull() {
     if (this.header.packetLength) {
-      if (this.data.length > (this.header.packetLength - (this.header.pesHeaderDataLength+24))) {
-        return true
-      } else {
+      if (this.data.length < (this.header.packetLength - (this.header.pesHeaderDataLength+3))) {
         return false
+      } else {
+        return true
       }
     }
     return false

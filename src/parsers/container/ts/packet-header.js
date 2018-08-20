@@ -57,6 +57,17 @@ class AdaptationField {
       this.adaptionFieldExt = new AdaptationFieldExtension(bitReader)
       this.length += this.adaptionFieldExt.length
     }
+
+    // while (1) {
+    //   if (bitReader.atEnd()) { break }
+    //   const byte = bitReader.readBits(8)
+    //   if (byte === undefined) { break }
+    //   if (byte !== 0xff) {
+    //     bitReader.rewind(8)
+    //     break
+    //   }
+    // }
+
   }
 }
 

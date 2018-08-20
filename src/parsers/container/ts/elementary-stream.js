@@ -28,7 +28,6 @@ class ElementaryStream {
     if (streamType === 27) { delimiter = 0xe0 }
     if (streamType === 15) { delimiter = 0xc0 }
     if (streamType === 21) { return es }
-    console.log(streamType);
 
     if (packetsHaveLength(streamPackets, delimiter)) {
       es.packets = parsePacketsByHeaders(streamPackets, delimiter)
@@ -105,62 +104,32 @@ const packetsHaveLength = (packets, delimiter) => {
 }
 
 const parsePacketsByHeaders = (packets, delimiter) => {
-  let results = []
-  let itr    = bytes.elementaryStreamIterator(packets, [0, 0, 1], true)
-  let cnt    = 0
-  let pesPacket
+  let results   = []
+  let cnt       = 0
+  let reader    = bytes.streamReader(packets)
+  let sync      = new Uint8Array([0, 0, 0])
   while(1) {
-    let next = itr.next()
-    if (next) {
+    if (reader.atEnd()) { break }
+    const byte = reader.readBits(8)
+    if (byte === undefined) { break }
 
-      if (next[3] === 0) {
-        console.log(next.slice(0, 10));
-        next = next.slice(5)
-      }
+    sync[2] = sync[1]
+    sync[1] = sync[0]
+    sync[0] = byte
 
-      let buffer    = new Uint8Array(next)
-      let reader    = new bytes.BitReader(buffer)
-
-      if (pesPacket) {
-        while (!pesPacket.isFull) {
-          if (reader.atEnd())     { break }
-          let byte = reader.readBits(8)
-          pesPacket.push(byte)
-        }
-
-        if (pesPacket.isFull) {
-          results.push(pesPacket)
-          cnt += 1
-          pesPacket = undefined
-        }
-
-      } else {
-
-        pesPacket = new PESPacket(reader, cnt)
-        if (pesPacket.header.packetLength) {
-          if (pesPacket.isFull) {
-            results.push(pesPacket)
-            cnt += 1
-            pesPacket = undefined
-          }
-        } else {
-          results.push(pesPacket)
-          cnt += 1
-          pesPacket = undefined
-        }
-
-      }
-
-    } else {
-      if (pesPacket) { results.push(pesPacket) }
-
-      break
+    if (sync[2] === 0x00 && sync[1] === 0x00 && sync[0] === 0x01) {
+      reader.rewind(24)
+      let pesPacket = new PESPacket(reader, cnt++)
+      results.push(pesPacket)
     }
+
   }
 
-  results = results.filter(p => p.data.length !== 0)
+  // results = results.filter(p => p.header.streamID === delimiter)
+
+  console.log('---', results.length);
   results.forEach(p => {
-    console.log(p.header.streamID, p.length, p.header.packetLength)
+    console.log('--', p.header.streamID, p.length, p.header.packetLength)
   })
 
   return results
@@ -175,9 +144,8 @@ const parsePacketsByChunks = (packets, delimiter) => {
     if (next) {
       let buffer    = new Uint8Array(next)
       let reader    = new bytes.BitReader(buffer)
-      let pesPacket = new PESPacket(reader, cnt)
+      let pesPacket = new PESPacket(reader, cnt++)
       results.push(pesPacket)
-      cnt += 1
     } else {
       break
     }

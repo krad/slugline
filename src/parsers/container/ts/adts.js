@@ -1,60 +1,43 @@
 import * as bytes from '../../../helpers/byte-helpers'
 
+const isHeader = (arr) => {
+  return arr[0] === 0xff && (arr[1] & 0xf6) === 0xf0
+}
+
 class ADTS {
 
   static parse(pes) {
     let result = {units: [], streamType: 15, duration: 0, trackID: pes.trackID}
-    let r   = bytes.streamReader(pes.packets)
+    let reader = bytes.streamReader(pes.packets)
     let cnt = 0
-    let pkt
-    let last
-
-    let sync = new Uint8Array(12)
-
-    let missChunk = []
-
+    let first
     while (1) {
-      if (r.atEnd()) { break }
+      if (reader.atEnd()) { break }
+      const bit = reader.readBits(12)
+      if (bit === 0b111111111111) {
 
-      let bit = r.readBit()
-      if (bit === undefined) { break }
-
-      sync[11] = sync[10]
-      sync[10] = sync[9]
-      sync[9] = sync[8]
-      sync[8] = sync[7]
-      sync[7] = sync[6]
-      sync[6] = sync[5]
-      sync[5] = sync[4]
-      sync[4] = sync[3]
-      sync[3] = sync[2]
-      sync[2] = sync[1]
-      sync[1] = sync[0]
-      sync[0] = bit
-
-      if (bytes.equal(sync, [1,1,1,1,1,1,1,1,1,1,1,1])) {
-        r.rewind(12)
-        sync = new Uint8Array(12)
-        pkt  = new ADTS(r)
-        let pes = r.currentPacket()
+        reader.rewind(12)
+        let adts  = new ADTS(reader)
+        const pes = reader.currentPacket()
         if (pes === undefined) { continue }
-        if (pes) { pkt.packet = pes.header }
+        if (pes) { adts.packet = pes.header }
 
-        last = result.units.slice(-1)[0]
-        if (last) {
-          if (pkt.header.samplingFreq === last.header.samplingFreq) {
-            pkt.readInPacket(r)
-            pkt.id = cnt++
-            result.units.push(pkt)
+        if (first) {
+          if (first.header.samplingRate === adts.header.samplingRate) {
+            adts.id = cnt++
+            result.units.push(adts)
           } else {
-            // r.rewind(12)
-            // console.log('bad packet', pkt.header);
+            reader.rewind(adts.packetLength)
           }
+
         } else {
-          pkt.readInPacket(r)
-          pkt.id = cnt ++
-          result.units.push(pkt)
+          first = adts
+          adts.id = cnt++
+          result.units.push(adts)
         }
+
+      } else {
+        reader.rewind(11)
       }
     }
 
@@ -101,7 +84,10 @@ class ADTS {
       this.header.crc = bitReader.readBits(16)
     }
 
-    this.payload        = []
+    this.payload = []
+    while (!this.isFull) {
+      this.payload.push(bitReader.readBits(8))
+    }
 
   }
 
@@ -110,17 +96,16 @@ class ADTS {
   }
 
   get packetLength() {
-    return ((this.header.frameLength) * (this.header.numberOfFramesMinusOne+1)) - (this.headerSize)
+    let frameLength = (this.header.frameLength) * (this.header.numberOfFramesMinusOne + 1)
+    frameLength -= this.headerSize
+    return frameLength
   }
 
-  readInPacket(reader) {
-    let cnt = 0
-    while (cnt < this.packetLength) {
-      let bits = reader.readBits(8)
-      if (bits === undefined) { break }
-      this.payload.push(bits)
-      cnt += 1
+  get isFull() {
+    if (this.payload.length < this.packetLength) {
+      return false
     }
+    return true
   }
 
   get length() {
