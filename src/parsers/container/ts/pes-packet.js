@@ -153,9 +153,8 @@ export class PESPacket {
   get isFull() {
     if (this.header.packetLength) {
       let lng = this.header.packetLength
-      lng -= 3
+      lng -= 3 // There are 24 bits between the packet length and the pes header length
       lng -= this.header.pesHeaderDataLength
-      // if (lng < 0) { return true }
 
       if (this.data.length === lng) {
         return true
@@ -172,7 +171,7 @@ const buildTimestamp = (low, mid, high) => {
   let ts = 0
   ts = (ts << 3) | low
   ts = (ts << 15) | mid
-  ts = (ts << 15) | high// >>> 0
+  ts = (ts << 15) | high
   ts = ts >>> 0
   return ts
 }
