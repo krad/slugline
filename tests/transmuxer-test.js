@@ -87,13 +87,13 @@ test('that we can do exponential golomb encoding/decoding', t=> {
   t.end()
 })
 
-test.skip('that we can parse a sps', t=> {
+test('that we can parse a sps', t=> {
 
   const buffer = Uint8Array.from(assetA)
   let ts       = TransportStream.parse(buffer)
 
-  t.ok(ts.tracksConfig[0].parsedSPS, 'elementary stream had a parsed sps')
-  const sps = ts.tracksConfig[0].parsedSPS
+  t.ok(ts.tracks[0].spsParsed, 'elementary stream had a parsed sps')
+  const sps = ts.tracks[0].spsParsed
 
   t.equals(77, sps.profileIDC,                 'got profileIDC')
   t.equals(0, sps.constraint_set0_flag,        'got constraint_set0_flag')
@@ -254,7 +254,7 @@ test.skip('that we can create an init segment from a ts file', t=> {
   t.end()
 })
 
-test.skip('that we can build a structure than can be used to arrange mp4 atoms', t => {
+test('that we can build a structure than can be used to arrange mp4 atoms', t => {
   const bufferA = Uint8Array.from(assetA)
   let ts        = TransportStream.parse(bufferA)
 

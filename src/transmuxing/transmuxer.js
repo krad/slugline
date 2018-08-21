@@ -45,8 +45,6 @@ class Transmuxer {
 
     let first = videoConfig.samples[0]
     let last  = videoConfig.samples.slice(-1)[0]
-    // console.log(first.packet.pts)
-    // console.log(this.audioTrack.units[0].packet.pts)
 
     let audioSamplesForChunk = []
     this.audioTrack.units.forEach(sample => {
@@ -55,7 +53,7 @@ class Transmuxer {
       }
     })
 
-    console.log(audioSamplesForChunk.map(s => [s.id, s.packet.pts, s.payload.length]));
+    // console.log(audioSamplesForChunk.map(s => [s.id, s.packet.pts, s.payload.length]));
 
     let audioConfig     = Object.assign({}, this.audioTrack)
     if (audioSamplesForChunk.length > 0) {

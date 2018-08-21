@@ -12,7 +12,7 @@ import * as bytes from '../src/helpers/byte-helpers'
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
 // const tsB = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
 
-test.skip('we can parse ts files', t=> {
+test('we can parse ts files', t=> {
 
   let byteArray = new Uint8Array(ts)
   const stream = TransportStream.parse(byteArray)
@@ -36,20 +36,20 @@ test.skip('we can parse ts files', t=> {
   t.ok(pat.crc,                               'crc was present')
 
   const pmt = stream.packets[1]
-  t.equals('PMT', pmt.constructor.name, 'Got a program map table')
-  t.equals(257,   pmt.pcrPID,           'clock pid was present')
-  t.ok(pmt.tracks,                      'tracks were present')
-  t.equals(2, pmt.tableID,              'table id was correct')
-  t.equals(1, pmt.sectionSyntaxIndicator, 'section syntax indicator was correct')
+  t.equals('PMT', pmt.constructor.name,   'Got a program map table')
+  t.ok(pmt.programs,                      'programs were present')
+  t.equals(1, pmt.programs.length,        'got correct number of programs')
+  t.equals(257,   pmt.programs[0].pcrPID, 'clock pid was present')
 
-  // console.log(pmt);
+  t.ok(pmt.programs[0].tracks, 'tracks were present')
+  t.equals(2, pmt.programs[0].tracks.length, 'correct amount of tracks present')
 
-  const trackA = pmt.tracks[0]
+  const trackA = pmt.programs[0].tracks[0]
   t.ok(trackA, 'track present')
   t.equals(27, trackA.streamType,     'marked as a video track')
   t.equals(257, trackA.elementaryPID, 'es pid present')
 
-  const trackB = pmt.tracks[1]
+  const trackB = pmt.programs[0].tracks[1]
   t.ok(trackB, 'track present')
   t.equals(15, trackB.streamType,       'marked as an audio track')
   t.equals(258, trackB.elementaryPID,   'es pid present')
