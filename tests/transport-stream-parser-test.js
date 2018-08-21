@@ -61,56 +61,6 @@ test('we can parse ts files', t=> {
   t.end()
 })
 
-test.skip('building an elementary stream out of a bunch of packets', t=> {
-
-  let byteArray = new Uint8Array(ts)
-  const stream  = TransportStream.parse(byteArray)
-  t.equals(stream.packets.length, 1551, 'got correct amount of packets')
-
-  let elementaryStream = ElementaryStream.parse(stream, 27)
-  t.ok(elementaryStream, 'got an elementary stream back')
-  t.equals(elementaryStream.chunks.length, 1499, 'got correct amount of video chunks')
-
-  t.equals(elementaryStream.chunks[2].nalu[0] & 0x1f, 7, 'got a SPS nalu')
-  t.equals(elementaryStream.chunks[3].nalu[0] & 0x1f, 8, 'got a PPS nalu')
-  t.equals(elementaryStream.chunks[4].nalu[0] & 0x1f, 6, 'got a SEI nalu')
-  t.equals(elementaryStream.chunks[7].nalu[0] & 0x1f, 5, 'got a IDR nalu')
-
-  t.end()
-})
-
-test.skip('parsing config from a transport stream', t=> {
-  let byteArray = new Uint8Array(ts)
-  const trs      = TransportStream.parse(byteArray)
-
-  t.ok(trs,      'got a transportStream')
-  t.ok(trs.PMT,  'transport stream had a program map table')
-  t.equals('PMT', trs.PMT.constructor.name, 'was a PMT object')
-
-  t.ok(trs.tracks,                       'transport stream had tracks')
-  t.equals(2, trs.tracks.length,         'transport stream had two tracks')
-  t.equals(27, trs.tracks[0].streamType, 'first track was a video track')
-  t.equals(15, trs.tracks[1].streamType, 'second track was an audio track')
-
-  const config = trs.tracksConfig
-  t.ok(config, 'got a config for using with a tree builder')
-  t.equals(config.length, 2, 'got right amount of tracks per config')
-  t.equals(1, config[0].id, 'got the right track id')
-  t.equals(27, config[0].type, 'got the correct track type')
-  t.equals(2, config[0].codec.length, 'got correct codec info')
-  t.ok(config[0].sps, 'video track had a parsed sps')
-  t.equals(config[0].sps.width, 400, 'had the correct width in the sps')
-  t.equals(config[0].sps.height, 300, 'had the correct height in the sps')
-
-
-  t.equals(2,    config[1].id,  'got the right track id')
-  t.equals(15, config[1].type,  'got the correct track type')
-  t.equals('ADTS', config[1].codec.constructor.name, 'got the correct type of codec thingie for the audio track')
-  console.log(config);
-
-  t.end()
-})
-
 test('that we can parse timestamps from pcr info', t=> {
 
   let byteArray = new Uint8Array(ts)

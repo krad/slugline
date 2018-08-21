@@ -103,7 +103,7 @@ class Transmuxer {
 
   buildInitializationSegment(moof) {
     let result = []
-    console.log(moof);
+    // console.log(moof);
     result.push(atoms.ftyp())
     result.push(atoms.moov(moof))
     result = result.map(a => atoms.build(a))
