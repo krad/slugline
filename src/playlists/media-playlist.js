@@ -2,6 +2,7 @@ import Playlist from './base-playlist'
 import { configureMediaPlaylist } from '../parsers/playlist/playlist-parser'
 import TransportStream from '../parsers/container/ts/transport-stream'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
+import Transmuxer from '../transmuxing/transmuxer'
 
 /**
  * A Media Playlist contains a list of Media Segments, which when played

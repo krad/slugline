@@ -489,7 +489,6 @@ export const traf = (config) => {
 export const tfhd = (config) => {
   let result = [bytes.strToUint8('tfhd')]
 
-
   const defaultBaseIsMOOF                = 0x20000
   const baseDataOffsetPresent            = 0x000001
   const sampleDescriptionIndexPresent    = 0x000002  // sample-description-index-present
@@ -501,9 +500,9 @@ export const tfhd = (config) => {
   let flags
   if (config.streamType === 27) {
     if (config.bFramesPresent) {
-      flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleFlagsPresent|defaultSampleSizePresent
+      flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent
     } else {
-      flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleFlagsPresent|defaultSampleSizePresent|defaultSampleDurationPresent
+      flags = defaultBaseIsMOOF|sampleDescriptionIndexPresent|defaultSampleSizePresent|defaultSampleDurationPresent
     }
   }
 
@@ -529,14 +528,13 @@ export const tfhd = (config) => {
       result.push(bytes.u32(firstSample.duration))  // default sample duration
     }
       result.push(bytes.u32(firstSample.length))    // default sample size
-      result.push(bytes.u32(0x2000000))             // default sample flags
+      // result.push(bytes.u32(0x2000000))             // default sample flags
   }
 
   if (config.streamType === 15) {
     if (firstSample) {
       result.push(bytes.u32(firstSample.duration)) // default sample duration
       result.push(bytes.u32(firstSample.length))   // default sample size
-      // result.push(bytes.u32(0x1000000))             // default sample flags
     } else {
       result.push(bytes.u32(0))
       result.push(bytes.u32(0))
@@ -576,12 +574,7 @@ const videoTRUN = (config) => {
   const sampleFlagsPresent                  = 0x000400
   const sampleCompositionTimeOffsetsPresent = 0x000800
 
-  let flags
-  if (config.bFramesPresent) {
-    flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent|sampleCompositionTimeOffsetsPresent
-  } else {
-    flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent
-  }
+  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent
 
   let result = [
     bytes.strToUint8('trun'),
@@ -593,17 +586,11 @@ const videoTRUN = (config) => {
 
   let c = 0
   payload.forEach(g => {
-    // if (!config.bFramesPresent) {
-      result.push(bytes.u32(g.duration))     // duration
-    // }
+    result.push(bytes.u32(g.duration))     // duration
     result.push(bytes.u32(g.length))       // size
 
     if (g.isKeyFrame) { result.push(bytes.u32(0x2000000)) }
-    else { result.push(bytes.u32(0x1010000)) }
-
-    if (config.bFramesPresent) {
-      result.push(bytes.u32((g.pts - g.dts)))     // sample composition offset
-    }
+    else { result.push(bytes.u32(0x1000000)) }
   })
 
   return result

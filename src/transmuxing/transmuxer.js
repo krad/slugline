@@ -2,6 +2,7 @@ import * as atoms from './atoms'
 import * as bytes from '../helpers/byte-helpers'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
 import { keyframeIterator } from '../parsers/container/ts/access-unit'
+import { durationIterator } from '../parsers/container/ts/adts'
 
 class Transmuxer {
 
@@ -10,18 +11,20 @@ class Transmuxer {
     this.currentMediaSequence = 1
     this.videoDecode          = 0
     this.audioDecode          = 0
+    this.lastKeyFrame         = undefined
   }
 
   setCurrentStream(ts) {
     this.currentStream = ts
     this.streamTypes   = ts.tracks.map(track => track.streamType)
     if (this.hasVideo) {
-      this.videoTrack = this.currentStream.tracks.filter(track => track.streamType === 27)[0]
+      this.videoTrack    = this.currentStream.tracks.filter(track => track.streamType === 27)[0]
       this.videoIterator = keyframeIterator(this.videoTrack.units)
     }
 
     if (this.hasAudio) {
-      this.audioTrack = this.currentStream.tracks.filter(track => track.streamType === 15)[0]
+      this.audioTrack    = this.currentStream.tracks.filter(track => track.streamType === 15)[0]
+      this.audioIterator = durationIterator(this.audioTrack.units)
     }
   }
 
@@ -40,6 +43,17 @@ class Transmuxer {
     delete videoConfig.units
     const videoSamples = this.videoIterator.next()
     if (videoSamples === undefined) { return undefined }
+
+    /// Fake keyframe
+    // if (videoSamples[0].isKeyFrame) {
+    //   this.lastKeyFrame = videoSamples[0]
+    // } else {
+    //   if (this.lastKeyFrame) {
+    //     this.lastKeyFrame.duration = 0
+    //     videoSamples.unshift(this.lastKeyFrame)
+    //   }
+    // }
+
     videoConfig.samples = videoSamples
     result.tracks.push(videoConfig)
 
@@ -47,13 +61,7 @@ class Transmuxer {
     let last  = videoConfig.samples.slice(-1)[0]
 
     let audioSamplesForChunk = []
-    this.audioTrack.units.forEach(sample => {
-      if (sample.packet.pts >= first.packet.pts && sample.packet.pts <= last.packet.pts) {
-        audioSamplesForChunk.push(sample)
-      }
-    })
-
-    // console.log(audioSamplesForChunk.map(s => [s.id, s.packet.pts, s.payload.length]));
+    audioSamplesForChunk = this.audioIterator.next(last.packet.pts)
 
     let audioConfig     = Object.assign({}, this.audioTrack)
     if (audioSamplesForChunk.length > 0) {
@@ -75,9 +83,16 @@ class Transmuxer {
     let y = atoms.build(x)
     this.currentOffset = y.length + (8)
 
+    // videoConfig.samples.forEach(au => {
+    //   console.log(result.currentMediaSequence, au.duration, au.nalus.map(n => n.nal_unit_type))
+    // })
+    // console.log(this.videoDecode, result.currentMediaSequence);
+
     result.tracks[0].offset = this.currentOffset
     result.tracks[0].decode = this.videoDecode
     this.videoDecode += videoConfig.samples.reduce((a, c) => a + c.duration, 0)
+
+    // console.log(this.videoDecode);
 
     if (audioSamplesForChunk.length > 0) {
       // bump the offset so the audio track knows where to start
@@ -92,8 +107,10 @@ class Transmuxer {
 
   build() {
     let result = []
+    this.currentMediaSequence--
     while(1) {
       let moof = this.nextMoof()
+      // console.log(moof);
       if (moof === undefined) { break }
       result.push(moof)
     }
@@ -103,7 +120,6 @@ class Transmuxer {
 
   buildInitializationSegment(moof) {
     let result = []
-    // console.log(moof);
     result.push(atoms.ftyp())
     result.push(atoms.moov(moof))
     result = result.map(a => atoms.build(a))
@@ -114,17 +130,12 @@ class Transmuxer {
     let result = []
 
     moofs.forEach(moof => {
-      // console.log(moof.tracks[0].samples);
       result.push(atoms.moof(moof))
       result.push(atoms.mdat(moof))
     })
     result = result.map(a => atoms.build(a))
     return bytes.concatenate(Uint8Array, ...result)
   }
-
-}
-
-const parseAudioTrack = (audioTrack) => {
 
 }
 

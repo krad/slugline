@@ -47,7 +47,7 @@ class AccessUnit {
 
     }
 
-    result.units.push(accessUnit)
+    // result.units.push(accessUnit)
 
     if (result.bFramesPresent) {
         let lastAccessUnit
@@ -62,8 +62,10 @@ class AccessUnit {
 
           au.dt = dt
           dt += au.dts
+
         })
-        lastAccessUnit.duration  = result.units.slice(-1)[0].duration
+        lastAccessUnit.duration = 0
+        // lastAccessUnit.duration  = result.units.slice(-2)[0].duration
         result.units.sort((a, b) => a.id - b.id)
     }
 

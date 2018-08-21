@@ -15,8 +15,8 @@ const tsURL2 = './tests/fixtures/apple-basic-ts/gear1/fileSequence1.ts'
 const assetA = fs.readFileSync(tsURL1)
 const assetB = fs.readFileSync(tsURL2)
 
-// const asset2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
-// const asset3 = fs.readFileSync('./tests/fixtures/master_Layer0_01196.ts')
+const asset2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+const asset3 = fs.readFileSync('./tests/fixtures/master_Layer0_01196.ts')
 // const asset4 = fs.readFileSync('./tests/fixtures/media.ts')
 
 const initSegmentOut  = '/tmp/ftyp.mp4'
@@ -277,41 +277,47 @@ test('that we can build a structure than can be used to arrange mp4 atoms', t =>
   t.end()
 })
 
-test.skip('writing a segment', t=> {
-  const bufferA  = Uint8Array.from(assetB)
+test.only('writing a segment', t=> {
+  const bufferA  = Uint8Array.from(assetA)
+  const bufferB  = Uint8Array.from(assetB)
   let tsA        = TransportStream.parse(bufferA)
+  let tsB        = TransportStream.parse(bufferB)
   let es         = ElementaryStream.parse(tsA, 15, 0)
 
-  console.log(es.packets.length);
-  tsA.packets.forEach(p => {
-    console.log(p.header);
-  })
-
-  let dts = ADTS.parse(es)
-  console.log(dts);
-  dts.units.forEach(d => {
-    console.log(d.id);
-    console.log(d.header)
-  })
-
-  console.log(dts);
-  console.log(es.packets.length, dts);
-  es.packets.forEach(p => {
-    // console.log(p.header, p.data.length);
-    // console.log(p.data.slice(0, 15));
-    fs.appendFileSync('/tmp/audio.aac', new Buffer(p.data))
-  })
+  // console.log(es.packets.length);
+  // tsA.packets.forEach(p => {
+  //   //console.log(p.header);
+  // })
+  //
+  // let dts = ADTS.parse(es)
+  // // console.log(dts);
+  // dts.units.forEach(d => {
+  //   // console.log(d.id);
+  //   // console.log(d.header)
+  // })
+  //
+  // // console.log(dts);
+  // // console.log(es.packets.length, dts);
+  // es.packets.forEach(p => {
+  //   // console.log(p.header, p.data.length);
+  //   // console.log(p.data.slice(0, 15));
+  //   fs.appendFileSync('/tmp/audio.aac', new Buffer(p.data))
+  // })
 
   let muxer     = new Transmuxer()
   muxer.setCurrentStream(tsA)
-  let res = muxer.build()
-  console.log(res);
-
+  let res       = muxer.build()
   const init    = muxer.buildInitializationSegment(res[0])
-  const payload = muxer.buildMediaSegment(res)
+  let payload   = muxer.buildMediaSegment(res)
 
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
+
+  muxer.setCurrentStream(tsB)
+  res     = muxer.build()
+  payload = muxer.buildMediaSegment(res)
+  fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
+
   t.end()
 })
 

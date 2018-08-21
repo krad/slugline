@@ -61,13 +61,13 @@ test('we can parse ts files', t=> {
   t.end()
 })
 
-test('that we can parse timestamps from pcr info', t=> {
+test('that we can parse pcr info from video packets', t=> {
 
   let byteArray = new Uint8Array(ts)
   const stream  = TransportStream.parse(byteArray)
 
   let videoPackets = stream.packets.filter(p => p.header.PID === 257).filter(p => p.header.adaptationField !== undefined)
-  videoPackets = videoPackets.filter(p => p.header.adaptationField.pcrBase !== undefined )
+  videoPackets     = videoPackets.filter(p => p.header.adaptationField.pcrBase !== undefined )
 
   ///// Check video packets first
   const packet = videoPackets[0]
@@ -81,12 +81,6 @@ test('that we can parse timestamps from pcr info', t=> {
   t.ok(adaptationField.pcrBase,   'pcrBase was present (video)')
   t.ok(adaptationField.pcrConst,  'pcrConst was present')
   t.ok(adaptationField.pcrExt,    'pcrExt was present')
-
-  let x = videoPackets.reduce((acc, curr) => {
-    return acc + ((curr.header.adaptationField.pcrBase >> 9) / 90000)
-  }, 0)
-
-  console.log(x);
 
   t.end()
 })

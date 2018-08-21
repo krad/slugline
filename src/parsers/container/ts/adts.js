@@ -184,4 +184,22 @@ const channelConfigurations = (config) => {
   }
 }
 
+export const durationIterator = (packets) => {
+  let currentIdx = 0
+
+  return {
+    next: (lastTS) => {
+      let result = []
+      for (var i = currentIdx; i < packets.length; i++) {
+        const p = packets[i]
+        if (p.packet.pts <= lastTS) {
+          result.push(p)
+          currentIdx++
+        }
+      }
+      return result
+    }
+  }
+}
+
 export default ADTS
