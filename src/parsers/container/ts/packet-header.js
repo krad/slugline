@@ -32,6 +32,8 @@ class PacketHeader {
 class AdaptationField {
   constructor(bitReader) {
     this.length                 = bitReader.readBits(8)
+    const afterLength           = bitReader.currentBit()
+
     this.discontinuityIndicator = bitReader.readBit()
     this.randomAccessIndicator  = bitReader.readBit()
     this.esProfileIndicator     = bitReader.readBit()
@@ -54,19 +56,21 @@ class AdaptationField {
     }
 
     if (this.adaptationFieldExtFlag) {
+      console.log('hereee');
       this.adaptionFieldExt = new AdaptationFieldExtension(bitReader)
       this.length += this.adaptionFieldExt.length
     }
 
-    // while (1) {
-    //   if (bitReader.atEnd()) { break }
-    //   const byte = bitReader.readBits(8)
-    //   if (byte === undefined) { break }
-    //   if (byte !== 0xff) {
-    //     bitReader.rewind(8)
-    //     break
-    //   }
-    // }
+    const afterParse = bitReader.currentBit()
+    let    bytesLeft = this.length - ((afterParse/8) - (afterLength/8))
+
+    /// Flush Stuffing
+    if (bytesLeft > 0) {
+      while (bytesLeft !== 0) {
+        bitReader.readBits(8)
+        bytesLeft -= 1
+      }
+    }
 
   }
 }

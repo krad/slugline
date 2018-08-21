@@ -1,7 +1,7 @@
 class Packet {
   constructor(header, bitReader) {
     this.header = header
-    this.data   = bitReader.data.slice(Math.round(bitReader.currentBit()/8))
+    this.data   = bitReader.data.slice(bitReader.currentBit()/8)
     this.length = bitReader.data.length
   }
 }

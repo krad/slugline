@@ -106,6 +106,51 @@ const packetsHaveLength = (packets, delimiter) => {
 const parsePacketsByHeaders = (packets, delimiter) => {
   let results   = []
   let cnt       = 0
+
+  // let itr = bytes.elementaryStreamIterator(packets, [0, 0, 1], true)
+  // let pesPacket
+  // while (1) {
+  //   let next = itr.next()
+  //   if (next) {
+  //
+  //     let reader = new bytes.BitReader(next)
+  //
+  //     if (pesPacket) {
+  //       while (!pesPacket.isFull) {
+  //         if (reader.atEnd()) { break }
+  //         let byte = reader.readBits(8)
+  //         pesPacket.push(byte)
+  //       }
+  //
+  //       console.log(pesPacket.isFull, pesPacket.data.length, pesPacket.header.packetLength);
+  //       if (pesPacket.isFull) {
+  //         results.push(pesPacket)
+  //         pesPacket = undefined
+  //
+  //         if (!reader.atEnd()) {
+  //           console.log('---------------');
+  //         }
+  //       }
+  //
+  //
+  //     } else {
+  //       pesPacket  = new PESPacket(reader, cnt++)
+  //       console.log(pesPacket.isFull, pesPacket.data.length, pesPacket.header.packetLength);
+  //
+  //       if (pesPacket.isFull) {
+  //         results.push(pesPacket)
+  //         pesPacket = undefined
+  //       }
+  //     }
+  //
+  //
+  //   } else {
+  //     if (pesPacket) { results.push(pesPacket) }
+  //
+  //     break
+  //   }
+  // }
+
   let reader    = bytes.streamReader(packets)
   let sync      = new Uint8Array([255, 255, 255])
   while(1) {
@@ -122,8 +167,23 @@ const parsePacketsByHeaders = (packets, delimiter) => {
       if (next === delimiter) {
         reader.rewind(32)
         let pesPacket = new PESPacket(reader, cnt++)
+
+        // console.log(pesPacket.header.packetLength, pesPacket.header.pesHeaderDataLength, pesPacket.data.length);
+
         results.push(pesPacket)
       } else {
+        // console.log(next,
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        //   reader.readBits(8),
+        // );
         reader.rewind(8)
       }
     }

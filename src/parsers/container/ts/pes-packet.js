@@ -107,7 +107,7 @@ export class PESPacket {
       reader.readBit()
       this.header.packetSeqCounter = reader.readBits(7)
       reader.readBit()
-      this.header.mpegIdent = reader.readBit()
+      this.header.mpegIdent      = reader.readBit()
       this.header.stuffingLength = reader.readBit(6)
     }
 
@@ -126,27 +126,12 @@ export class PESPacket {
     const bitAfterHeaderParsing = reader.currentBit()
     const parsedBytes = ((bitAfterHeaderParsing - bitAfterHeaderLengthCheck) / 8)
     if (parsedBytes !== this.header.pesHeaderDataLength) {
-      this.failed = true
       console.log('!!!! Failed to parse full PES packet. !!!!')
       console.log(this)
       console.log('parsed bytes:', parsedBytes)
       console.log('parsed header length:', this.header.pesHeaderDataLength)
       console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
     }
-
-    // this.stuffingLength = 0
-    // while (1) {
-    //   if (reader.atEnd()) { break }
-    //   if (this.isFull) { break }
-    //   let byte = reader.readBits(8)
-    //   if (byte === undefined) { break }
-    //   if (byte === 0xff) {
-    //     this.stuffingLength += 1
-    //   } else {
-    //     reader.rewind(8)
-    //     break
-    //   }
-    // }
 
     while (1) {
       if (reader.atEnd()) { break }
@@ -168,12 +153,14 @@ export class PESPacket {
   get isFull() {
     if (this.header.packetLength) {
       let lng = this.header.packetLength
-      lng -= this.header.pesHeaderDataLength
       lng -= 3
-      if (this.data.length < lng) {
-        return false
-      } else {
+      lng -= this.header.pesHeaderDataLength
+      // if (lng < 0) { return true }
+
+      if (this.data.length === lng) {
         return true
+      } else {
+        return false
       }
     }
     return false
