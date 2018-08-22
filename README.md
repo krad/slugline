@@ -21,8 +21,7 @@ It can be used in node.js and in the browser.
       * ✅ PAT  
       * ✅ PMT
       * ✅ Elementary Streams
-    * ❎ FLV
-  * ❎ Transmuxing transport streams to fragmented mp4
+  * ✅ Transmuxing transport streams to fragmented mp4
   * ✅ Periodic fetching of event & live playlists
   * ❎ Range Requests
 
