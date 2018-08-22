@@ -26,6 +26,7 @@ class TransportStreamParser {
       if (pmt.programs.length <= 0) { throw 'Program Map Table had no programs listed' }
       this.tracks     = pmt.programs[0].tracks
       this.trackPIDs  = this.tracks.map(t => t.elementaryPID)
+      // console.log(pmt.programs[0].tracks);
       return pmt
     } else if (this.trackPIDs.includes(header.PID)) {
       const track       = this.tracks.filter(t => t.elementaryPID === header.PID)[0]

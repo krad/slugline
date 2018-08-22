@@ -10,6 +10,7 @@ class TransportStream {
     let parser     = new TransportStreamParser()
     let stream     = new TransportStream()
     let packetSize = detectPacketSize(arrayBuffer.slice(0, 205))
+
     for (var i = 0; i < arrayBuffer.length; i+= packetSize) {
       let packet = parser.parse(arrayBuffer.slice(i, (i+packetSize)))
       if (packet) { stream.packets.push(packet) }
@@ -22,7 +23,7 @@ class TransportStream {
   }
 
   get codecs() {
-    return this.trackPackets.map(p => p.codec)
+    return this.trackPackets.filter(t => t.streamType === 27 || t.streamType === 15 ).map(p => p.codec)
   }
 
   get codecsString() {

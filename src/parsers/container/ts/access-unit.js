@@ -65,8 +65,8 @@ class AccessUnit {
           dt += au.dts
 
         })
-        lastAccessUnit.duration = 0
-        // lastAccessUnit.duration  = result.units.slice(-2)[0].duration
+        // lastAccessUnit.duration = 0
+        lastAccessUnit.duration  = result.units.slice(-2)[0].duration
         result.units.sort((a, b) => a.id - b.id)
     }
 

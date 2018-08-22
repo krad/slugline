@@ -290,7 +290,7 @@ test('that we can build a structure than can be used to arrange mp4 atoms', t =>
   t.end()
 })
 
-test.only('writing a segment', t=> {
+test.skip('writing a segment', t=> {
   const bufferA  = Uint8Array.from(assetA)
   // const bufferB  = Uint8Array.from(assetB)
   let tsA        = TransportStream.parse(bufferA)

@@ -26,6 +26,7 @@ class MediaPlaylist extends Playlist {
     super(playlistStruct, body)
     this._ended   = false
     this.segments = []
+    // console.log(playlistStruct);
     configureMediaPlaylist(this, playlistStruct)
   }
 

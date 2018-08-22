@@ -10,7 +10,7 @@ import * as bytes from '../src/helpers/byte-helpers'
 
 
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
-// const tsB = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+const tsB = fs.readFileSync('./tests/fixtures/segment.ts')
 
 test('we can parse ts files', t=> {
 
@@ -100,6 +100,18 @@ test('that we can parse a rbsp (stripping emulating bytes)', t=> {
   t.deepEquals(expected, result, 'correctly stripped the rbsp')
 
   console.log(bytes.parseSPS(result));
+
+  t.end()
+})
+
+test.only('parsing weird stream', t=> {
+  const buffer = Uint8Array.from(tsB)
+  let transportStream = TransportStream.parse(buffer)
+
+  const codecs       = transportStream.codecs
+  t.deepEquals(['avc1.4D001F', 'mp4a.40.2'], codecs, 'codec info was correct')
+  const codecsString = transportStream.codecsString
+  t.equals('video/mp4; codecs="avc1.4D001F,mp4a.40.2"', transportStream.codecsString, 'codec string was correct')
 
   t.end()
 })

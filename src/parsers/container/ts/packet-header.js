@@ -48,6 +48,7 @@ class AdaptationField {
       this.pcrConst = bitReader.readBits(6)
       this.pcrExt   = bitReader.readBits(9)
     }
+
     if (this.opcrFlag) { this.opcr = bitReader.readBit(48) }
     if (this.splicingPointFlag) { this.spliceCountdown = bitReader.readBits(8) }
     if (this.transportPrivateFlag) {
@@ -65,7 +66,7 @@ class AdaptationField {
 
     /// Flush Stuffing
     if (bytesLeft > 0) {
-      while (bytesLeft !== 0) {
+      while (bytesLeft > 0) {
         bitReader.readBits(8)
         bytesLeft -= 1
       }
