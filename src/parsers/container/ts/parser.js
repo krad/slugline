@@ -6,8 +6,9 @@ import { MediaPacket } from './packet'
 
 class TransportStreamParser {
   constructor() {
-    this.PAT    = undefined
-    this.PMT_ID = undefined
+    this.PAT          = undefined
+    this.PMT_ID       = undefined
+    this.trackPIDs    = []
   }
 
   parse(arrayBuffer) {
@@ -20,23 +21,20 @@ class TransportStreamParser {
       const pat   = new PAT(header, bitReader)
       this.pmtPID  = pat.pmtID
       return pat
-    }
-
-    // Header matches the pmtPID we got from the PAT
-    if (header.PID === this.pmtPID) {
+    } else if (header.PID === this.pmtPID) {
       const pmt       = new PMT(header, bitReader)
-      this.tracks     = pmt.tracks
-      this.trackPIDs  = pmt.tracks.map(t => t.elementaryPID)
+      if (pmt.programs.length <= 0) { throw 'Program Map Table had no programs listed' }
+      this.tracks     = pmt.programs[0].tracks
+      this.trackPIDs  = this.tracks.map(t => t.elementaryPID)
+      // console.log(pmt.programs[0].tracks);
       return pmt
-    }
-
-    // Check if the pid matches any of the pids from the tracks we parsed from the PMT
-    if (this.trackPIDs.includes(header.PID)) {
+    } else if (this.trackPIDs.includes(header.PID)) {
       const track       = this.tracks.filter(t => t.elementaryPID === header.PID)[0]
       const mediaPacket = new MediaPacket(header, bitReader, track.streamType)
       return mediaPacket
+    } else {
+      console.log('!!! ERROR PARSING PROGRAM PACKETS !!!');
     }
-
   }
 }
 

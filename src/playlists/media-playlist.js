@@ -2,6 +2,7 @@ import Playlist from './base-playlist'
 import { configureMediaPlaylist } from '../parsers/playlist/playlist-parser'
 import TransportStream from '../parsers/container/ts/transport-stream'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
+import Transmuxer from '../transmuxing/transmuxer'
 
 /**
  * A Media Playlist contains a list of Media Segments, which when played
@@ -25,6 +26,7 @@ class MediaPlaylist extends Playlist {
     super(playlistStruct, body)
     this._ended   = false
     this.segments = []
+    // console.log(playlistStruct);
     configureMediaPlaylist(this, playlistStruct)
   }
 
@@ -137,10 +139,11 @@ class MediaPlaylist extends Playlist {
    * fetchSequentially - Fetch segments in the playlist one at a time
    *
    * @param  {Function} onNext     Callback executed before each fetch
+   * @params {Function} onComplete Callback executed after each successful fetch
    * @param  {Function} onProgress Callback executed as a segment downloads
    * @return {Promise<Playlist>}   Returns a promise the fulfills with the mutated playlist
    */
-  fetchSequentially(onNext, onProgress) {
+  fetchSequentially(onNext, onComplete, onProgress) {
     return new Promise((resolve, reject) => {
 
       const fetch = (idx) => {
@@ -151,7 +154,10 @@ class MediaPlaylist extends Playlist {
         const segment = this.segments[idx]
         if (segment) {
           onNext(segment)
-          segment.fetch(progressWrapper).then(res => fetch(idx+1)).catch(err => reject(err))
+          segment.fetch(progressWrapper).then(res => {
+            onComplete(res)
+            fetch(idx+1)
+          }).catch(err => reject(err))
         } else {
           resolve(this)
         }
@@ -220,13 +226,11 @@ class MediaPlaylist extends Playlist {
         firstSegment.fetch().then(s => {
           this.segmentsType   = 'ts'
           const ts            = TransportStream.parse(s)
-          const pmt           = ts.packets.filter(p => p.constructor.name == 'PMT')[0]
-          const trackPackets = pmt.tracks.map(t => {
-            return ElementaryStream.parse(ts, t.streamType)
-          })
-
-          resolve(trackPackets.map(tp => tp.codec))
+          this.codecs         = ts.trackPackets.map(tp => tp.codec)
+          this.codecsString   = ts.codecsString
+          resolve(this.codecs)
         }).catch(err => {
+          console.log('failed to fetch first segment', err);
           reject(err)
         })
 

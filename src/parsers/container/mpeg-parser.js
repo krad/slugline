@@ -104,7 +104,7 @@ const parseCodecs = (tree) => {
   return result
 }
 
-const createCodecsString = (codecs) => {
+export const createCodecsString = (codecs) => {
   return 'video/mp4; codecs="' + codecs.join(',') + '"'
 }
 

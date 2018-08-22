@@ -1,11 +1,16 @@
 const test  = require('tape')
 const fs    = require('fs')
 import TransportStream from '../src/parsers/container/ts/transport-stream'
+import TransportStreamParser from '../src/parsers/container/ts/parser'
 import ElementaryStream from '../src/parsers/container/ts/elementary-stream'
+import PESPacket from '../src/parsers/container/ts/pes-packet'
+import { buildRBSP } from '../src/parsers/container/ts/nalu'
 import base64ArrayBuffer from '../src/parsers/container/ts/base64'
+import * as bytes from '../src/helpers/byte-helpers'
 
-// const ts = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
+// const tsB = fs.readFileSync('./tests/fixtures/segment.ts')
 
 test('we can parse ts files', t=> {
 
@@ -31,20 +36,20 @@ test('we can parse ts files', t=> {
   t.ok(pat.crc,                               'crc was present')
 
   const pmt = stream.packets[1]
-  t.equals('PMT', pmt.constructor.name, 'Got a program map table')
-  t.equals(257,   pmt.pcrPID,           'clock pid was present')
-  t.ok(pmt.tracks,                      'tracks were present')
-  t.equals(2, pmt.tableID,              'table id was correct')
-  t.equals(1, pmt.sectionSyntaxIndicator, 'section syntax indicator was correct')
+  t.equals('PMT', pmt.constructor.name,   'Got a program map table')
+  t.ok(pmt.programs,                      'programs were present')
+  t.equals(1, pmt.programs.length,        'got correct number of programs')
+  t.equals(257,   pmt.programs[0].pcrPID, 'clock pid was present')
 
-  // console.log(pmt);
+  t.ok(pmt.programs[0].tracks, 'tracks were present')
+  t.equals(2, pmt.programs[0].tracks.length, 'correct amount of tracks present')
 
-  const trackA = pmt.tracks[0]
+  const trackA = pmt.programs[0].tracks[0]
   t.ok(trackA, 'track present')
   t.equals(27, trackA.streamType,     'marked as a video track')
   t.equals(257, trackA.elementaryPID, 'es pid present')
 
-  const trackB = pmt.tracks[1]
+  const trackB = pmt.programs[0].tracks[1]
   t.ok(trackB, 'track present')
   t.equals(15, trackB.streamType,       'marked as an audio track')
   t.equals(258, trackB.elementaryPID,   'es pid present')
@@ -56,45 +61,13 @@ test('we can parse ts files', t=> {
   t.end()
 })
 
-test('building an elementary stream out of a bunch of packets', t=> {
-
-  let byteArray = new Uint8Array(ts)
-  const stream  = TransportStream.parse(byteArray)
-  t.equals(stream.packets.length, 1551, 'got correct amount of packets')
-
-  let elementaryStream = ElementaryStream.parse(stream, 27)
-  t.ok(elementaryStream, 'got an elementary stream back')
-  t.equals(elementaryStream.chunks.length, 1499, 'got correct amount of video chunks')
-
-  t.equals(elementaryStream.chunks[2].nalu[0] & 0x1f, 7, 'got a SPS nalu')
-  t.equals(elementaryStream.chunks[3].nalu[0] & 0x1f, 8, 'got a PPS nalu')
-  t.equals(elementaryStream.chunks[4].nalu[0] & 0x1f, 6, 'got a SEI nalu')
-  t.equals(elementaryStream.chunks[7].nalu[0] & 0x1f, 5, 'got a IDR nalu')
-
-  t.end()
-})
-
-test('parsing audio packets from a transport stream', t=> {
-  let byteArray = new Uint8Array(ts)
-  const stream  = TransportStream.parse(byteArray)
-
-  let es = ElementaryStream.parse(stream, 15)
-  t.ok(es, 'got an elementary stream')
-  t.equals(es.chunks.length, 161, 'got correct amount of audio chunks')
-
-  let sampleFreq = unique(es.chunks.map(c => c.samplingFreq))
-  t.equals(sampleFreq.length, 1, 'all chunks had the same sampling frequency')
-
-  t.end()
-})
-
-test('that we can parse timestamps from pcr info', t=> {
+test('that we can parse pcr info from video packets', t=> {
 
   let byteArray = new Uint8Array(ts)
   const stream  = TransportStream.parse(byteArray)
 
   let videoPackets = stream.packets.filter(p => p.header.PID === 257).filter(p => p.header.adaptationField !== undefined)
-  videoPackets = videoPackets.filter(p => p.header.adaptationField.pcrBase !== undefined )
+  videoPackets     = videoPackets.filter(p => p.header.adaptationField.pcrBase !== undefined )
 
   ///// Check video packets first
   const packet = videoPackets[0]
@@ -109,11 +82,91 @@ test('that we can parse timestamps from pcr info', t=> {
   t.ok(adaptationField.pcrConst,  'pcrConst was present')
   t.ok(adaptationField.pcrExt,    'pcrExt was present')
 
-  let x = videoPackets.reduce((acc, curr) => {
-    return acc + ((curr.header.adaptationField.pcrBase >> 9) / 90000)
-  }, 0)
+  t.end()
+})
 
-  console.log(x);
+test('that we can parse a rbsp (stripping emulating bytes)', t=> {
+
+  const sps = [103, 66, 192, 30, 182, 129, 161, 255, 147, 1, 16,
+                 0,  0, 3,
+                 0, 16, 0, 0, 3,
+                 3, 206, 40, 0, 117, 48, 3, 169, 230, 162, 0, 248, 177, 117, 0 ]
+
+  let result = buildRBSP(sps)
+
+  let expected = [103, 66, 192, 30, 182, 129, 161, 255, 147,
+                  1, 16, 0, 0, 0, 16, 0, 0, 3, 206, 40, 0, 117, 48, 3, 169, 230, 162, 0, 248, 177, 117, 0]
+
+  t.deepEquals(expected, result, 'correctly stripped the rbsp')
+
+  console.log(bytes.parseSPS(result));
+
+  t.end()
+})
+
+test.skip('parsing weird stream', t=> {
+  const buffer = Uint8Array.from(tsB)
+  let transportStream = TransportStream.parse(buffer)
+
+  const codecs       = transportStream.codecs
+  t.deepEquals(['avc1.4D001F', 'mp4a.40.2'], codecs, 'codec info was correct')
+  const codecsString = transportStream.codecsString
+  t.equals('video/mp4; codecs="avc1.4D001F,mp4a.40.2"', transportStream.codecsString, 'codec string was correct')
+
+  t.end()
+})
+
+test.skip('that we can parse a stream correctly', t=> {
+
+  const bufferA       = Uint8Array.from(ts)
+  let transportStream = TransportStream.parse(bufferA)
+  const pmt           = transportStream.packets.filter(p => p.constructor.name === 'PMT')[0]
+  const track         = pmt.tracks.filter(t => t.streamType === 27)[0]
+  const streamPackets = transportStream.packets.filter(p => p.header.PID === track.elementaryPID)
+
+
+  let itr = bytes.elementaryStreamIterator(streamPackets, [0, 0, 1, 0xe0], true)
+  let cnt = 0
+  let pkts = []
+  while(1) {
+    let next = itr.next()
+    if (next) {
+
+      let b = new bytes.BitReader(next.slice(4))
+      let p = new PESPacket(0xe0, b, cnt)
+      pkts.push(p)
+      cnt += 1
+
+    } else {
+      break
+    }
+  }
+
+  itr = bytes.elementaryStreamIterator(pkts, [0, 0, 1])
+  console.log(itr.next().slice(0, 10).map(n => n.toString(16)))
+  let sps = itr.next()
+  let pps = itr.next()
+  let a = itr.next()
+  let b = itr.next()
+  let c = itr.next()
+  let idr = itr.next()
+  let idr2 = itr.next()
+
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(sps))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(pps))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(a))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(b))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(c))
+
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(idr))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer([0, 0, 0, 1]))
+  fs.appendFileSync('/tmp/sss.h264', new Buffer(idr2))
 
   t.end()
 })

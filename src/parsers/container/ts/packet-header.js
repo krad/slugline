@@ -20,6 +20,7 @@ class PacketHeader {
       case 0b10:
       case 0b11:
         this.adaptationField = new AdaptationField(bitReader)
+        this.length += this.adaptationField.length
       case 0b00:
         break
         // console.log('reserved');
@@ -31,6 +32,8 @@ class PacketHeader {
 class AdaptationField {
   constructor(bitReader) {
     this.length                 = bitReader.readBits(8)
+    const afterLength           = bitReader.currentBit()
+
     this.discontinuityIndicator = bitReader.readBit()
     this.randomAccessIndicator  = bitReader.readBit()
     this.esProfileIndicator     = bitReader.readBit()
@@ -45,16 +48,30 @@ class AdaptationField {
       this.pcrConst = bitReader.readBits(6)
       this.pcrExt   = bitReader.readBits(9)
     }
+
     if (this.opcrFlag) { this.opcr = bitReader.readBit(48) }
     if (this.splicingPointFlag) { this.spliceCountdown = bitReader.readBits(8) }
     if (this.transportPrivateFlag) {
-      this.transportPrivateDataLength = this.spliceCountdown = bitReader.readBits(8)
-      this.transportPrivateData = bitReader.readBits(this.transportPrivateDataLength * 8)
+      this.transportPrivateDataLength = bitReader.readBits(8)
+      this.transportPrivateData       = bitReader.readBits(this.transportPrivateDataLength * 8)
     }
 
     if (this.adaptationFieldExtFlag) {
       this.adaptionFieldExt = new AdaptationFieldExtension(bitReader)
+      this.length += this.adaptionFieldExt.length
     }
+
+    const afterParse = bitReader.currentBit()
+    let    bytesLeft = this.length - ((afterParse/8) - (afterLength/8))
+
+    /// Flush Stuffing
+    if (bytesLeft > 0) {
+      while (bytesLeft > 0) {
+        bitReader.readBits(8)
+        bytesLeft -= 1
+      }
+    }
+
   }
 }
 

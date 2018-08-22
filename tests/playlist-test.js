@@ -250,9 +250,10 @@ const sequentialFetchTest = (t) => {
   let progress = []
 
   const onNext = (segment) => fetches.push(segment)
+  const onComplete = () => {}
   const onProgress = (x) => progress.push(x)
 
-  playlist.fetchSequentially(onNext, onProgress).then(res =>{
+  playlist.fetchSequentially(onNext, onComplete, onProgress).then(res =>{
     t.ok(res, 'got a response')
     t.equals('MediaPlaylist', res.constructor.name, 'got a reference to the playlist back')
     t.equals(res, playlist, 'the response and our playlist were equal')

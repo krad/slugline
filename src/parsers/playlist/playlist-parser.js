@@ -122,7 +122,7 @@ const componentsFromString = (body) => {
 const parseTagsAndAttributes = (body) => {
   return componentsFromString(body).map(line => {
     const comps = line.split(':')
-    if (comps.length > 1 && comps[0] !== 'http') {
+    if (comps.length > 1 && comps[0] !== 'http' && comps[0] !== 'https') {
       return {[comps[0]]: Attribute.parse(comps)}
     } else {
       return line

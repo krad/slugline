@@ -9,7 +9,11 @@ class Segment {
   constructor () { }
 
   get url () {
-    return url.parse([this.basePath, this.uri].join('/')).href
+    if (this.uri.slice(0, 4) === 'http') {
+      return this.uri
+    } else {
+      return url.parse([this.basePath, this.uri].join('/')).href      
+    }
   }
 
   fetch (onProgress) {
