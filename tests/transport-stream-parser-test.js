@@ -104,7 +104,7 @@ test('that we can parse a rbsp (stripping emulating bytes)', t=> {
   t.end()
 })
 
-test.only('parsing weird stream', t=> {
+test.skip('parsing weird stream', t=> {
   const buffer = Uint8Array.from(tsB)
   let transportStream = TransportStream.parse(buffer)
 

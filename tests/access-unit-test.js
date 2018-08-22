@@ -145,11 +145,11 @@ test('that we can chunk access units by idrs', t=> {
   t.equals(false, next.slice(-1)[0].isKeyFrame, 'last entry was not a keyframe')
 
   next = itr.next()
-  t.equals(11, next.length)
+  t.equals(10, next.length)
   t.ok(next, 'got the next group')
   t.equals(288, next[0].id, 'next entry started with correct id')
   t.equals(true, next[0].isKeyFrame, 'first entry was a keyframe in the next packet')
-  t.equals(298, next.slice(-1)[0].id, 'last au had the correct id')
+  t.equals(297, next.slice(-1)[0].id, 'last au had the correct id')
   t.equals(false, next.slice(-1)[0].isKeyFrame, 'last entry was not a keyframe')
 
   next = itr.next()
