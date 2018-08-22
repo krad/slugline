@@ -581,7 +581,7 @@ const videoTRUN = (config) => {
   const sampleFlagsPresent                  = 0x000400
   const sampleCompositionTimeOffsetsPresent = 0x000800
 
-  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent
+  let flags = dataOffsetPresent|sampleSizePresent|sampleFlagsPresent|sampleDurationPresent|sampleCompositionTimeOffsetsPresent
 
   let result = [
     bytes.strToUint8('trun'),
@@ -598,6 +598,7 @@ const videoTRUN = (config) => {
 
     if (g.isKeyFrame) { result.push(bytes.u32(0x2000000)) }
     else { result.push(bytes.u32(0x1000000)) }
+    result.push(bytes.u32(g.pts - g.dts))
   })
 
   return result
