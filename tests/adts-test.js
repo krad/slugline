@@ -6,7 +6,7 @@ const test = require('tape')
 const fs   = require('fs')
 
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
-const ts2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+// const ts2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
 
 test('parsing audio packets from a transport stream', t=> {
   let byteArray = new Uint8Array(ts)

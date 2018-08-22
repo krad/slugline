@@ -10,7 +10,7 @@ import * as bytes from '../src/helpers/byte-helpers'
 
 
 const ts = fs.readFileSync('./tests/fixtures/fileSequence0.ts')
-const tsB = fs.readFileSync('./tests/fixtures/segment.ts')
+// const tsB = fs.readFileSync('./tests/fixtures/segment.ts')
 
 test('we can parse ts files', t=> {
 
