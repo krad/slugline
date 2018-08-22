@@ -9,14 +9,27 @@ import Transmuxer from '../src/transmuxing/transmuxer'
 const test = require('tape')
 const fs = require('fs')
 
-const tsURL1 = './tests/fixtures/apple-basic-ts/gear1/fileSequence0.ts'
-const tsURL2 = './tests/fixtures/apple-basic-ts/gear1/fileSequence1.ts'
+const tsURL0 = './tests/fixtures/apple-basic-ts/gear1/fileSequence0.ts'
+const tsURL1 = './tests/fixtures/apple-basic-ts/gear1/fileSequence1.ts'
+const tsURL2 = './tests/fixtures/apple-basic-ts/gear1/fileSequence2.ts'
+const tsURL3 = './tests/fixtures/apple-basic-ts/gear1/fileSequence3.ts'
+const tsURL4 = './tests/fixtures/apple-basic-ts/gear1/fileSequence4.ts'
+const tsURL5 = './tests/fixtures/apple-basic-ts/gear1/fileSequence5.ts'
+const tsURL6 = './tests/fixtures/apple-basic-ts/gear1/fileSequence6.ts'
+const tsURL7 = './tests/fixtures/apple-basic-ts/gear1/fileSequence7.ts'
 
-const assetA = fs.readFileSync(tsURL1)
-const assetB = fs.readFileSync(tsURL2)
 
-const asset2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
-const asset3 = fs.readFileSync('./tests/fixtures/master_Layer0_01196.ts')
+const assetA = fs.readFileSync(tsURL0)
+const assetB = fs.readFileSync(tsURL1)
+const assetC = fs.readFileSync(tsURL2)
+const assetD = fs.readFileSync(tsURL3)
+const assetE = fs.readFileSync(tsURL4)
+const assetF = fs.readFileSync(tsURL5)
+const assetG = fs.readFileSync(tsURL6)
+const assetH = fs.readFileSync(tsURL7)
+
+// const asset2 = fs.readFileSync('./tests/fixtures/master_Layer0_01195.ts')
+// const asset3 = fs.readFileSync('./tests/fixtures/master_Layer0_01196.ts')
 // const asset4 = fs.readFileSync('./tests/fixtures/media.ts')
 
 const initSegmentOut  = '/tmp/ftyp.mp4'
@@ -279,9 +292,9 @@ test('that we can build a structure than can be used to arrange mp4 atoms', t =>
 
 test.only('writing a segment', t=> {
   const bufferA  = Uint8Array.from(assetA)
-  const bufferB  = Uint8Array.from(assetB)
+  // const bufferB  = Uint8Array.from(assetB)
   let tsA        = TransportStream.parse(bufferA)
-  let tsB        = TransportStream.parse(bufferB)
+  // let tsB        = TransportStream.parse(bufferB)
   let es         = ElementaryStream.parse(tsA, 15, 0)
 
   // console.log(es.packets.length);
@@ -313,10 +326,10 @@ test.only('writing a segment', t=> {
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(init))
   fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
 
-  muxer.setCurrentStream(tsB)
-  res     = muxer.build()
-  payload = muxer.buildMediaSegment(res)
-  fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
+  // muxer.setCurrentStream(tsB)
+  // res     = muxer.build()
+  // payload = muxer.buildMediaSegment(res)
+  // fs.appendFileSync('/tmp/chunk.mp4', new Buffer(payload))
 
   t.end()
 })

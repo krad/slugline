@@ -7,15 +7,18 @@ const isHeader = (arr) => {
 class ADTS {
 
   static parse(pes) {
+    // console.log('ADTS PARSE');
     let result = {units: [], streamType: 15, duration: 0, trackID: pes.trackID}
     let reader = bytes.streamReader(pes.packets)
     let cnt = 0
     let first
     while (1) {
+      // console.log(cnt);
       if (reader.atEnd()) { break }
       const bit = reader.readBits(12)
-      if (bit === 0b111111111111) {
+      if (bit === undefined) { break }
 
+      if (bit === 0b111111111111) {
         reader.rewind(12)
         let adts  = new ADTS(reader)
         const pes = reader.currentPacket()
@@ -27,8 +30,8 @@ class ADTS {
             adts.id = cnt++
             result.units.push(adts)
           } else {
-            reader.rewind((adts.packetLength+adts.headerSize)*8)
-            reader.readBit()
+            // reader.rewind((adts.packetLength+adts.headerSize)*8)
+            // reader.readBits(1)
           }
 
         } else {
@@ -38,7 +41,7 @@ class ADTS {
         }
 
       } else {
-        reader.rewind(11)
+        // reader.rewind(11)
       }
     }
 
@@ -87,7 +90,9 @@ class ADTS {
 
     this.payload = []
     while (!this.isFull) {
-      this.payload.push(bitReader.readBits(8))
+      let byte = bitReader.readBits(8)
+      if (byte === undefined) { break }
+      this.payload.push(byte)
     }
 
   }

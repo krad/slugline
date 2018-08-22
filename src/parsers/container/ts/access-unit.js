@@ -4,6 +4,7 @@ import NALU from './nalu'
 class AccessUnit {
 
   static parse(pes) {
+    // console.log('ACCESS UNIT');
     let result = {units: [], streamType: 27, duration: 0, trackID: pes.trackID}
     let itr    = bytes.elementaryStreamIterator(pes.packets, [0, 0, 1])
     let cnt = 0

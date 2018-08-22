@@ -41,9 +41,11 @@ class Transmuxer {
 
     let videoConfig  = Object.assign({}, this.videoTrack)
     delete videoConfig.units
+
     const videoSamples = this.videoIterator.next()
     if (videoSamples === undefined) { return undefined }
 
+    // console.log(videoSamples.map(s => s.nalusWithoutConfig.map(n => n.nal_unit_type)))
     /// Fake keyframe
     // if (videoSamples[0].isKeyFrame) {
     //   this.lastKeyFrame = videoSamples[0]

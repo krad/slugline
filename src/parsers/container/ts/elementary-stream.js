@@ -29,9 +29,12 @@ class ElementaryStream {
     if (streamType === 15) { delimiter = 0xc0 }
     if (streamType === 21) { return es }
 
+    // console.log('LENGTH CHECK');
     if (packetsHaveLength(streamPackets, delimiter)) {
+      // console.log('GOT LENGTH');
       es.packets = parsePacketsByHeaders(streamPackets, delimiter)
     } else {
+      // console.log('BY CHUNK');
       es.packets = parsePacketsByChunks(streamPackets, delimiter)
     }
 

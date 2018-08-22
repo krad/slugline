@@ -56,7 +56,6 @@ class AdaptationField {
     }
 
     if (this.adaptationFieldExtFlag) {
-      console.log('hereee');
       this.adaptionFieldExt = new AdaptationFieldExtension(bitReader)
       this.length += this.adaptionFieldExt.length
     }

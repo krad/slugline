@@ -274,10 +274,10 @@ export const avc1 = (config) => {
 
   let width  = 0
   let height = 0
-  if (config.type === 27) {
-    if (config.sps) {
-      width   = config.sps.width
-      height  = config.sps.height
+  if (config.streamType === 27) {
+    if (config.spsParsed) {
+      width   = config.spsParsed.width
+      height  = config.spsParsed.height
     }
   }
 
@@ -315,7 +315,7 @@ export const avcC = (config) => {
     new Uint8Array([sps[1]]),     // profile
     new Uint8Array([sps[2]]),     // profile compatibility
     new Uint8Array([sps[3]]),     // level indication
-    new Uint8Array([0b11111111]), // nalu size minus 1 (5 bits reserved all one - 3 bits)
+    new Uint8Array([0b11111011]), // nalu size minus 1 (5 bits reserved all one - 3 bits)
     new Uint8Array([1]),          // sps count
     bytes.u16(sps.length),        // sps length
     new Uint8Array(sps),          // sps bytes
@@ -331,7 +331,7 @@ export const colr = (config) => {
     bytes.strToUint8('nclx'),     // color parameter
     bytes.u16(1),                 // primaries index
     bytes.u16(1),                 // transfer function index
-    bytes.u16(0),                 // matrix index
+    bytes.u16(1),                 // matrix index
     new Uint8Array(1),            // unknown
   ]
 }
@@ -457,8 +457,15 @@ export const trex = (config) => {
     bytes.u32(1),              // sample description index
     bytes.u32(0),              // sample duration
     bytes.u32(0),              // sample size
-    bytes.u32(0),              // sample flags
   ]
+
+  if (config.streamType === 27) {
+    result.push(bytes.u32(0x02000000)) // sample flags
+  }
+
+  if (config.streamType === 15) {
+    result.push(bytes.u32(0)) // sample flags
+  }
 
   return result
 }
