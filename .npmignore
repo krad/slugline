@@ -4,3 +4,5 @@ src
 *.ts
 .nyc_output/
 coverage/
+tests/
+.travis.yml
