@@ -2,8 +2,8 @@ export class PESPacket {
 
   constructor(reader, cntID) {
     this.data = []
-
-    this.header = {}
+    this.objType = 'PESPacket'
+    this.header  = {}
     this.header.cntID                 = cntID
     this.header.startCode             = reader.readBits(24)
     this.header.streamID              = reader.readBits(8)

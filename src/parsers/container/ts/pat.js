@@ -8,6 +8,7 @@ import { Packet } from './packet'
 class PAT extends Packet {
   constructor(header, bitReader) {
     super(header, bitReader)
+    this.objType = 'PAT'
 
     this.ptrField = bitReader.readBits(8)
     if (this.ptrField) { bitReader.readBits(this.ptrField * 8) }

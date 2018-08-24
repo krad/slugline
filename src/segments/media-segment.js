@@ -5,6 +5,7 @@ class MediaSegment extends Segment {
     super()
     if (info.title) { this.title = info.title }
     this.duration = info.duration
+    this.objType  = 'MediaSegment'
   }
 
   fetch (onProgress) {

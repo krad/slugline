@@ -10,6 +10,7 @@ class MediaPacket extends Packet {
   constructor(header, bitReader, streamType) {
     super(header, bitReader)
     this.streamType = streamType
+    this.objType    = 'MediaPacket'
   }
 
 }

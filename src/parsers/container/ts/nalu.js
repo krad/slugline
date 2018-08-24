@@ -3,6 +3,7 @@ import * as bytes from '../../../helpers/byte-helpers'
 class NALU {
 
   constructor(payload) {
+    this.objType       = 'NALU'
     const reader       = new bytes.BitReader(payload)
     this.forbidden_bit = reader.readBit()
     this.nal_ref_idc   = reader.readBits(2)

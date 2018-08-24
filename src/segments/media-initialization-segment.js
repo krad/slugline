@@ -8,7 +8,8 @@ import MPEGParser from '../parsers/container/mpeg-parser'
 class MediaInitializationSegment extends Segment {
   constructor (info) {
     super()
-    this.uri = info['URI']
+    this.uri      = info['URI']
+    this.objType  = 'MediaInitializationSegment'
 
     if (info['BYTERANGE']) {
       this.byteRange = info['BYTERANGE']

@@ -14,6 +14,7 @@ import { Packet } from './packet'
 class PMT extends Packet {
   constructor(header, bitReader) {
     super(header, bitReader)
+    this.objType  = 'PMT'
     this.programs = []
 
     this.ptrField = bitReader.readBits(8)

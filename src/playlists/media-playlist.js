@@ -27,7 +27,7 @@ class MediaPlaylist extends Playlist {
     super(playlistStruct, body)
     this._ended   = false
     this.segments = []
-    // console.log(playlistStruct);
+    this.objType  = 'MediaPlaylist'
     configureMediaPlaylist(this, playlistStruct)
   }
 
@@ -60,7 +60,7 @@ class MediaPlaylist extends Playlist {
   get totalDuration () {
     return this.segments
       .filter(segment => {
-        return segment.constructor.name == TYPES.MediaSegment
+        return segment.objType === TYPES.MediaSegment
       })
       .reduce((acc, curr) => {
         return acc + curr.duration
@@ -206,7 +206,7 @@ class MediaPlaylist extends Playlist {
       if (!this.segments) { reject('No segments in playlist') }
       if (this.segments.length <= 0) { reject('No segments in playlist') }
 
-      const initSegments = this.segments.filter(s => s.constructor.name === TYPES.MediaInitializationSegment)
+      const initSegments = this.segments.filter(s => s.objType === TYPES.MediaInitializationSegment)
       if (initSegments.length > 0) {
         const initSegment = initSegments[0]
         initSegment.fetch().then(s => {
