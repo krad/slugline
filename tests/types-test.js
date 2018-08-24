@@ -14,10 +14,10 @@ test('that we map all types correctly', t=> {
 
   t.equals('MediaInitializationSegment', TYPES.MediaInitializationSegment, 'MediaInitializationSegment was correct')
   t.equals('MediaSegment',     TYPES.MediaSegment, 'MediaSegment was correct')
-  t.equals('MediaPlaylist',   TYPES.MediaPlaylist, 'MediaPlaylist was correct')
-  t.equals('MasterPlaylist', TYPES.MasterPlaylist, 'MasterPlaylist was correct')
-  t.equals('VariantStream',   TYPES.VariantStream, 'VariantStream was correct')
-  t.equals('Rendition',           TYPES.Rendition, 'Rendition was correct')
+  // t.equals('MediaPlaylist',   TYPES.MediaPlaylist, 'MediaPlaylist was correct')
+  // t.equals('MasterPlaylist', TYPES.MasterPlaylist, 'MasterPlaylist was correct')
+  // t.equals('VariantStream',   TYPES.VariantStream, 'VariantStream was correct')
+  // t.equals('Rendition',           TYPES.Rendition, 'Rendition was correct')
 
 
   t.end()
