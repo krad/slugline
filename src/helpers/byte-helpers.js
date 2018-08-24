@@ -446,9 +446,9 @@ const constructBitReader = (stream) => {
   let reader
   if (stream[0].constructor.name === TYPES.Array) {
     reader = streamReader(stream)
-  } else if(stream[0].constructor.name === TYPES.MediaPacket) {
+  } else if(stream[0].objType === TYPES.MediaPacket) {
     reader = streamReader(stream)
-  } else if(stream[0].constructor.name === TYPES.PESPacket) {
+  } else if(stream[0].objType === TYPES.PESPacket) {
     reader = streamReader(stream)
   } else {
     let buffer = new Uint8Array(stream)

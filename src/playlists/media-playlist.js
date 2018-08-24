@@ -254,8 +254,8 @@ class MediaPlaylist extends Playlist {
       const newSegment = segments[i]
 
       if (i == 0) {
-        if (oldSegment.constructor.name === TYPES.MediaSegment &&
-            newSegment.constructor.name === TYPES.MediaSegment)
+        if (oldSegment.objType === TYPES.MediaSegment &&
+            newSegment.objType === TYPES.MediaSegment)
         {
           startsWithInitSegment = false
           oldSegment = this.segments[i+1]

@@ -16,7 +16,7 @@ class ElementaryStream {
     let es      = new ElementaryStream(streamType)
     es.trackID  = trackID
 
-    const pmt   = transportStream.packets.filter(p => p.constructor.name === TYPES.PMT)[0]
+    const pmt   = transportStream.packets.filter(p => p.objType === TYPES.PMT)[0]
     const track = pmt.programs[0].tracks.filter(t => t.streamType === streamType)[0]
 
     if (!pmt)   { throw 'PMT not present in transport stream' }

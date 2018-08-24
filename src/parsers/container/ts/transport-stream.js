@@ -31,7 +31,7 @@ class TransportStream {
   }
 
   get PMT() {
-    return this.packets.filter(p => p.constructor.name == 'PMT')[0]
+    return this.packets.filter(p => p.objType == 'PMT')[0]
   }
 
   get trackPackets() {
