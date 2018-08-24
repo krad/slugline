@@ -20,7 +20,8 @@ It can be used in node.js and in the browser.
     * ✅ Transport Stream
       * ✅ PAT  
       * ✅ PMT
-      * ✅ Elementary Streams
+      * ✅ Packetized Elementary Streams
+      * ✅ ADTS Streams
   * ✅ Transmuxing transport streams to fragmented mp4
   * ✅ Periodic fetching of event & live playlists
   * ❎ Range Requests
