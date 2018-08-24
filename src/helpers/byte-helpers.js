@@ -1,3 +1,5 @@
+import TYPES from '../types'
+
 /**
  * concatenate - Concat an array of byte buffers
  *
@@ -303,11 +305,11 @@ export const packetStreamGenerator = (packetGenerator) => {
     next: () => {
       currentPacket = packetGenerator.next()
       if (currentPacket) {
-        if (currentPacket.constructor.name === 'Array') {
+        if (currentPacket.constructor.name === TYPES.Array) {
           return new BitReader(new Uint8Array(currentPacket))
         } else {
           let data = currentPacket.data
-          if (currentPacket.data.constructor.name != 'Uint8Array') {
+          if (currentPacket.data.constructor.name != TYPES.Uint8Array) {
             data = new Uint8Array(data)
           }
           return new BitReader(data)
@@ -442,11 +444,11 @@ export const equal = (bufA, bufB) => {
 
 const constructBitReader = (stream) => {
   let reader
-  if (stream[0].constructor.name === 'Array') {
+  if (stream[0].constructor.name === TYPES.Array) {
     reader = streamReader(stream)
-  } else if(stream[0].constructor.name === 'MediaPacket') {
+  } else if(stream[0].constructor.name === TYPES.MediaPacket) {
     reader = streamReader(stream)
-  } else if(stream[0].constructor.name === 'PESPacket') {
+  } else if(stream[0].constructor.name === TYPES.PESPacket) {
     reader = streamReader(stream)
   } else {
     let buffer = new Uint8Array(stream)

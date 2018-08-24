@@ -3,6 +3,7 @@ import { configureMediaPlaylist } from '../parsers/playlist/playlist-parser'
 import TransportStream from '../parsers/container/ts/transport-stream'
 import ElementaryStream from '../parsers/container/ts/elementary-stream'
 import Transmuxer from '../transmuxing/transmuxer'
+import TYPES from '../types'
 
 /**
  * A Media Playlist contains a list of Media Segments, which when played
@@ -59,7 +60,7 @@ class MediaPlaylist extends Playlist {
   get totalDuration () {
     return this.segments
       .filter(segment => {
-        return segment.constructor.name == 'MediaSegment'
+        return segment.constructor.name == TYPES.MediaSegment
       })
       .reduce((acc, curr) => {
         return acc + curr.duration
@@ -205,7 +206,7 @@ class MediaPlaylist extends Playlist {
       if (!this.segments) { reject('No segments in playlist') }
       if (this.segments.length <= 0) { reject('No segments in playlist') }
 
-      const initSegments = this.segments.filter(s => s.constructor.name === 'MediaInitializationSegment')
+      const initSegments = this.segments.filter(s => s.constructor.name === TYPES.MediaInitializationSegment)
       if (initSegments.length > 0) {
         const initSegment = initSegments[0]
         initSegment.fetch().then(s => {
@@ -253,8 +254,8 @@ class MediaPlaylist extends Playlist {
       const newSegment = segments[i]
 
       if (i == 0) {
-        if (oldSegment.constructor.name === 'MediaSegment' &&
-            newSegment.constructor.name === 'MediaSegment')
+        if (oldSegment.constructor.name === TYPES.MediaSegment &&
+            newSegment.constructor.name === TYPES.MediaSegment)
         {
           startsWithInitSegment = false
           oldSegment = this.segments[i+1]

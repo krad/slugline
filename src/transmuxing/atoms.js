@@ -1,4 +1,5 @@
 import * as bytes from '../helpers/byte-helpers'
+import TYPES from '../types'
 
 //////////////////////////////////////////////////////////////////
 //#pragma - Initialization Section Atoms
@@ -687,7 +688,7 @@ export const prependSize = (atom, padding) => {
 export const prepare = (atom) => {
   for (var i = 0; i < atom.length; i++) {
     const child = atom[i]
-    if (child.constructor.name === 'Array') {
+    if (child.constructor.name === TYPES.Array) {
       atom[i] = prepare(child)
     }
   }

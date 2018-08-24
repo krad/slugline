@@ -1,4 +1,5 @@
 import * as bytes from '../../../helpers/byte-helpers'
+import TYPES from '../../../types'
 import PESPacket from './pes-packet'
 import AccessUnit from './access-unit'
 import ADTS from './adts'
@@ -15,7 +16,7 @@ class ElementaryStream {
     let es      = new ElementaryStream(streamType)
     es.trackID  = trackID
 
-    const pmt   = transportStream.packets.filter(p => p.constructor.name === 'PMT')[0]
+    const pmt   = transportStream.packets.filter(p => p.constructor.name === TYPES.PMT)[0]
     const track = pmt.programs[0].tracks.filter(t => t.streamType === streamType)[0]
 
     if (!pmt)   { throw 'PMT not present in transport stream' }
