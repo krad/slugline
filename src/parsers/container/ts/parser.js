@@ -33,7 +33,7 @@ class TransportStreamParser {
       const mediaPacket = new MediaPacket(header, bitReader, track.streamType)
       return mediaPacket
     } else {
-      console.log('!!! ERROR PARSING PROGRAM PACKETS !!!');
+      console.log('[Unknown transport stream packet] - ', header);
     }
   }
 }
