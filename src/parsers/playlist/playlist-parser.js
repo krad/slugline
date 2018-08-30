@@ -138,8 +138,9 @@ const findOne = (haystack, arr) => {
 }
 
 /// Used to configure a media playlist
-const configureMediaPlaylist = (playlist, struct) => {
-  var currentSegment = undefined
+const configureMediaPlaylist = (playlist, struct, startIdx) => {
+  let currentSegment = undefined
+  let idx            = startIdx || 0
   struct.forEach(tag => {
     if (typeof tag === 'string') {
       if (tag === '#EXT-X-ENDLIST') {
@@ -155,11 +156,14 @@ const configureMediaPlaylist = (playlist, struct) => {
 
     if (typeof tag === 'object') {
       if (tag['#EXT-X-MAP']) {
-        playlist.segments.push(new MediaInitializationSegment(tag['#EXT-X-MAP']))
+        let initSegment = new MediaInitializationSegment(tag['#EXT-X-MAP'])
+        initSegment.id  = idx++
+        playlist.segments.push(initSegment)
       }
 
       if (tag['#EXTINF']) {
-        currentSegment = new MediaSegment(tag['#EXTINF'])
+        currentSegment    = new MediaSegment(tag['#EXTINF'])
+        currentSegment.id = idx++
       }
 
       if (tag['#EXT-X-TARGETDURATION']) {

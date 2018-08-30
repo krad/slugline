@@ -25,10 +25,30 @@ test('basic attributes from a VOD playlist', t=>{
 
   const initSegment = playlist.segments[0]
   t.equals('fileSeq0.mp4', initSegment.uri)
+  t.equals('MediaInitializationSegment', initSegment.constructor.name, 'First segment was init segment')
+  t.equals(0, initSegment.id, 'id for init segment was 0')
 
-  const mediaSegment = playlist.segments[1]
-  t.equals(6.006226722, mediaSegment.duration, 'first segment had correct duration')
-  t.equals('First Sequence Title', mediaSegment.title, 'title was present on first segment')
+  let mediaSegment = playlist.segments[1]
+  t.equals(6.006226722, mediaSegment.duration,            'first segment had correct duration')
+  t.equals('First Sequence Title', mediaSegment.title,    'title was present on first segment')
+  t.equals('MediaSegment', mediaSegment.constructor.name, 'segment was had MediaSegment constructor')
+  t.equals(mediaSegment.id, 1,                            'id for segment was 1')
+
+  mediaSegment = playlist.segments[2]
+  t.equals('MediaSegment', mediaSegment.constructor.name, 'segment was had MediaSegment constructor')
+  t.equals(mediaSegment.id, 2, 'id for segment was 2')
+
+  mediaSegment = playlist.segments[3]
+  t.equals('MediaSegment', mediaSegment.constructor.name, 'segment was had MediaSegment constructor')
+  t.equals(mediaSegment.id, 3, 'id for segment was 3')
+
+  mediaSegment = playlist.segments[4]
+  t.equals('MediaSegment', mediaSegment.constructor.name, 'segment was had MediaSegment constructor')
+  t.equals(mediaSegment.id, 4, 'id for segment was 4')
+
+  mediaSegment = playlist.segments[5]
+  t.equals('MediaInitializationSegment', mediaSegment.constructor.name, 'segment was had MediaInitializationSegment constructor')
+  t.equals(mediaSegment.id, 5, 'id for segment was 5')
 
   console.log(playlist);
 
@@ -204,7 +224,7 @@ test('preventing segment update overwrites', t=> {
 })
 
 const fetchTest = (t) => {
-  t.plan(114)
+  t.plan(136)
   t.timeoutAfter(4000)
 
   const url = hostAndPort()+vodURL
@@ -217,7 +237,8 @@ const fetchTest = (t) => {
     const basePath = hostAndPort()+'/basic/krad.tv/tractor'
     t.equals(basePath, playlist.basePath, 'base path was correct')
 
-    playlist.segments.forEach(segment => {
+    playlist.segments.forEach((segment, idx) => {
+      t.equals(segment.id, idx, 'segment id matched index')
       t.equals(basePath, segment.basePath, 'base path was correct ' + segment.uri)
       t.equals(basePath+'/'+segment.uri, segment.url, 'segment url was correct ' + segment.url)
 
