@@ -249,7 +249,7 @@ test('preventing segment update overwrites', t=> {
 
 const fetchTest = (t) => {
   t.plan(136)
-  t.timeoutAfter(4000)
+  t.timeoutAfter(8000)
 
   const url = hostAndPort()+vodURL
   Playlist.fetch(url)
@@ -284,7 +284,7 @@ const fetchTest = (t) => {
 
 const sequentialFetchTest = (t) => {
   t.plan(8)
-  t.timeoutAfter(3000)
+  t.timeoutAfter(8000)
   let playlist      = Playlist.parse(vod)
   playlist.basePath = hostAndPort()+'/basic/krad.tv/tractor'
 
