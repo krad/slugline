@@ -1,12 +1,11 @@
 import * as atoms from './atoms'
 import * as bytes from '../helpers/byte-helpers'
-import ElementaryStream from '../parsers/container/ts/elementary-stream'
 import { keyframeIterator } from '../parsers/container/ts/access-unit'
 import { durationIterator } from '../parsers/container/ts/adts'
 
 class Transmuxer {
 
-  constructor() {
+  constructor () {
     this.currentOffset        = 0
     this.currentMediaSequence = 1
     this.videoDecode          = 0
@@ -14,7 +13,7 @@ class Transmuxer {
     this.lastKeyFrame         = undefined
   }
 
-  setCurrentStream(ts) {
+  setCurrentStream (ts) {
     this.currentStream = ts
     this.streamTypes   = ts.tracks.map(track => track.streamType)
     if (this.hasVideo) {
@@ -28,15 +27,15 @@ class Transmuxer {
     }
   }
 
-  hasAudio() {
+  hasAudio () {
     return this.streamTypes.includes(15)
   }
 
-  hasVideo() {
+  hasVideo () {
     return this.streamTypes.includes(27)
   }
 
-  nextMoof() {
+  nextMoof () {
     let result = {currentMediaSequence: this.currentMediaSequence++, tracks: []}
 
     let videoConfig  = Object.assign({}, this.videoTrack)
@@ -107,7 +106,7 @@ class Transmuxer {
     return result
   }
 
-  build() {
+  build () {
     let result = []
     this.currentMediaSequence--
     while(1) {
@@ -120,7 +119,7 @@ class Transmuxer {
   }
 
 
-  buildInitializationSegment(moof) {
+  buildInitializationSegment (moof) {
     let result = []
     result.push(atoms.ftyp())
     result.push(atoms.moov(moof))
@@ -128,7 +127,7 @@ class Transmuxer {
     return bytes.concatenate(Uint8Array, ...result)
   }
 
-  buildMediaSegment(moofs) {
+  buildMediaSegment (moofs) {
     let result = []
 
     moofs.forEach(moof => {

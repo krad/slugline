@@ -12,7 +12,6 @@ class TransportStreamParser {
   }
 
   parse(arrayBuffer) {
-
     let bitReader     = new bytes.BitReader(arrayBuffer)
     const header      = new PacketHeader(bitReader)
 
@@ -33,7 +32,7 @@ class TransportStreamParser {
       const mediaPacket = new MediaPacket(header, bitReader, track.streamType)
       return mediaPacket
     } else {
-      console.log('!!! ERROR PARSING PROGRAM PACKETS !!!');
+      console.log('[Unknown transport stream packet] - ', header);
     }
   }
 }

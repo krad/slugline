@@ -25,10 +25,30 @@ test('basic attributes from a VOD playlist', t=>{
 
   const initSegment = playlist.segments[0]
   t.equals('fileSeq0.mp4', initSegment.uri)
+  t.equals('MediaInitializationSegment', initSegment.constructor.name, 'First segment was init segment')
+  t.equals(0, initSegment.id, 'id for init segment was 0')
 
-  const mediaSegment = playlist.segments[1]
-  t.equals(6.006226722, mediaSegment.duration, 'first segment had correct duration')
-  t.equals('First Sequence Title', mediaSegment.title, 'title was present on first segment')
+  let mediaSegment = playlist.segments[1]
+  t.equals(6.006226722, mediaSegment.duration,            'first segment had correct duration')
+  t.equals('First Sequence Title', mediaSegment.title,    'title was present on first segment')
+  t.equals('MediaSegment', mediaSegment.constructor.name, 'segment was had MediaSegment constructor')
+  t.equals(mediaSegment.id, 1,                            'id for segment was 1')
+
+  mediaSegment = playlist.segments[2]
+  t.equals('MediaSegment', mediaSegment.constructor.name, 'segment was had MediaSegment constructor')
+  t.equals(mediaSegment.id, 2, 'id for segment was 2')
+
+  mediaSegment = playlist.segments[3]
+  t.equals('MediaSegment', mediaSegment.constructor.name, 'segment was had MediaSegment constructor')
+  t.equals(mediaSegment.id, 3, 'id for segment was 3')
+
+  mediaSegment = playlist.segments[4]
+  t.equals('MediaSegment', mediaSegment.constructor.name, 'segment was had MediaSegment constructor')
+  t.equals(mediaSegment.id, 4, 'id for segment was 4')
+
+  mediaSegment = playlist.segments[5]
+  t.equals('MediaInitializationSegment', mediaSegment.constructor.name, 'segment was had MediaInitializationSegment constructor')
+  t.equals(mediaSegment.id, 5, 'id for segment was 5')
 
   console.log(playlist);
 
@@ -179,33 +199,57 @@ test('preventing segment update overwrites', t=> {
   ////// Test live segment shuffling (ts without init map)
   const srcE = fs.readFileSync('./tests/fixtures/basic/live-inprogress-ts-a.m3u8').toString()
   const srcF = fs.readFileSync('./tests/fixtures/basic/live-inprogress-ts-b.m3u8').toString()
+  const srcG = fs.readFileSync('./tests/fixtures/basic/live-inprogress-ts-c.m3u8').toString()
+  const srcH = fs.readFileSync('./tests/fixtures/basic/live-inprogress-ts-d.m3u8').toString()
 
   const playlistE = Playlist.parse(srcE)
   t.ok(playlistE, 'parsed original live playlist')
   t.equals('LIVE', playlistE.type, 'it is a live playlist')
   t.equals(3, playlistE.segments.length, 'correct amount of segments')
+  t.equals(0, playlistE.segments[0].id, 'id was 0')
+  t.equals(1, playlistE.segments[1].id, 'id was 1')
+  t.equals(2, playlistE.segments[2].id, 'id was 2')
 
   const playlistF = Playlist.parse(srcF)
   t.ok(playlistF, 'parsed new live playlist')
   t.ok(playlistF, 'parsed original live playlist')
   t.equals('LIVE', playlistF.type, 'it is a live playlist')
   t.equals(3, playlistF.segments.length, 'correct amount of segments')
+  t.equals(0, playlistF.segments[0].id, 'id was 0')
+  t.equals(1, playlistF.segments[1].id, 'id was 1')
+  t.equals(2, playlistF.segments[2].id, 'id was 2')
 
   t.notDeepEqual(playlistE, playlistF, 'they are not equal')
 
   playlistE.segments.forEach(segment => segment.tainted = true )
-  playlistE.updateSegments(playlistF.segments)
+  playlistE.updateSegments(playlistF.segments, true)
 
   t.equals(true, playlistE.segments[0].tainted, 'segment still marked as tained #1')
   t.equals(true, playlistE.segments[1].tainted, 'segment still marked as tained #2')
   t.equals(undefined, playlistE.segments[2].tainted, 'new segment not tainted')
 
+  t.equals(playlistE.segments[0].id, 1, 'first index was marked as 1 because prev was bumped')
+  t.equals(playlistE.segments[1].id, 2, 'second index was marked as 2 because prev was bumped')
+  t.equals(playlistE.segments[2].id, 3, 'third index was marked as 3 because prev was bumped')
+
+  const playlistG = Playlist.parse(srcG)
+  playlistE.updateSegments(playlistG.segments, true)
+  t.equals(playlistE.segments[0].id, 2, 'first index was marked as 2 because prev was bumped')
+  t.equals(playlistE.segments[1].id, 3, 'second index was marked as 3 because prev was bumped')
+  t.equals(playlistE.segments[2].id, 4, 'third index was marked as 4 because prev was bumped')
+
+  const playlistH = Playlist.parse(srcH)
+  playlistE.updateSegments(playlistH.segments, true)
+  t.equals(playlistE.segments[0].id, 3, 'first index was marked as 3 because prev was bumped')
+  t.equals(playlistE.segments[1].id, 4, 'second index was marked as 4 because prev was bumped')
+  t.equals(playlistE.segments[2].id, 5, 'third index was marked as 5 because prev was bumped')
+
   t.end()
 })
 
 const fetchTest = (t) => {
-  t.plan(114)
-  t.timeoutAfter(4000)
+  t.plan(136)
+  t.timeoutAfter(8000)
 
   const url = hostAndPort()+vodURL
   Playlist.fetch(url)
@@ -217,7 +261,8 @@ const fetchTest = (t) => {
     const basePath = hostAndPort()+'/basic/krad.tv/tractor'
     t.equals(basePath, playlist.basePath, 'base path was correct')
 
-    playlist.segments.forEach(segment => {
+    playlist.segments.forEach((segment, idx) => {
+      t.equals(segment.id, idx, 'segment id matched index')
       t.equals(basePath, segment.basePath, 'base path was correct ' + segment.uri)
       t.equals(basePath+'/'+segment.uri, segment.url, 'segment url was correct ' + segment.url)
 
@@ -239,7 +284,7 @@ const fetchTest = (t) => {
 
 const sequentialFetchTest = (t) => {
   t.plan(8)
-  t.timeoutAfter(3000)
+  t.timeoutAfter(8000)
   let playlist      = Playlist.parse(vod)
   playlist.basePath = hostAndPort()+'/basic/krad.tv/tractor'
 
