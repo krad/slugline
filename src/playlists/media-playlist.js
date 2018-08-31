@@ -23,12 +23,12 @@ import TYPES from '../types'
  */
 class MediaPlaylist extends Playlist {
 
-  constructor (playlistStruct, body) {
+  constructor (playlistStruct, body, startIdx) {
     super(playlistStruct, body)
     this._ended   = false
     this.segments = []
     this.objType  = 'MediaPlaylist'
-    configureMediaPlaylist(this, playlistStruct)
+    configureMediaPlaylist(this, playlistStruct, startIdx)
   }
 
   set basePath (val) {
@@ -182,7 +182,9 @@ class MediaPlaylist extends Playlist {
       }
 
       Playlist.fetch(this.url).then(refreshedPlaylist => {
-        this.updateSegments(refreshedPlaylist.segments)
+
+        const segmentBump = this.type === 'LIVE' ? true : false
+        this.updateSegments(refreshedPlaylist.segments, segmentBump)
         this.ended               = refreshedPlaylist.ended
         this.mediaSequenceNumber = refreshedPlaylist.mediaSequenceNumber
         if (this.onRefresh) { this.onRefresh(this) }
@@ -246,9 +248,10 @@ class MediaPlaylist extends Playlist {
    *
    * @param  {Array<Segment>} segments An array of segments
    */
-  updateSegments(segments) {
+  updateSegments(segments, segmentBump) {
     let results = []
     var startsWithInitSegment = false
+    let lastOldSegmentID
     for (var i = 0; i < segments.length; i++) {
       var oldSegment   = this.segments[i]
       const newSegment = segments[i]
@@ -269,12 +272,14 @@ class MediaPlaylist extends Playlist {
       }
 
       if (oldSegment) {
+        lastOldSegmentID = oldSegment.id
         if (newSegment.uri == oldSegment.uri) {
           results.push(oldSegment)
         } else {
           results.push(newSegment)
         }
       } else {
+        newSegment.id = lastOldSegmentID+1
         results.push(newSegment)
       }
     }

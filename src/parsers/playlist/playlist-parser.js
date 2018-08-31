@@ -54,7 +54,7 @@ const ERRORS = {
 }
 
 class PlaylistParser {
-  static parse (body) {
+  static parse (body, startIdx) {
     if (body.slice(0, 7) !== '#EXTM3U') { throwError(ERRORS.INVALID) }
     const playlistStruct = parseTagsAndAttributes(body)
 
@@ -63,7 +63,7 @@ class PlaylistParser {
 
     // If we have tags for both Media and Master type playlists, something is wrong
     if (isMedia && isMaster) { throwError(ERRORS.MIXED_TAGS) }
-    if (isMedia) { return new MediaPlaylist(playlistStruct, body) } // return a MediaPlaylist
+    if (isMedia) { return new MediaPlaylist(playlistStruct, body, startIdx) } // return a MediaPlaylist
     if (isMaster) { return new MasterPlaylist(playlistStruct, body) } // return a MasterPlaylist
 
     throwError(ERRORS.INVALID)

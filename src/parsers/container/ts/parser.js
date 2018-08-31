@@ -12,7 +12,6 @@ class TransportStreamParser {
   }
 
   parse(arrayBuffer) {
-
     let bitReader     = new bytes.BitReader(arrayBuffer)
     const header      = new PacketHeader(bitReader)
 
