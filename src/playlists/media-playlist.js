@@ -152,7 +152,7 @@ class MediaPlaylist extends Playlist {
           if (onProgress) { onProgress(Object.assign(progress, {uri: segment.uri})) }
         }
 
-        const segment = this.segments[idx]
+        const segment = this.segments.filter(s => s.id === idx)[0]
         if (segment) {
           onNext(segment)
           segment.fetch(progressWrapper).then(res => {
@@ -182,7 +182,6 @@ class MediaPlaylist extends Playlist {
       }
 
       Playlist.fetch(this.url).then(refreshedPlaylist => {
-
         const segmentBump = this.type === 'LIVE' ? true : false
         this.updateSegments(refreshedPlaylist.segments, segmentBump)
         this.ended               = refreshedPlaylist.ended
