@@ -1,6 +1,6 @@
 {
   "name": "@krad/slugline",
-  "version": "1.2.10",
+  "version": "1.2.11",
   "description": "A library for parsing HLS playlists",
   "main": "distribution/slugline.js",
   "scripts": {
