@@ -12,7 +12,7 @@ class Segment {
     if (this.uri.slice(0, 4) === 'http') {
       return this.uri
     } else {
-      return url.parse([this.basePath, this.uri].join('/')).href      
+      return url.parse([this.basePath, this.uri].join('/')).href
     }
   }
 
@@ -36,7 +36,6 @@ class Segment {
           this.headers       = fetcher.headers
           resolve(res)
         }).catch(err => {
-          console.log(err);
           reject(err)
         })
     })

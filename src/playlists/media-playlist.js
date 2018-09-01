@@ -232,7 +232,6 @@ class MediaPlaylist extends Playlist {
           this.codecsString   = ts.codecsString
           resolve(this.codecs)
         }).catch(err => {
-          console.log('failed to fetch first segment', err);
           reject(err)
         })
 
