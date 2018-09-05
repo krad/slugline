@@ -1,4 +1,3 @@
-import { PlaylistFetcher } from './fetchers/fetcher'
 import Playlist from './playlists/base-playlist'
 import MediaPlaylist from './playlists/media-playlist'
 import MasterPlaylist from './playlists/master-playlist'

@@ -1,4 +1,3 @@
-import { Playlist } from '../playlist'
 const https = require('https')
 const http  = require('http')
 const url   = require('url')
@@ -6,7 +5,7 @@ const url   = require('url')
 /**
  * Base class for performing fetches for playlists and assets defined in them
  */
-class Fetcher {
+export default class Fetcher {
   /**
    * @static fetch - static method used
    *
@@ -263,41 +262,3 @@ const checkLocation = (originalURL, newLocation) => {
 
   return newLocation
 }
-
-/**
- * PlaylistFetcher can be used to fetch and parse a playlist
- */
-class PlaylistFetcher extends Fetcher {
-  constructor (config) {
-    super(config)
-    this.encoding = 'utf8'
-  }
-
-  /**
-   * fetch - Fetch the playlist
-   *
-   * @return {Promise<Playlist>} A promise with either a MediaPlaylist or a MasterPlaylist
-   */
-  fetch () {
-    return super.fetch()
-      .then(body => Playlist.parse(body))
-      .then(playlist => {
-        playlist.url      = this.url
-        playlist.headers  = this.headers
-        playlist.basePath = this.url.split('/').slice(0, -1).join('/')
-        return playlist
-      })
-  }
-}
-
-/**
- * MediaSegmentFetcher can be used to fetch a media segment
- */
-class MediaSegmentFetcher extends Fetcher {
-  constructor (config) {
-    super(config)
-    this.encoding = 'binary'
-  }
-}
-
-export { Fetcher, PlaylistFetcher, MediaSegmentFetcher }

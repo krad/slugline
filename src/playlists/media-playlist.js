@@ -221,7 +221,6 @@ class MediaPlaylist extends Playlist {
         return
 
       } else {
-
         if (this.segments.count <= 0) { reject('Playlist had no segments.') }
         const firstSegment = this.segments[0]
 
@@ -234,7 +233,6 @@ class MediaPlaylist extends Playlist {
         }).catch(err => {
           reject(err)
         })
-
       }
     })
   }

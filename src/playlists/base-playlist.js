@@ -1,5 +1,6 @@
 import { PlaylistParser } from '../parsers/playlist/playlist-parser'
-import { PlaylistFetcher } from '../fetchers/fetcher'
+import Fetcher from '../fetchers/fetcher'
+import PlaylistFetcher from '../fetchers/playlist-fetcher'
 
 /**
  * Playlist is the base type for all supported playlists
