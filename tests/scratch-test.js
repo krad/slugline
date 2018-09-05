@@ -19,8 +19,11 @@ test.skip('parsing a random segment to diagnose what is wrong', t=> {
   const ts      = TransportStream.parse(fixture)
   t.ok(ts, 'was able to parse the transport stream')
 
-  console.log(ts.trackPackets);
-
+  const accessUnits = ts.tracks.filter(t => t.streamType === 27)[0]
+  let accessUnit    = accessUnits.units.filter(au => au.isKeyFrame === true)[0]
+  let sps           = accessUnit.nalus.filter(n => n.nal_unit_type === 7)[0]
+  let pps           = accessUnit.nalus.filter(n => n.nal_unit_type === 8)[0]
+  // console.log(accessUnits);
 
   t.end()
 })

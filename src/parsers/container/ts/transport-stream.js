@@ -44,7 +44,7 @@ class TransportStream {
     return this.trackPackets.map(stream => {
       if (stream.streamType === 27) { return AccessUnit.parse(stream) }
       if (stream.streamType === 15) { return ADTS.parse(stream) }
-      if (stream.streamType === 21) { return {} }
+      return {}
     })
   }
 
