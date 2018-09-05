@@ -30,6 +30,8 @@ class ElementaryStream {
     if (streamType === 15) { delimiter = 0xc0 }
     if (streamType === 21) { return es }
 
+    if (streamPackets.length === 0) { return es }
+
     // console.log('LENGTH CHECK');
     if (packetsHaveLength(streamPackets, delimiter)) {
       // console.log('GOT LENGTH');
