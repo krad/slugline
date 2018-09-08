@@ -12,7 +12,6 @@ import { buildRBSP } from '../src/parsers/container/ts/nalu'
 import base64ArrayBuffer from '../src/parsers/container/ts/base64'
 import * as bytes from '../src/helpers/byte-helpers'
 
-
 test.skip('parsing a random segment to diagnose what is wrong', t=> {
 
   const fixture = fs.readFileSync('./tests/fixtures/pbs.ts')

@@ -190,6 +190,8 @@ class MediaPlaylist extends Playlist {
         resolve(this)
       }).catch(err => reject(err))
 
+    }).catch(err => {
+      this.refresh()
     })
   }
 
