@@ -179,7 +179,7 @@ const shouldAttemptRetryByNetworkError = (errCode) => {
  */
 const simpleGet = (params, proto) => {
   const url = params.url
-  const timeout = params.timeout || 5000
+  const timeout = params.timeout || 10000
   const onProgress = params.onProgress || (() => {})
   const onResponse = params.onResponse || (() => {})
   const onRedirect = params.onRedirect || (() => {})
@@ -187,10 +187,11 @@ const simpleGet = (params, proto) => {
   const followRedirects = params.followRedirects || true
 
   return new Promise((resolve, reject) => {
+
     const setupTimer = (timer, timeout) => {
       clearTimeout(timer)
       return setTimeout(() => {
-        reject(new Error('fetch timed out'))
+        reject('fetch timed out')
       }, timeout)
     }
 

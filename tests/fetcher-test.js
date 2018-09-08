@@ -98,6 +98,6 @@ const timeoutTest = (t) => {
     t.fail('We should have timed out')
   })
   .catch(err => {
-    t.equals(err.message, 'fetch timed out', 'got timeout error')
+    t.equals(err, 'fetch timed out', 'got timeout error')
   })
 }

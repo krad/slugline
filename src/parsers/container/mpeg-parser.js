@@ -38,6 +38,10 @@ const MPEGParser = {
       tree.codecsString = createCodecsString(tree.codecs)
     }
     return tree
+  },
+
+  createCodecsString: (codecs) => {
+    return createCodecsString(codecs)
   }
 }
 

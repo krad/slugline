@@ -211,7 +211,6 @@ class MediaPlaylist extends Playlist {
       if (initSegments.length > 0) {
         const initSegment = initSegments[0]
         initSegment.fetch().then(s => {
-          this.segmentsType = 'fmp4'
           this.codecs       = initSegment.codecs.codecs
           this.codecsString = initSegment.codecs.codecsString
           resolve(initSegment.codecs.codecs)
@@ -221,11 +220,11 @@ class MediaPlaylist extends Playlist {
         return
 
       } else {
+
         if (this.segments.count <= 0) { reject('Playlist had no segments.') }
         const firstSegment = this.segments[0]
 
         firstSegment.fetch().then(s => {
-          this.segmentsType   = 'ts'
           const ts            = TransportStream.parse(s)
           this.codecs         = ts.trackPackets.map(tp => tp.codec)
           this.codecsString   = ts.codecsString
@@ -235,6 +234,15 @@ class MediaPlaylist extends Playlist {
         })
       }
     })
+  }
+
+  get segmentsType() {
+    const initSegments = this.segments.filter(s => s.objType === TYPES.MediaInitializationSegment)
+    if (initSegments.length > 0) {
+      return 'fmp4'
+    } else {
+      return 'ts'
+    }
   }
 
   /**
