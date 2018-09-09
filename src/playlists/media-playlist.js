@@ -135,41 +135,6 @@ class MediaPlaylist extends Playlist {
   //   return undefined
   // }
 
-
-  /**
-   * fetchSequentially - Fetch segments in the playlist one at a time
-   *
-   * @param  {Function} onNext     Callback executed before each fetch
-   * @params {Function} onComplete Callback executed after each successful fetch
-   * @param  {Function} onProgress Callback executed as a segment downloads
-   * @return {Promise<Playlist>}   Returns a promise the fulfills with the mutated playlist
-   */
-  fetchSequentially(onNext, onComplete, onProgress) {
-    return new Promise((resolve, reject) => {
-
-      const fetch = (idx) => {
-        const progressWrapper = (progress) => {
-          if (onProgress) { onProgress(Object.assign(progress, {uri: segment.uri})) }
-        }
-
-        const segment = this.segments.filter(s => s.id === idx)[0]
-        if (segment) {
-          onNext(segment)
-          segment.fetch(progressWrapper).then(res => {
-            onComplete(res)
-            fetch(idx+1)
-          }).catch(err => reject(err))
-        } else {
-          resolve(this)
-        }
-      }
-
-      fetch(0)
-
-    })
-  }
-
-
   /**
    * refresh - Refetch the playlist and update all relevant values
    *

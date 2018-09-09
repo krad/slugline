@@ -127,13 +127,6 @@ test('fetching a playlist', t=> {
   t.end()
 })
 
-test('sequentially fetching segments in a playlist', t=> {
-  t.test(setupServer,           'fetching playlist segments sequentially - setup the fixture server')
-  t.test(sequentialFetchTest,   'fetching a playlists segments ')
-  t.test(tearDownServer,        'fetching playlist segments sequentially  - tore down the fixture server')
-  t.end()
-})
-
 test('preventing segment update overwrites', t=> {
 
   ////// Test event segment shuffling
@@ -280,39 +273,4 @@ const fetchTest = (t) => {
     console.log(err);
     t.fail('We should not have failed')
   })
-}
-
-const sequentialFetchTest = (t) => {
-  t.plan(8)
-  t.timeoutAfter(8000)
-  let playlist      = Playlist.parse(vod)
-  playlist.basePath = hostAndPort()+'/basic/krad.tv/tractor'
-
-  const segmentCount = playlist.segments.length
-  t.equals(7, segmentCount, 'correct amount of segments present')
-
-  let fetches = []
-  let progress = []
-
-  const onNext = (segment) => fetches.push(segment)
-  const onComplete = () => {}
-  const onProgress = (x) => progress.push(x)
-
-  playlist.fetchSequentially(onNext, onComplete, onProgress).then(res =>{
-    t.ok(res, 'got a response')
-    t.equals('MediaPlaylist', res.constructor.name, 'got a reference to the playlist back')
-    t.equals(res, playlist, 'the response and our playlist were equal')
-    t.equals(segmentCount, fetches.length, 'fetched each of the segments')
-    t.ok(progress.length > 0, 'we got some progress callbacks')
-
-    const first = progress.filter(p => p.uri == 'fileSeq1.mp4')
-    t.notEqual(0, first[0].progress, 'progress was not zero')
-    t.equals(100, first[first.length-1].progress, 'last entry was 100')
-  }).catch(err => {
-    console.log(err);
-    t.fail('We should not have failed')
-  })
-
-  // console.log(playlist);
-
 }
