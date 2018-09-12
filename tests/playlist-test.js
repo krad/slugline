@@ -5,11 +5,13 @@ import {setupServer, tearDownServer, serverPort, hostAndPort} from './fixture-se
 
 const vod       = fs.readFileSync('./tests/fixtures/basic/vod.m3u8').toString()
 const master    = fs.readFileSync('./tests/fixtures/basic/master.m3u8').toString()
+const tsMaster  = fs.readFileSync('./tests/fixtures/apple-basic-ts/bipbop_4x3_variant.m3u8').toString()
 const advMaster = fs.readFileSync('./tests/fixtures/apple-advanced-fmp4/master.m3u8').toString()
 const weirdLive = fs.readFileSync('./tests/fixtures/basic/live-without-ident.m3u8').toString()
 
 const vodURL        = '/basic/krad.tv/tractor/vod.m3u8'
 const advMasterURL  = '/apple-advanced-fmp4/master.m3u8'
+const tsMasterURL   = '/apple-basic-ts/bipbop_4x3_variant.m3u8'
 
 test('basic attributes from a VOD playlist', t=>{
 
@@ -249,11 +251,26 @@ test('preventing segment update overwrites', t=> {
   t.end()
 })
 
+test('sanity check for apple basic ts master playlist', t=> {
+
+  const playlist = Playlist.parse(tsMaster)
+  t.ok(playlist, 'parsed the playlist')
+  t.equals('MasterPlaylist', playlist.constructor.name, 'object was indeed a MasterPlaylist')
+  t.equals(5, playlist.variants.length, 'had 5 variants')
+  t.equals(true, playlist.variantsAllHaveCodecsInfo, 'all variants have codecs info')
+
+  t.equals(4, playlist.completeVariants.length, 'had 4 "complete" variants')
+
+  console.log(playlist.completeVariants);
+  t.end()
+})
+
 test('fetching a playlist', t=> {
-  t.test(setupServer,         'fetching a playlist - setup the fixture server')
-  t.test(fetchTest,           'fetching a playlist and segments')
-  t.test(masterPlaylistFetch, 'fetching a master playlist')
-  t.test(tearDownServer,      'fetching a playlist - tore down the fixture server')
+  t.test(setupServer,               'fetching a playlist - setup the fixture server')
+  t.test(fetchTest,                 'fetching a playlist and segments')
+  t.test(masterPlaylistFetch,       'fetching a master playlist')
+  t.test(simpleMasterPlaylistFetch, 'fetching another type of master playlist')
+  t.test(tearDownServer,            'fetching a playlist - tore down the fixture server')
   t.end()
 })
 
@@ -342,5 +359,21 @@ const masterPlaylistFetch = (t) => {
   .catch(err => {
     t.fail('We should not have failed')
     console.log(err)
+  })
+}
+
+const simpleMasterPlaylistFetch = (t) => {
+
+  t.plan(1)
+  t.timeoutAfter(3000)
+
+  const url = hostAndPort()+tsMasterURL
+  Playlist.fetch(url)
+  .then(playlist => {
+    t.ok(playlist, 'fetched master playlist')
+  })
+  .catch(err => {
+    t.fail('Failed to fetch playlist')
+    console.log(err);
   })
 }

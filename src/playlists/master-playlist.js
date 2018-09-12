@@ -29,8 +29,14 @@ class MasterPlaylist extends Playlist {
 
   set basePath(val) {
     this._basePath = val
-    this.variants.forEach(v => v.basePath = val)
-    this.renditions.forEach(v => v.basePath = val)
+
+    if (this.variants) {
+      this.variants.forEach(v => v.basePath = val)
+    }
+
+    if (this.renditions) {
+      this.renditions.forEach(v => v.basePath = val)      
+    }
   }
 
   get basePath() { return this._basePath }
@@ -61,8 +67,8 @@ class MasterPlaylist extends Playlist {
    * @return {type}  description
    */
   get variantsAllHaveCodecsInfo() {
-    for (let variant in this.regularVariants) {
-      if (!variant.hasOwnProperty('codecs')) {
+    for (let variant of this.regularVariants) {
+      if (variant.codecs === undefined || variant.codecs === null) {
         return false
       }
     }
@@ -89,7 +95,6 @@ class MasterPlaylist extends Playlist {
     .filter(v => (v.codecs.split(',').length === 1))
   }
 
-
   /**
    * get completeVariants - Return variants that might have both audio & video.
    * Variants that aren't labeled
@@ -98,7 +103,11 @@ class MasterPlaylist extends Playlist {
    */
   get completeVariants() {
     if (this.variantsAllHaveCodecsInfo) {
-      return this.regularVariants
+      /// Kind of dumb, but maybe kind of not?
+      /// Filter most tracks based on the highest amount of codecs listed
+      const codecsCnt = unique(this.regularVariants.map(v => v.codecs.split(',').length))
+      const trackMax  = codecsCnt.reduce((a, b) => Math.max(a,b))
+      return this.regularVariants.filter(v => v.codecs.split(',').length === trackMax)
     } else {
       const results = this.regularVariants.filter(v => v.codecs === undefined)
       return results
@@ -110,5 +119,12 @@ class MasterPlaylist extends Playlist {
 const lowestBandWidthVariant = (variants) => {
   return variants.sort((a, b) => a.bandwidth - b.bandwidth)[0]
 }
+
+const unique = (arr) => {
+  return arr.filter((val, idx, self) => {
+    return self.indexOf(val) === idx
+  })
+}
+
 
 export default MasterPlaylist
