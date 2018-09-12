@@ -196,7 +196,8 @@ const configureMasterPlaylist = (playlist, struct) => {
   struct.forEach(tag => {
     if (typeof tag === 'string') {
       if (currentVariant) {
-        currentVariant.uri = tag
+        currentVariant.uri      = tag
+        currentVariant.basePath = playlist.basePath
         playlist.variants.push(currentVariant)
         currentVariant = undefined
       }

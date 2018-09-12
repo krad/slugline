@@ -27,6 +27,14 @@ class MasterPlaylist extends Playlist {
     configureMasterPlaylist(this, playlistStruct)
   }
 
+  set basePath(val) {
+    this._basePath = val
+    this.variants.forEach(v => v.basePath = val)
+    this.renditions.forEach(v => v.basePath = val)
+  }
+
+  get basePath() { return this._basePath }
+
   /**
    * get regularVariants - Get variant streams that are regular
    *
@@ -44,6 +52,63 @@ class MasterPlaylist extends Playlist {
   get iFrameVaraints () {
     return this.variants.filter(vs => vs.isIFrame == true)
   }
+
+
+  /**
+   * get variantsAllHaveCodecsInfo - Master playlists contain a list of variants that sometimes have codec information and sometimes does not.
+   * This is used to determine if they all have codecs or not
+   *
+   * @return {type}  description
+   */
+  get variantsAllHaveCodecsInfo() {
+    for (let variant in this.regularVariants) {
+      if (!variant.hasOwnProperty('codecs')) {
+        return false
+      }
+    }
+    return true
+  }
+
+  /**
+   * get lowestBandwidthVariant - Returns variants with the lowest bandwidth rate
+   *
+   * @return {Variant} Variant with the lowest bandwidth
+   */
+  get lowestBandwidthVariant() {
+    return lowestBandWidthVariant(this.regularVariants)
+  }
+
+  /**
+   * get audioOnlyVariants - Return variants that are labeled as audio only
+   *
+   * @return {Array<Variant>} An array of variants
+   */
+  get audioOnlyVariants() {
+    return this.regularVariants
+    .filter(v => v.codecs !== undefined)
+    .filter(v => (v.codecs.split(',').length === 1))
+  }
+
+
+  /**
+   * get completeVariants - Return variants that might have both audio & video.
+   * Variants that aren't labeled
+   *
+   * @return {Array<Variant>}
+   */
+  get completeVariants() {
+    if (this.variantsAllHaveCodecsInfo) {
+      return this.regularVariants
+    } else {
+      const results = this.regularVariants.filter(v => v.codecs === undefined)
+      return results
+    }
+  }
+
+}
+
+const lowestBandWidthVariant = (variants) => {
+  return variants.sort((a, b) => a.bandwidth - b.bandwidth)[0]
 }
 
 export default MasterPlaylist

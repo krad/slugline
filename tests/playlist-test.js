@@ -8,7 +8,8 @@ const master    = fs.readFileSync('./tests/fixtures/basic/master.m3u8').toString
 const advMaster = fs.readFileSync('./tests/fixtures/apple-advanced-fmp4/master.m3u8').toString()
 const weirdLive = fs.readFileSync('./tests/fixtures/basic/live-without-ident.m3u8').toString()
 
-const vodURL   = '/basic/krad.tv/tractor/vod.m3u8'
+const vodURL        = '/basic/krad.tv/tractor/vod.m3u8'
+const advMasterURL  = '/apple-advanced-fmp4/master.m3u8'
 
 test('basic attributes from a VOD playlist', t=>{
 
@@ -56,7 +57,6 @@ test('basic attributes from a VOD playlist', t=>{
 })
 
 test('basic attributes from a Master playlist', t=> {
-
   const playlist = Playlist.parse(master)
   t.ok(playlist, 'got a playlist')
   t.equals('MasterPlaylist', playlist.constructor.name, 'got a MasterPlaylist')
@@ -71,6 +71,22 @@ test('basic attributes from a Master playlist', t=> {
 
   const last = playlist.variants[playlist.variants.length-1]
   t.equals('mp4a.40.5', last.codecs,                    'got codec info for the last variant')
+
+  t.equals(false, playlist.variantsAllHaveCodecsInfo, 'not every variant had codec info')
+  t.equals('http://example.com/audio-only.m3u8', playlist.lowestBandwidthVariant.uri, 'got the lowest bandwidth variant')
+
+  const audioVariants = playlist.audioOnlyVariants
+  t.ok(audioVariants, 'got audio variants back')
+  t.equals(1, audioVariants.length, 'had a single item in it')
+  t.equals('http://example.com/audio-only.m3u8', audioVariants[0].uri, 'had the audio only variant in it')
+
+  const possibleStreams = playlist.completeVariants
+  t.ok(possibleStreams, 'got possible streams back')
+  t.equals(3, possibleStreams.length, 'had the streams that werent labeld as audio only')
+  t.equals('http://example.com/low.m3u8', possibleStreams[0].uri, 'got the low stream')
+  t.equals('http://example.com/mid.m3u8', possibleStreams[1].uri, 'got the mid stream')
+  t.equals('http://example.com/hi.m3u8', possibleStreams[2].uri, 'got the high stream')
+
   t.end()
 })
 
@@ -117,13 +133,6 @@ test('attributes from an advanced Master Playlist', t=> {
 test('identifying a live playlist', t=> {
   const playlist = Playlist.parse(weirdLive)
   t.equals('LIVE', playlist.type, 'correctly identified as LIVE')
-  t.end()
-})
-
-test('fetching a playlist', t=> {
-  t.test(setupServer,     'fetching a playlist - setup the fixture server')
-  t.test(fetchTest,       'fetching a playlist and segments')
-  t.test(tearDownServer,  'fetching a playlist - tore down the fixture server')
   t.end()
 })
 
@@ -240,6 +249,14 @@ test('preventing segment update overwrites', t=> {
   t.end()
 })
 
+test('fetching a playlist', t=> {
+  t.test(setupServer,         'fetching a playlist - setup the fixture server')
+  t.test(fetchTest,           'fetching a playlist and segments')
+  t.test(masterPlaylistFetch, 'fetching a master playlist')
+  t.test(tearDownServer,      'fetching a playlist - tore down the fixture server')
+  t.end()
+})
+
 const fetchTest = (t) => {
   t.plan(136)
   t.timeoutAfter(8000)
@@ -272,5 +289,58 @@ const fetchTest = (t) => {
   }).catch(err => {
     console.log(err);
     t.fail('We should not have failed')
+  })
+}
+
+
+const masterPlaylistFetch = (t) => {
+  t.plan(15)
+  t.timeoutAfter(3000)
+
+  const url = hostAndPort()+advMasterURL
+  Playlist.fetch(url)
+  .then(playlist => {
+    t.ok(playlist,                          'fetched completed with a resposne')
+    t.ok(playlist.variants,                 'playlist has variants')
+    t.equals(30, playlist.variants.length,  'playlist had correct amount of variants')
+
+    t.ok(playlist.renditions, 'playlist has renditions')
+    t.equals(5, playlist.renditions.length, 'playlist has correct number of renditions')
+
+    const variant = playlist.variants[0]
+    t.ok(variant, 'got variant back')
+    t.equals('v5/prog_index.m3u8', variant.uri, 'variant had correct uri')
+    t.equals(hostAndPort()+'/apple-advanced-fmp4/v5/prog_index.m3u8', variant.url, 'variant had correct url')
+
+    variant.fetch()
+    .then(variantPlaylist => {
+      t.ok(variantPlaylist, 'got variant playlist')
+      t.equals('MediaPlaylist', variantPlaylist.constructor.name, 'Correctly identifed as MediaPlaylist')
+    })
+    .catch(err => {
+      t.fail('Failed to fetch variant playlist')
+      console.log(err);
+    })
+
+    const rendition = playlist.renditions[0]
+    t.ok(rendition, 'got rendition back')
+    t.equals('a1/prog_index.m3u8', rendition.uri, 'rendition had correct uri')
+    t.equals(hostAndPort()+'/apple-advanced-fmp4/a1/prog_index.m3u8', rendition.url, 'rendition had correct url')
+
+    rendition.fetch()
+    .then(renditionPlaylist => {
+      t.ok(renditionPlaylist)
+      t.equals('MediaPlaylist', renditionPlaylist.constructor.name, 'Correctly identified as MediaPlaylist')
+    })
+    .catch(err => {
+      t.fail('Failed to fetch rendition playlist')
+      console.log(err);
+    })
+
+
+  })
+  .catch(err => {
+    t.fail('We should not have failed')
+    console.log(err)
   })
 }
