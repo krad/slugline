@@ -9,7 +9,6 @@ import TransportStreamParser from '../src/parsers/container/ts/parser'
 import ElementaryStream from '../src/parsers/container/ts/elementary-stream'
 import PESPacket from '../src/parsers/container/ts/pes-packet'
 import { buildRBSP } from '../src/parsers/container/ts/nalu'
-import base64ArrayBuffer from '../src/parsers/container/ts/base64'
 import * as bytes from '../src/helpers/byte-helpers'
 
 test.skip('parsing a random segment to diagnose what is wrong', t=> {
