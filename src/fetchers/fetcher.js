@@ -203,7 +203,7 @@ const simpleGet = (params, proto) => {
 
       if (response.statusCode != 200) {
         // Check if we got a redirect
-        if (response.statusCode == 301 && followRedirects) {
+        if ((response.statusCode == 301 || response.statusCode == 302) && followRedirects) {
           if (response.headers['location']) {
             onRedirect(checkLocation(url, response.headers['location']))
           }
