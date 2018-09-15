@@ -4,6 +4,7 @@
 const test = require('tape')
 const fs = require('fs')
 
+import { Playlist } from '../src/playlist'
 import TransportStream from '../src/parsers/container/ts/transport-stream'
 import TransportStreamParser from '../src/parsers/container/ts/parser'
 import ElementaryStream from '../src/parsers/container/ts/elementary-stream'
@@ -24,4 +25,22 @@ test.skip('parsing a random segment to diagnose what is wrong', t=> {
   // console.log(accessUnits);
 
   t.end()
+})
+
+test.skip('fetching a problematic playlist', t=> {
+
+  t.plan(1)
+
+  const url = 'http://iphone-streaming.ustream.tv/uhls/10414700/streams/live/iphone/playlist.m3u8'
+
+  Playlist.fetch(url)
+  .then(playlist => {
+    t.ok(playlist, 'fetched the playlist')
+    console.log(playlist);
+  })
+  .catch(err => {
+    t.fail('Failed to fetch the playlist')
+    console.log(err);
+  })
+
 })

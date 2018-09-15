@@ -18,16 +18,16 @@ export default class Fetcher {
   }
 
   constructor (config) {
-    this.timeout = config.timeout || 5000
-    this._url = config.url
-    this.contentRead = 0
-    this.encoding = config.encoding || 'utf8'
-    this.followRedirects = config.followRedirects || true
-    this.redirects = []
+    this.timeout          = config.timeout || 5000
+    this._url             = config.url
+    this.contentRead      = 0
+    this.encoding         = config.encoding || 'utf8'
+    this.followRedirects  = config.followRedirects || true
+    this.redirects        = []
 
     // The maximum amount of times to retry
     this.maxRetries = config.maxRetries
-    if (this.maxRetries == undefined) { this.maxRetries = 1 }
+    if (this.maxRetries == undefined) { this.maxRetries = 4 }
 
     // The number of fetches made.
     this.fetchCount = 0
