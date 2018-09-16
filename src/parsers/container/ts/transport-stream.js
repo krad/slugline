@@ -30,8 +30,12 @@ class TransportStream {
     return createCodecsString(this.codecs)
   }
 
+  get PAT() {
+    return this.packets.filter(p => p.objType === 'PAT')[0]
+  }
+
   get PMT() {
-    return this.packets.filter(p => p.objType == 'PMT')[0]
+    return this.packets.filter(p => p.objType === 'PMT')[0]
   }
 
   get trackPackets() {

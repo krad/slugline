@@ -21,7 +21,7 @@ class PMT extends Packet {
     if (this.ptrField) { bitReader.readBits(this.ptrField * 8) }
 
     this.tableID                = bitReader.readBits(8)
-    let sectionSyntaxIndicator = bitReader.readBit()
+    let sectionSyntaxIndicator  = bitReader.readBit()
     this.privateBit             = bitReader.readBit()
 
     bitReader.readBits(2)   // reserved bits
@@ -68,8 +68,10 @@ class PMT extends Packet {
 
         let esInfo = []
         let esStopBit = bitReader.currentBit() + (esInfoLength * 8)
-        while (bitReader.currentBit() < esStopBit) {
-          esInfo.push(bitReader.readBits(8))
+        if (track.streamType !== 14) {
+          while (bitReader.currentBit() < esStopBit) {
+            esInfo.push(bitReader.readBits(8))
+          }          
         }
 
         if (esInfo.length > 0) {
