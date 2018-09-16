@@ -31,7 +31,8 @@ test.skip('fetching a problematic playlist', t=> {
 
   t.plan(1)
 
-  const url = 'http://iphone-streaming.ustream.tv/uhls/10414700/streams/live/iphone/playlist.m3u8'
+  // const url = 'https://www.cbsnews.com/common/video/dai_prod.m3u8'
+  const url = 'http://klive.kaltura.com/dc-1/m/ny-live-publish114/live/legacy/p/931702/e/1_oorxcge2/sd/10000/t/hNIbfRfBu-zhVyW-WU3jBg/master.m3u8'
 
   Playlist.fetch(url)
   .then(playlist => {

@@ -23,6 +23,7 @@ class Segment {
         this.size       = progress.size
         this.downloaded = progress.downloaded
         this.progress   = progress.progress
+        progress.uri    = this.uri
         if (onProgress) { onProgress(progress) }
       }
 
